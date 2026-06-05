@@ -186,8 +186,19 @@ program
     const ask = (q: string): Promise<string> =>
       new Promise((resolve) => rl.question(q, resolve));
 
-    const apiBaseUrl = (await ask("API Base URL (默认 https://api.packyapi.com/v1/images): ")).trim()
-      || "https://api.packyapi.com/v1/images";
+    const providerInput = (await ask("Provider (openai/grok/gemini，默认 openai): ")).trim().toLowerCase();
+    const provider = providerInput === "grok"
+      ? "grok"
+      : providerInput === "gemini"
+        ? "gemini"
+        : "openai";
+    const defaultApiBaseUrl = provider === "grok"
+      ? "https://api.x.ai/v1"
+      : provider === "gemini"
+        ? "https://generativelanguage.googleapis.com"
+        : "https://api.packyapi.com/v1/images";
+    const apiBaseUrl = (await ask(`API Base URL (默认 ${defaultApiBaseUrl}): `)).trim()
+      || defaultApiBaseUrl;
 
     const apiKey = await new Promise<string>((resolve) => {
       process.stdout.write("API Key: ");
@@ -221,9 +232,10 @@ program
       return;
     }
 
-    saveCredentials(apiBaseUrl, apiKey.trim());
+    saveCredentials(apiBaseUrl, apiKey.trim(), provider);
     console.log("");
     console.log("凭据已保存。");
+    console.log(`  Provider:     ${provider}`);
     console.log(`  API Base URL: ${apiBaseUrl}`);
     console.log(`  API Key:      ${maskApiKey(apiKey.trim())}`);
   });
@@ -243,6 +255,7 @@ program
 
     if (creds) {
       console.log(`凭据:    已配置`);
+      console.log(`  Provider: ${creds.provider ?? "openai"}`);
       console.log(`  Base URL: ${creds.apiBaseUrl}`);
       console.log(`  API Key:  ${maskApiKey(creds.apiKey)}`);
       console.log(`  保存时间: ${creds.savedAt}`);

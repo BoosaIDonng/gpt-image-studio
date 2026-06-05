@@ -57,12 +57,14 @@ const imageAsset: ImageAsset = {
   conversationId: conversation.id,
   messageId: message.id,
   prompt: "画一张图",
+  requestPrompt: "请保持提示词不被改写。\n画一张图",
   createdAt: "2026-05-07T00:02:00.000Z",
   previewUrl: "blob:http://localhost/preview",
 };
 
 const settings: AppSettings = {
   connectionMode: "direct",
+  apiProvider: "openai",
   apiKey: "sk-secret",
   apiBaseUrl: "https://api.example.test/v1/images",
   apiBaseUrlMode: "full",
@@ -82,6 +84,8 @@ const settings: AppSettings = {
     },
   ],
   favoritePrompts: [],
+  ragEnabled: false,
+  ragTopK: 4,
   defaults: {
     size: "1:1",
     resolution: "1k",
@@ -128,6 +132,7 @@ describe("studio backups", () => {
     });
     expect(data.settings).toEqual({
       connectionMode: settings.connectionMode,
+      apiProvider: settings.apiProvider,
       apiBaseUrl: settings.apiBaseUrl,
       apiBaseUrlMode: settings.apiBaseUrlMode,
       apiMode: settings.apiMode,
@@ -140,12 +145,15 @@ describe("studio backups", () => {
       promptRewriteGuardText: settings.promptRewriteGuardText,
       promptRewriteGuardHistory: settings.promptRewriteGuardHistory,
       favoritePrompts: settings.favoritePrompts,
+      ragEnabled: settings.ragEnabled,
+      ragTopK: settings.ragTopK,
       autoRetryOnNetworkError: settings.autoRetryOnNetworkError,
       defaults: settings.defaults,
       storageMode: settings.storageMode,
     });
     expect(JSON.stringify(data)).not.toContain("sk-secret");
     expect(data.imageAssets[0]).not.toHaveProperty("previewUrl");
+    expect(data.imageAssets[0].requestPrompt).toBe(imageAsset.requestPrompt);
     expect(await files.get("blobs/blob%201")!.text()).toBe("image-data");
   });
 
@@ -193,6 +201,7 @@ describe("studio backups", () => {
         imageAssets: [{ ...imageAsset, previewUrl: undefined }],
         settings: {
           connectionMode: settings.connectionMode,
+          apiProvider: settings.apiProvider,
           apiBaseUrl: settings.apiBaseUrl,
           apiBaseUrlMode: settings.apiBaseUrlMode,
           apiMode: settings.apiMode,
@@ -201,6 +210,8 @@ describe("studio backups", () => {
           model: settings.model,
           promptMode: settings.promptMode,
           promptWordbanks: settings.promptWordbanks,
+          ragEnabled: settings.ragEnabled,
+          ragTopK: settings.ragTopK,
           defaults: settings.defaults,
           storageMode: settings.storageMode,
         },
@@ -232,6 +243,41 @@ describe("studio backups", () => {
       ...settings,
       apiKey: "sk-current",
     });
+  });
+
+  it("defaults missing RAG settings when restoring an older backup", async () => {
+    const backup = await zipBackup({
+      data: {
+        conversations: [conversation],
+        messages: [message],
+        imageAssets: [{ ...imageAsset, previewUrl: undefined }],
+        settings: {
+          connectionMode: settings.connectionMode,
+          apiProvider: settings.apiProvider,
+          apiBaseUrl: settings.apiBaseUrl,
+          apiBaseUrlMode: settings.apiBaseUrlMode,
+          apiMode: settings.apiMode,
+          streamImages: settings.streamImages,
+          streamPartialImages: settings.streamPartialImages,
+          model: settings.model,
+          promptMode: settings.promptMode,
+          promptWordbanks: settings.promptWordbanks,
+          defaults: settings.defaults,
+          storageMode: settings.storageMode,
+        },
+      },
+      blobs: [{ name: "blobs/blob%201", content: "image-data" }],
+    });
+    mocks.loadSettings.mockResolvedValue({ ...settings, apiKey: "sk-current" });
+
+    await restoreStudioBackup(fileFromBlob(backup));
+
+    expect(mocks.saveSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ragEnabled: false,
+        ragTopK: 4,
+      }),
+    );
   });
 });
 

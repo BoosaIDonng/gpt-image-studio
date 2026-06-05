@@ -15,6 +15,7 @@ export function useStudioSettings(input: UseStudioSettingsInput) {
   watch(
     [
       refs.connectionMode,
+      refs.apiProvider,
       refs.apiKey,
       refs.apiBaseUrl,
       refs.apiBaseUrlMode,
@@ -28,6 +29,8 @@ export function useStudioSettings(input: UseStudioSettingsInput) {
       refs.promptRewriteGuardText,
       refs.promptRewriteGuardHistory,
       refs.favoritePrompts,
+      refs.ragEnabled,
+      refs.ragTopK,
       refs.autoRetryOnNetworkError,
       refs.activeSizePreset,
       refs.sizeResolution,

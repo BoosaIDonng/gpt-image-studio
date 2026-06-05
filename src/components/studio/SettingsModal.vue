@@ -2,6 +2,7 @@
 import { ref, watch } from "vue";
 import type {
   ApiMode,
+  ApiProvider,
   ConnectionMode,
   Conversation,
   FavoritePrompt,
@@ -37,6 +38,7 @@ const props = defineProps<{
   initialTab?: SettingsTab;
   autoRetryOnNetworkError: boolean;
   connectionMode: ConnectionMode;
+  apiProvider: ApiProvider;
   apiKey: string;
   apiBaseUrl: string;
   apiBaseUrlMode: "origin" | "full";
@@ -49,6 +51,8 @@ const props = defineProps<{
   companionPaired: boolean;
   promptMode: PromptMode;
   promptWordbanks: PromptWordbanks;
+  ragEnabled: boolean;
+  ragTopK: number;
   favoritePrompts: FavoritePrompt[];
   promptRewriteGuardEnabled: boolean;
   promptRewriteGuardText: string;
@@ -67,6 +71,7 @@ const emit = defineEmits<{
   previewImage: [id: string];
   "update:autoRetryOnNetworkError": [value: boolean];
   "update:connectionMode": [value: ConnectionMode];
+  "update:apiProvider": [value: ApiProvider];
   "update:apiKey": [value: string];
   "update:apiBaseUrl": [value: string];
   "update:apiBaseUrlMode": [value: "origin" | "full"];
@@ -76,6 +81,8 @@ const emit = defineEmits<{
   "update:model": [value: string];
   "update:companionSessionToken": [value: string];
   "update:promptMode": [value: PromptMode];
+  "update:ragEnabled": [value: boolean];
+  "update:ragTopK": [value: number];
   savePromptWordbank: [section: PromptWordbankSectionKey, terms: string[]];
   restoreDefaultPromptWordbank: [section: PromptWordbankSectionKey];
   addFavoritePrompt: [value: { title: string; text: string }];
@@ -215,6 +222,7 @@ function forwardSavePromptWordbank(
             <ApiSettingsPanel
               v-else-if="activeTab === 'api'"
               :connection-mode="connectionMode"
+              :api-provider="apiProvider"
               :api-base-url="apiBaseUrl"
               :api-base-url-mode="apiBaseUrlMode"
               :api-mode="apiMode"
@@ -226,6 +234,7 @@ function forwardSavePromptWordbank(
               :companion-session-token="companionSessionToken"
               :companion-paired="companionPaired"
               @update:connection-mode="emit('update:connectionMode', $event)"
+              @update:api-provider="emit('update:apiProvider', $event)"
               @update:api-base-url="emit('update:apiBaseUrl', $event)"
               @update:api-base-url-mode="emit('update:apiBaseUrlMode', $event)"
               @update:api-mode="emit('update:apiMode', $event)"
@@ -239,10 +248,14 @@ function forwardSavePromptWordbank(
             <PromptModeSettingsPanel
               v-else-if="activeTab === 'promptMode'"
               :model-value="promptMode"
+              :rag-enabled="ragEnabled"
+              :rag-top-k="ragTopK"
               :wordbanks="promptWordbanks"
               @restore-default-wordbank="emit('restoreDefaultPromptWordbank', $event)"
               @save-wordbank="forwardSavePromptWordbank"
               @update:model-value="emit('update:promptMode', $event)"
+              @update:rag-enabled="emit('update:ragEnabled', $event)"
+              @update:rag-top-k="emit('update:ragTopK', $event)"
             />
 
             <FavoritePromptsPanel

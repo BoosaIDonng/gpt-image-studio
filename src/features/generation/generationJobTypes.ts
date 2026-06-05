@@ -13,6 +13,7 @@ export type GenerationJob = {
   editMaskImageId?: string;
   generationParams: GenerationParams;
   promptRequestSettings: PromptRequestSettings;
+  batchImageCount?: number;
   status: GenerationJobStatus;
   startedAtMs: number;
   finishedAtMs?: number;

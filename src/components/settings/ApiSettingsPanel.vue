@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted, watch } from "vue";
-import type { ApiMode, ConnectionMode } from "../../types/studio";
-import { FIXED_IMAGE_MODEL } from "../../shared/models";
+import type { ApiMode, ApiProvider, ConnectionMode } from "../../types/studio";
+import { GEMINI_IMAGE_MODEL, GROK_IMAGE_MODEL, OPENAI_IMAGE_MODEL } from "../../shared/models";
 import {
   checkCompanionHealth,
   getCompanionAuthStatus,
@@ -14,6 +14,7 @@ import type { CompanionAuthStatus, CompanionHealthResponse } from "../../types/c
 
 const props = defineProps<{
   connectionMode: ConnectionMode;
+  apiProvider: ApiProvider;
   apiBaseUrl: string;
   apiBaseUrlMode: "origin" | "full";
   apiMode: ApiMode;
@@ -28,6 +29,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   "update:connectionMode": [value: ConnectionMode];
+  "update:apiProvider": [value: ApiProvider];
   "update:apiBaseUrl": [value: string];
   "update:apiBaseUrlMode": [value: "origin" | "full"];
   "update:apiMode": [value: ApiMode];
@@ -49,12 +51,26 @@ const apiKeyCopyStatus = ref<"idle" | "copied" | "failed">("idle");
 let apiKeyCopyStatusTimer: ReturnType<typeof setTimeout> | undefined;
 
 const isManagedCompanion = computed(() => companionHealth.value?.runMode !== "serve");
+const providerOptions: Array<{ value: ApiProvider; label: string; description: string }> = [
+  { value: "openai", label: "OpenAI 兼容", description: "支持当前 Images / Responses API 和中转站。" },
+  { value: "grok", label: "Grok xAI", description: "调用 xAI Grok 图片接口。" },
+  { value: "gemini", label: "Gemini", description: "调用 Google Gemini 原生图片接口。" },
+];
 const apiModeOptions: Array<{ value: ApiMode; label: string; description: string }> = [
   { value: "images", label: "Images API", description: "直接调用 /v1/images，兼容传统图片接口。" },
   { value: "responses", label: "Responses API", description: "通过 /v1/responses 调用 image_generation 工具。" },
 ];
 const partialImageOptions = [0, 1, 2, 3] as const;
 const apiBaseUrlHint = computed(() =>
+  props.apiProvider === "gemini"
+    ? props.apiBaseUrlMode === "full"
+      ? "https://generativelanguage.googleapis.com/v1"
+      : "https://generativelanguage.googleapis.com"
+    : props.apiProvider === "grok"
+    ? props.apiBaseUrlMode === "full"
+      ? "https://api.x.ai/v1"
+      : "https://api.x.ai"
+    :
   props.apiBaseUrlMode === "full"
     ? props.apiMode === "responses"
       ? "https://api.example.com/v1"
@@ -62,8 +78,22 @@ const apiBaseUrlHint = computed(() =>
     : "https://api.example.com",
 );
 const apiSuffixLabel = computed(() =>
-  props.apiMode === "responses" ? "/v1" : "/v1/images",
+  props.apiProvider === "gemini"
+    ? "/v1"
+    : props.apiProvider === "grok" || props.apiMode === "images"
+      ? "/v1/images"
+      : "/v1",
 );
+const apiKeyLabel = computed(() => {
+  if (props.apiProvider === "grok") return "xAI API key";
+  if (props.apiProvider === "gemini") return "Google AI API key";
+  return "OpenAI API key";
+});
+const modelHint = computed(() => {
+  if (props.apiProvider === "grok") return GROK_IMAGE_MODEL;
+  if (props.apiProvider === "gemini") return GEMINI_IMAGE_MODEL;
+  return OPENAI_IMAGE_MODEL;
+});
 
 async function checkStatus() {
   const health = await checkCompanionHealth(props.companionUrl);
@@ -158,6 +188,10 @@ function cancelPairing() {
 
 function normalizeApiBaseUrlInput(value: string) {
   return value.trim().replace(/\/+$/, "");
+}
+
+function selectProvider(provider: ApiProvider) {
+  emit("update:apiProvider", provider);
 }
 
 function resetApiKeyCopyStatusSoon() {
@@ -261,6 +295,32 @@ watch(
         </div>
 
         <div>
+          <p class="mb-2 block text-sm font-medium text-gray-700">接口供应商</p>
+          <div class="grid gap-2 sm:grid-cols-2">
+            <button
+              v-for="option in providerOptions"
+              :key="option.value"
+              class="cursor-pointer rounded-xl border px-3 py-3 text-left transition-colors"
+              :class="
+                apiProvider === option.value
+                  ? 'border-gray-900 bg-gray-900 text-white'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+              "
+              type="button"
+              @click="selectProvider(option.value)"
+            >
+              <div class="text-sm font-semibold">{{ option.label }}</div>
+              <div
+                class="mt-1 text-xs"
+                :class="apiProvider === option.value ? 'text-gray-200' : 'text-gray-500'"
+              >
+                {{ option.description }}
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <div v-if="apiProvider === 'openai'">
           <p class="mb-2 block text-sm font-medium text-gray-700">接口模式</p>
           <div class="grid gap-2 sm:grid-cols-2">
             <button
@@ -291,7 +351,7 @@ watch(
             class="mb-1 block text-sm font-medium text-gray-700"
             for="apiKey"
           >
-            OpenAI API key
+            {{ apiKeyLabel }}
           </label>
           <div class="flex rounded-lg border border-gray-300 bg-white focus-within:border-gray-500">
             <input
@@ -374,14 +434,14 @@ watch(
             id="apiModel"
             :value="model"
             class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-500 outline-none"
-            :placeholder="FIXED_IMAGE_MODEL"
+            :placeholder="modelHint"
             disabled
             readonly
             spellcheck="false"
             type="text"
           />
           <p class="mt-1.5 text-xs text-gray-500">
-            当前阶段固定使用 <span class="font-mono">{{ FIXED_IMAGE_MODEL }}</span>，先不开放自定义模型输入。
+            当前使用 <span class="font-mono">{{ modelHint }}</span>。切换供应商时会自动切换默认模型。
           </p>
         </div>
 
@@ -450,7 +510,8 @@ watch(
             <input
               class="mt-0.5 h-4 w-4 cursor-pointer accent-gray-900"
               type="checkbox"
-              :checked="streamImages"
+              :checked="streamImages && apiProvider === 'openai'"
+              :disabled="apiProvider !== 'openai'"
               @change="
                 emit(
                   'update:streamImages',
@@ -461,7 +522,12 @@ watch(
             <span class="min-w-0">
               <span class="block text-sm font-medium text-gray-700">流式预览</span>
               <span class="mt-1 block text-xs text-gray-500">
-                生成过程中接收中间图像，优先用于减少长时间等待时的空白状态。
+                <template v-if="apiProvider !== 'openai'">
+                  当前供应商在本应用中使用非流式 base64 返回。
+                </template>
+                <template v-else>
+                  生成过程中接收中间图像，优先用于减少长时间等待时的空白状态。
+                </template>
               </span>
             </span>
           </label>
@@ -477,7 +543,7 @@ watch(
               id="streamPartialImages"
               :value="streamPartialImages"
               class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
-              :disabled="!streamImages"
+              :disabled="!streamImages || apiProvider !== 'openai'"
               @change="
                 emit(
                   'update:streamPartialImages',

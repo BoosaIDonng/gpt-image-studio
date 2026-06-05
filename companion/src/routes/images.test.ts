@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { createSecurityConfig } from "../securityConfig.js";
-import { validateEditMultipart } from "./images.js";
+import {
+  buildGeminiGenerateContentRequest,
+  normalizeGeminiGenerateContentResponse,
+  validateEditMultipart,
+  validateGeminiEditBody,
+  validateGrokEditBody,
+} from "./images.js";
 
 function multipart(parts: Array<{ name: string; contentType?: string; body?: string }>): Buffer {
   const boundary = "----test-boundary";
@@ -61,5 +67,104 @@ describe("companion image route validation", () => {
     ]);
 
     expect(validateEditMultipart(body, security)).toContain("mask 必须是 image/png");
+  });
+
+  it("accepts a Grok JSON edit image_url object", () => {
+    expect(validateGrokEditBody({
+      model: "grok-imagine-image-quality",
+      prompt: "改一下图",
+      image: { type: "image_url", url: "data:image/png;base64,aW1hZ2U=" },
+      response_format: "b64_json",
+    })).toBeNull();
+  });
+
+  it("accepts Grok JSON edit image_url arrays", () => {
+    expect(validateGrokEditBody({
+      model: "grok-imagine-image-quality",
+      prompt: "改一下图",
+      images: [
+        { type: "image_url", url: "data:image/png;base64,aW1hZ2U=" },
+        { type: "image_url", url: "data:image/jpeg;base64,aW1hZ2U=" },
+      ],
+      response_format: "b64_json",
+    })).toBeNull();
+  });
+
+  it("rejects Grok JSON edits without data URL image_url objects", () => {
+    expect(validateGrokEditBody({
+      model: "grok-imagine-image-quality",
+      prompt: "改一下图",
+      image: { type: "image_url", url: "https://example.com/image.png" },
+    })).toContain("data URL");
+  });
+
+  it("builds Gemini generateContent requests from Companion JSON bodies", () => {
+    expect(buildGeminiGenerateContentRequest({
+      model: "gemini-3.1-flash-image-preview",
+      prompt: "画一张图",
+      gemini: {
+        aspectRatio: "16:9",
+        imageSize: "2K",
+      },
+    })).toEqual({
+      model: "gemini-3.1-flash-image-preview",
+      body: {
+        contents: [
+          {
+            parts: [{ text: "画一张图" }],
+          },
+        ],
+        generationConfig: {
+          responseModalities: ["TEXT", "IMAGE"],
+          responseFormat: {
+            image: {
+              aspectRatio: "16:9",
+              imageSize: "2K",
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it("normalizes Gemini inline image responses to the existing Images API shape", () => {
+    expect(normalizeGeminiGenerateContentResponse({
+      candidates: [
+        {
+          content: {
+            parts: [
+              {
+                inlineData: {
+                  data: "gemini-image",
+                  mimeType: "image/png",
+                },
+              },
+            ],
+          },
+        },
+      ],
+    })).toEqual({
+      data: [
+        {
+          b64_json: "gemini-image",
+          mime_type: "image/png",
+        },
+      ],
+    });
+  });
+
+  it("accepts Gemini JSON edit inline image parts", () => {
+    expect(validateGeminiEditBody({
+      model: "gemini-3.1-flash-image-preview",
+      prompt: "改一下图",
+      images: [
+        {
+          inline_data: {
+            mime_type: "image/png",
+            data: "aW1hZ2U=",
+          },
+        },
+      ],
+    })).toBeNull();
   });
 });

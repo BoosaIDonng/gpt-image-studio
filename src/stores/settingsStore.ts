@@ -27,10 +27,14 @@ import {
 import { saveSettings } from "../services/settings";
 import { isoTimestamp } from "../shared/dateTime";
 import { createId } from "../shared/id";
-import { readStorage, writeStorage } from "../shared/localStorage";
-import { FIXED_IMAGE_MODEL } from "../shared/models";
+import { readJsonStorage, readStorage, writeStorage } from "../shared/localStorage";
+import {
+  FIXED_IMAGE_MODEL,
+  defaultModelForProvider,
+} from "../shared/models";
 import type {
   ApiMode,
+  ApiProvider,
   AppSettings,
   ConnectionMode,
   FavoritePrompt,
@@ -49,6 +53,14 @@ const SETTINGS_STORAGE_KEYS = {
   companionUrl: "gpt-image-studio:companion-url",
   companionSessionToken: "gpt-image-studio:companion-session-token",
 } as const;
+
+type ProviderApiSettings = {
+  apiKey: string;
+  apiBaseUrl: string;
+  apiBaseUrlMode: AppSettings["apiBaseUrlMode"];
+  apiMode: ApiMode;
+  model: string;
+};
 
 const SIZE_RATIO_OPTIONS = [
   { value: "21:9", label: "21:9", widthRatio: 21, heightRatio: 9 },
@@ -74,11 +86,19 @@ type ImageCountMode = "preset" | "custom";
 
 export const useSettingsStore = defineStore("settings", () => {
   const connectionMode = ref<ConnectionMode>("direct");
-  const apiMode = ref<ApiMode>("images");
-  const model = ref(FIXED_IMAGE_MODEL);
-  const apiKey = ref(readStorage(SETTINGS_STORAGE_KEYS.apiKey, ""));
-  const apiBaseUrl = ref(readStorage(SETTINGS_STORAGE_KEYS.apiBaseUrl, ""));
-  const apiBaseUrlMode = ref<AppSettings["apiBaseUrlMode"]>("origin");
+  const apiProvider = ref<ApiProvider>("openai");
+  const initialApiSettings = readProviderApiSettings("openai", {
+    ...defaultProviderApiSettings("openai"),
+    apiKey: readStorage(SETTINGS_STORAGE_KEYS.apiKey, ""),
+    apiBaseUrl: readStorage(SETTINGS_STORAGE_KEYS.apiBaseUrl, ""),
+  });
+  const apiMode = ref<ApiMode>(initialApiSettings.apiMode);
+  const model = ref(initialApiSettings.model);
+  const apiKey = ref(initialApiSettings.apiKey);
+  const apiBaseUrl = ref(initialApiSettings.apiBaseUrl);
+  const apiBaseUrlMode = ref<AppSettings["apiBaseUrlMode"]>(
+    initialApiSettings.apiBaseUrlMode,
+  );
   const streamImages = ref(false);
   const streamPartialImages = ref<0 | 1 | 2 | 3>(1);
   const promptMode = ref<PromptMode>("default");
@@ -89,6 +109,8 @@ export const useSettingsStore = defineStore("settings", () => {
   const promptRewriteGuardText = ref(PROMPT_REWRITE_GUARD_PREFIX);
   const autoRetryOnNetworkError = ref(false);
   const favoritePrompts = ref<FavoritePrompt[]>([]);
+  const ragEnabled = ref(false);
+  const ragTopK = ref(4);
   const promptRewriteGuardHistory = ref<PromptRewriteGuardHistoryItem[]>([
     {
       id: "prompt-guard-default",
@@ -133,6 +155,7 @@ export const useSettingsStore = defineStore("settings", () => {
     { value: "webp", label: "WebP" },
     { value: "jpeg", label: "JPEG" },
   ] as const;
+  let skipNextProviderRestore = false;
   const sizeLabel = computed(() => {
     if (activeSizePreset.value === "auto") return "自动";
     if (activeSizePreset.value === "custom")
@@ -154,7 +177,12 @@ export const useSettingsStore = defineStore("settings", () => {
       backgroundOptions.find((o) => o.value === background.value)?.label ??
       background.value,
   );
-  const transparentDisabled = computed(() => model.value === FIXED_IMAGE_MODEL);
+  const transparentDisabled = computed(
+    () =>
+      apiProvider.value === "grok" ||
+      apiProvider.value === "gemini" ||
+      model.value === FIXED_IMAGE_MODEL,
+  );
   const formatLabel = computed(
     () =>
       formatOptions.find((o) => o.value === outputFormat.value)?.label ??
@@ -188,14 +216,16 @@ export const useSettingsStore = defineStore("settings", () => {
 
   function applySettings(settings: AppSettings) {
     const defaults = normalizeGenerationParams(settings.defaults);
+    skipNextProviderRestore = settings.apiProvider !== apiProvider.value;
     connectionMode.value = settings.connectionMode;
+    apiProvider.value = settings.apiProvider;
     apiKey.value = settings.apiKey;
     apiBaseUrlMode.value = settings.apiBaseUrlMode;
     apiBaseUrl.value = displayApiBaseUrl(settings.apiBaseUrl, settings.apiBaseUrlMode);
     apiMode.value = settings.apiMode;
     streamImages.value = settings.streamImages;
     streamPartialImages.value = settings.streamPartialImages;
-    model.value = FIXED_IMAGE_MODEL;
+    model.value = settings.model || defaultModelForProvider(settings.apiProvider);
     promptMode.value = settings.promptMode;
     promptWordbanks.value = normalizePromptWordbanks(settings.promptWordbanks);
     promptRewriteGuardEnabled.value = settings.promptRewriteGuardEnabled;
@@ -203,6 +233,8 @@ export const useSettingsStore = defineStore("settings", () => {
       settings.promptRewriteGuardText,
     );
     autoRetryOnNetworkError.value = settings.autoRetryOnNetworkError ?? false;
+    ragEnabled.value = settings.ragEnabled ?? false;
+    ragTopK.value = normalizeRagTopK(settings.ragTopK);
     promptRewriteGuardHistory.value = normalizePromptRewriteGuardHistory(
       settings.promptRewriteGuardHistory,
       promptRewriteGuardText.value,
@@ -223,18 +255,20 @@ export const useSettingsStore = defineStore("settings", () => {
     quality.value = defaults.quality;
     background.value = normalizeBackground(defaults.background);
     outputFormat.value = defaults.outputFormat;
+    saveProviderApiSettings(settings.apiProvider);
   }
 
   function currentSettings(): AppSettings {
     return {
       connectionMode: connectionMode.value,
+      apiProvider: apiProvider.value,
       apiKey: apiKey.value.trim(),
       apiBaseUrl: apiBaseUrl.value.trim(),
       apiBaseUrlMode: apiBaseUrlMode.value,
       apiMode: apiMode.value,
       streamImages: streamImages.value,
       streamPartialImages: streamPartialImages.value,
-      model: FIXED_IMAGE_MODEL,
+      model: model.value || defaultModelForProvider(apiProvider.value),
       promptMode: promptMode.value,
       promptWordbanks: clonePromptWordbanks(promptWordbanks.value),
       promptRewriteGuardEnabled: promptRewriteGuardEnabled.value,
@@ -243,6 +277,8 @@ export const useSettingsStore = defineStore("settings", () => {
         toPlainPromptRewriteGuardHistoryItem,
       ),
       favoritePrompts: favoritePrompts.value.map(toPlainFavoritePrompt),
+      ragEnabled: ragEnabled.value,
+      ragTopK: normalizeRagTopK(ragTopK.value),
       autoRetryOnNetworkError: autoRetryOnNetworkError.value,
       defaults: currentGenerationParams(),
       storageMode: "indexeddb",
@@ -280,7 +316,33 @@ export const useSettingsStore = defineStore("settings", () => {
   }
 
   function saveCurrentSettings() {
+    saveProviderApiSettings(apiProvider.value);
     return saveSettings(currentSettings());
+  }
+
+  function saveProviderApiSettings(provider: ApiProvider) {
+    writeProviderApiSettings(provider, {
+      apiKey: apiKey.value,
+      apiBaseUrl: apiBaseUrl.value,
+      apiBaseUrlMode: apiBaseUrlMode.value,
+      apiMode: apiMode.value,
+      model: model.value,
+    });
+  }
+
+  function applyProviderConstraints(provider: ApiProvider) {
+    if (provider === "openai") return;
+    if (apiMode.value === "responses") apiMode.value = "images";
+    if (streamImages.value) streamImages.value = false;
+    if (background.value === "transparent") background.value = "auto";
+    if (
+      !model.value ||
+      model.value === FIXED_IMAGE_MODEL ||
+      model.value === defaultModelForProvider("openai") ||
+      (provider === "gemini" && model.value === "gemini-3.1-flash-image")
+    ) {
+      model.value = defaultModelForProvider(provider);
+    }
   }
 
   function savePromptRewriteGuardText(text: string) {
@@ -367,9 +429,40 @@ export const useSettingsStore = defineStore("settings", () => {
   watch(companionSessionToken, (v) =>
     writeStorage(SETTINGS_STORAGE_KEYS.companionSessionToken, v),
   );
+  watch(
+    [apiKey, apiBaseUrl, apiBaseUrlMode, apiMode, model],
+    () => {
+      saveProviderApiSettings(apiProvider.value);
+    },
+    { flush: "sync" },
+  );
+  watch(apiProvider, (provider, previousProvider) => {
+    if (skipNextProviderRestore) {
+      skipNextProviderRestore = false;
+      saveProviderApiSettings(provider);
+      applyProviderConstraints(provider);
+      return;
+    }
+
+    if (previousProvider) {
+      saveProviderApiSettings(previousProvider);
+    }
+
+    const next = readProviderApiSettings(
+      provider,
+      defaultProviderApiSettings(provider),
+    );
+    apiKey.value = next.apiKey;
+    apiBaseUrl.value = next.apiBaseUrl;
+    apiBaseUrlMode.value = next.apiBaseUrlMode;
+    apiMode.value = next.apiMode;
+    model.value = next.model;
+    applyProviderConstraints(provider);
+  });
 
   return {
     activeSizePreset,
+    apiProvider,
     apiMode,
     apiBaseUrl,
     apiBaseUrlMode,
@@ -394,6 +487,8 @@ export const useSettingsStore = defineStore("settings", () => {
     formatLabel,
     formatOptions,
     favoritePrompts,
+    ragEnabled,
+    ragTopK,
     imageCount,
     imageCountMode,
     imageCountPresets,
@@ -428,6 +523,69 @@ export const useSettingsStore = defineStore("settings", () => {
     deleteFavoritePrompt,
   };
 });
+
+function providerApiSettingsStorageKey(provider: ApiProvider) {
+  return `gpt-image-studio:provider-api-settings:${provider}`;
+}
+
+function readProviderApiSettings(
+  provider: ApiProvider,
+  fallback: ProviderApiSettings,
+): ProviderApiSettings {
+  return normalizeProviderApiSettings(
+    provider,
+    readJsonStorage<Partial<ProviderApiSettings>>(
+      providerApiSettingsStorageKey(provider),
+      fallback,
+    ),
+    fallback,
+  );
+}
+
+function writeProviderApiSettings(provider: ApiProvider, settings: ProviderApiSettings) {
+  writeStorage(
+    providerApiSettingsStorageKey(provider),
+    JSON.stringify(normalizeProviderApiSettings(provider, settings, settings)),
+  );
+}
+
+function normalizeProviderApiSettings(
+  provider: ApiProvider,
+  settings: Partial<ProviderApiSettings>,
+  fallback: ProviderApiSettings,
+): ProviderApiSettings {
+  const apiBaseUrlMode = settings.apiBaseUrlMode === "full" ? "full" : "origin";
+  const apiMode = provider === "openai" && settings.apiMode === "responses"
+    ? "responses"
+    : "images";
+  const model = normalizeProviderModel(provider, settings.model);
+
+  return {
+    apiKey: settings.apiKey ?? fallback.apiKey,
+    apiBaseUrl: settings.apiBaseUrl ?? fallback.apiBaseUrl,
+    apiBaseUrlMode,
+    apiMode,
+    model,
+  };
+}
+
+function normalizeProviderModel(provider: ApiProvider, value: string | undefined) {
+  const trimmed = value?.trim();
+  if (provider === "gemini" && trimmed === "gemini-3.1-flash-image") {
+    return defaultModelForProvider("gemini");
+  }
+  return trimmed || defaultModelForProvider(provider);
+}
+
+function defaultProviderApiSettings(provider: ApiProvider): ProviderApiSettings {
+  return {
+    apiKey: "",
+    apiBaseUrl: "",
+    apiBaseUrlMode: "origin",
+    apiMode: "images",
+    model: defaultModelForProvider(provider),
+  };
+}
 
 function getPromptWordbankTerms(
   wordbanks: PromptWordbanks,
@@ -520,6 +678,12 @@ function normalizeBackground(background: GenerationParams["background"]) {
   if (background === "transparent") return "auto";
 
   return background;
+}
+
+function normalizeRagTopK(value: unknown) {
+  const numeric = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(numeric)) return 4;
+  return Math.min(12, Math.max(1, Math.trunc(numeric)));
 }
 
 function displayApiBaseUrl(apiBaseUrl: string, mode: AppSettings["apiBaseUrlMode"]) {

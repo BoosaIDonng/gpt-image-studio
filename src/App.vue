@@ -35,6 +35,7 @@ const studio = useStudioViewModel();
     />
 
     <SettingsModal
+      v-model:api-provider="studio.settingsModal.apiProvider"
       v-model:api-base-url="studio.settingsModal.apiBaseUrl"
       v-model:api-base-url-mode="studio.settingsModal.apiBaseUrlMode"
       v-model:api-mode="studio.settingsModal.apiMode"
@@ -50,6 +51,8 @@ const studio = useStudioViewModel();
       :favorite-prompts="studio.settingsModal.favoritePrompts"
       :prompt-mode="studio.settingsModal.promptMode"
       :prompt-wordbanks="studio.settingsModal.promptWordbanks"
+      :rag-enabled="studio.settingsModal.ragEnabled"
+      :rag-top-k="studio.settingsModal.ragTopK"
       :prompt-rewrite-guard-enabled="studio.settingsModal.promptRewriteGuardEnabled"
       :prompt-rewrite-guard-history="studio.settingsModal.promptRewriteGuardHistory"
       :prompt-rewrite-guard-text="studio.settingsModal.promptRewriteGuardText"
@@ -78,6 +81,8 @@ const studio = useStudioViewModel();
       @update:companion-session-token="studio.settingsModal.companionSessionToken = $event"
       @update:auto-retry-on-network-error="studio.settingsModal.autoRetryOnNetworkError = $event"
       @update:prompt-mode="studio.settingsModal.setPromptMode"
+      @update:rag-enabled="studio.settingsModal.setRagEnabled"
+      @update:rag-top-k="studio.settingsModal.setRagTopK"
     />
 
     <ImagePreviewModal

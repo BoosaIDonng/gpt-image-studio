@@ -17,6 +17,10 @@ export type GenerateImageInput = {
   onStatusText?: (text: string) => void;
 };
 
+export type GenerateImageBatchInput = GenerateImageInput & {
+  count: number;
+};
+
 export type EditImageInput = GenerateImageInput & {
   images: ImageEditSource[];
   mask?: ImageEditSource;
@@ -24,7 +28,9 @@ export type EditImageInput = GenerateImageInput & {
 
 export type ImageClientResult = {
   b64Json: string;
+  requestPrompt?: string;
   revisedPrompt?: string;
+  mimeType?: string;
 };
 
 export type PartialImageEvent = {
@@ -34,5 +40,7 @@ export type PartialImageEvent = {
 
 export type ImageClient = {
   generate(input: GenerateImageInput): Promise<ImageClientResult>;
+  generateBatch?(input: GenerateImageBatchInput): Promise<ImageClientResult[]>;
+  canGenerateBatch?(): boolean;
   edit(input: EditImageInput): Promise<ImageClientResult>;
 };

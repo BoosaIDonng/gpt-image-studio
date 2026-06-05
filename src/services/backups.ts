@@ -50,11 +50,15 @@ type StoredBackupSettings = Omit<
   | "promptRewriteGuardText"
   | "promptRewriteGuardHistory"
   | "favoritePrompts"
+  | "ragEnabled"
+  | "ragTopK"
 > & {
   promptRewriteGuardEnabled?: boolean;
   promptRewriteGuardText?: string;
   promptRewriteGuardHistory?: AppSettings["promptRewriteGuardHistory"];
   favoritePrompts?: unknown;
+  ragEnabled?: boolean;
+  ragTopK?: unknown;
   promptMode?: AppSettings["promptMode"];
   promptWordbanks?: unknown;
   defaults: StoredGenerationParams;
@@ -124,6 +128,8 @@ export async function restoreStudioBackup(file: File) {
             },
           ],
         favoritePrompts: normalizeFavoritePrompts(data.settings.favoritePrompts),
+        ragEnabled: data.settings.ragEnabled ?? false,
+        ragTopK: normalizeRagTopK(data.settings.ragTopK),
         defaults: normalizeGenerationParams(data.settings.defaults),
         autoRetryOnNetworkError:
           data.settings.autoRetryOnNetworkError ?? false,
@@ -191,6 +197,12 @@ function normalizeMessage(message: StoredMessage): Message {
       ? normalizeGenerationParams(message.generationParams)
       : undefined,
   };
+}
+
+function normalizeRagTopK(value: unknown) {
+  const numeric = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(numeric)) return 4;
+  return Math.min(12, Math.max(1, Math.trunc(numeric)));
 }
 
 function blobEntryName(blobKey: string) {

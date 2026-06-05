@@ -10,6 +10,7 @@ export type ImageTagColor =
   | "blue"
   | "purple";
 export type ApiMode = "images" | "responses";
+export type ApiProvider = "openai" | "grok" | "gemini";
 
 export type Conversation = {
   id: string;
@@ -52,6 +53,7 @@ export type ImageAsset = {
   conversationId?: string;
   messageId?: string;
   prompt: string;
+  requestPrompt?: string;
   revisedPrompt?: string;
   referencedImageIds?: string[];
   editSourceImageId?: string;
@@ -115,10 +117,12 @@ export type PromptRequestSettings = {
   promptWordbanks: PromptWordbanks;
   promptRewriteGuardEnabled: boolean;
   promptRewriteGuardText: string;
+  ragContext?: string;
 };
 
 export type AppSettings = {
   connectionMode: ConnectionMode;
+  apiProvider: ApiProvider;
   apiKey: string;
   apiBaseUrl: string;
   apiBaseUrlMode: ApiBaseUrlMode;
@@ -132,6 +136,8 @@ export type AppSettings = {
   promptRewriteGuardText: string;
   promptRewriteGuardHistory: PromptRewriteGuardHistoryItem[];
   favoritePrompts: FavoritePrompt[];
+  ragEnabled: boolean;
+  ragTopK: number;
   autoRetryOnNetworkError: boolean;
   defaults: GenerationParams;
   storageMode: "indexeddb";

@@ -1,11 +1,11 @@
-import { applyPromptRewriteGuard } from "../../../services/imagesApi";
-import { buildImagePrompt } from "../../../services/promptBuilder";
-import type { PromptMode, PromptWordbanks } from "../../../types/studio";
+import type { ApiProvider, GenerationParams, SizeRatio } from "../../../types/studio";
+import { buildFinalRequestPrompt } from "../../../services/promptRequest";
 import type { ImageClient, ImageClientResult } from "./imageClient";
 
 type CompanionClientConfig = {
   getCompanionUrl: () => string;
   getSessionToken: () => string;
+  getApiProvider: () => ApiProvider;
   getModel: () => string;
 };
 
@@ -19,43 +19,181 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
   }
 
   return {
+    canGenerateBatch() {
+      return config.getApiProvider() === "grok";
+    },
     async generate(input) {
       const url = `${config.getCompanionUrl()}/images/generations`;
       const model = config.getModel();
-      const modePrompt = applyPromptMode(
-        input.prompt,
-        input.promptRequestSettings.promptMode,
-        input.promptRequestSettings.promptWordbanks,
-      );
-      const prompt = applyPromptRewriteGuard(
-        modePrompt,
-        input.promptRequestSettings.promptRewriteGuardEnabled,
-        input.promptRequestSettings.promptRewriteGuardText,
-      );
+      const prompt = buildFinalRequestPrompt({
+        prompt: input.prompt,
+        promptMode: input.promptRequestSettings.promptMode,
+        promptWordbanks: input.promptRequestSettings.promptWordbanks,
+        promptRewriteGuardEnabled:
+          input.promptRequestSettings.promptRewriteGuardEnabled,
+        promptRewriteGuardText:
+          input.promptRequestSettings.promptRewriteGuardText,
+        ragContext: input.promptRequestSettings.ragContext,
+      });
 
       const params = buildParams(input.params);
+      if (config.getApiProvider() === "grok") {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { ...headers(), "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model,
+            prompt,
+            response_format: "b64_json",
+          }),
+        });
+
+        const result = await extractB64Json(response);
+        return {
+          ...result,
+          requestPrompt: prompt,
+        };
+      }
+
+      if (config.getApiProvider() === "gemini") {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { ...headers(), "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model,
+            prompt,
+            response_format: "b64_json",
+            gemini: buildGeminiOptions(input.params),
+          }),
+        });
+
+        return {
+          ...(await extractB64Json(response)),
+          requestPrompt: prompt,
+        };
+      }
+
       const response = await fetch(url, {
         method: "POST",
         headers: { ...headers(), "Content-Type": "application/json" },
         body: JSON.stringify({ model, prompt, ...params }),
       });
 
-      return extractB64Json(response);
+      return {
+        ...(await extractB64Json(response)),
+        requestPrompt: prompt,
+      };
+    },
+
+    async generateBatch(input) {
+      if (config.getApiProvider() !== "grok") {
+        throw new Error("当前供应商不支持批量单请求生成。");
+      }
+
+      const url = `${config.getCompanionUrl()}/images/generations`;
+      const model = config.getModel();
+      const prompt = buildFinalRequestPrompt({
+        prompt: input.prompt,
+        promptMode: input.promptRequestSettings.promptMode,
+        promptWordbanks: input.promptRequestSettings.promptWordbanks,
+        promptRewriteGuardEnabled:
+          input.promptRequestSettings.promptRewriteGuardEnabled,
+        promptRewriteGuardText:
+          input.promptRequestSettings.promptRewriteGuardText,
+        ragContext: input.promptRequestSettings.ragContext,
+      });
+      const count = normalizeBatchCount(input.count);
+      const results: ImageClientResult[] = [];
+
+      for (let remaining = count; remaining > 0; remaining -= 10) {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { ...headers(), "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model,
+            prompt,
+            n: Math.min(10, remaining),
+            response_format: "b64_json",
+          }),
+        });
+        results.push(...(await extractB64JsonList(response)).map((result) => ({
+          ...result,
+          requestPrompt: prompt,
+        })));
+      }
+
+      return results;
     },
 
     async edit(input) {
       const url = `${config.getCompanionUrl()}/images/edits`;
       const model = config.getModel();
-      const modePrompt = applyPromptMode(
-        input.prompt,
-        input.promptRequestSettings.promptMode,
-        input.promptRequestSettings.promptWordbanks,
-      );
-      const prompt = applyPromptRewriteGuard(
-        modePrompt,
-        input.promptRequestSettings.promptRewriteGuardEnabled,
-        input.promptRequestSettings.promptRewriteGuardText,
-      );
+      const prompt = buildFinalRequestPrompt({
+        prompt: input.prompt,
+        promptMode: input.promptRequestSettings.promptMode,
+        promptWordbanks: input.promptRequestSettings.promptWordbanks,
+        promptRewriteGuardEnabled:
+          input.promptRequestSettings.promptRewriteGuardEnabled,
+        promptRewriteGuardText:
+          input.promptRequestSettings.promptRewriteGuardText,
+        ragContext: input.promptRequestSettings.ragContext,
+      });
+
+      if (config.getApiProvider() === "grok") {
+        if (input.mask) {
+          throw new Error("Grok 图片接口当前不支持本应用的局部遮罩编辑。");
+        }
+        const imageDataUrls = await Promise.all(
+          input.images.map((image) => blobToDataUrl(image.blob)),
+        );
+        const imagePayload = buildGrokEditImagePayload(imageDataUrls);
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { ...headers(), "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model,
+            prompt,
+            ...imagePayload,
+            response_format: "b64_json",
+          }),
+        });
+
+        const result = await extractB64Json(response);
+        return {
+          ...result,
+          requestPrompt: prompt,
+        };
+      }
+
+      if (config.getApiProvider() === "gemini") {
+        if (input.mask) {
+          throw new Error("Gemini 图片接口当前不支持本应用的局部遮罩编辑。");
+        }
+        const imageParts = await Promise.all(
+          input.images.map(async (image) => ({
+            inline_data: {
+              mime_type: image.blob.type || "application/octet-stream",
+              data: await blobToBase64(image.blob),
+            },
+          })),
+        );
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { ...headers(), "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model,
+            prompt,
+            images: imageParts,
+            response_format: "b64_json",
+            gemini: buildGeminiOptions(input.params),
+          }),
+        });
+
+        return {
+          ...(await extractB64Json(response)),
+          requestPrompt: prompt,
+        };
+      }
 
       const body = new FormData();
       body.append("model", model);
@@ -77,13 +215,34 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
         body,
       });
 
-      return extractB64Json(response);
+      return {
+        ...(await extractB64Json(response)),
+        requestPrompt: prompt,
+      };
     },
   };
 }
 
-function applyPromptMode(prompt: string, mode: PromptMode, wordbanks: PromptWordbanks) {
-  return buildImagePrompt({ prompt, mode, wordbanks });
+function buildGeminiOptions(params: GenerationParams) {
+  return {
+    ...(isSizeRatio(params.size) ? { aspectRatio: params.size } : {}),
+    imageSize: params.resolution.toUpperCase(),
+  };
+}
+
+function isSizeRatio(value: GenerationParams["size"]): value is SizeRatio {
+  return value.includes(":");
+}
+
+function buildGrokEditImagePayload(imageDataUrls: string[]) {
+  const references = imageDataUrls.map((url) => ({
+    type: "image_url",
+    url,
+  }));
+
+  return references.length === 1
+    ? { image: references[0] }
+    : { images: references };
 }
 
 function buildParams(params: { size: string; width: number; height: number; background: string; outputFormat: string }) {
@@ -102,6 +261,14 @@ function buildParams(params: { size: string; width: number; height: number; back
 }
 
 async function extractB64Json(response: Response): Promise<ImageClientResult> {
+  const [result] = await extractB64JsonList(response);
+  if (!result) {
+    throw new Error("响应中没有 data[0].b64_json。");
+  }
+  return result;
+}
+
+async function extractB64JsonList(response: Response): Promise<ImageClientResult[]> {
   const text = await response.text();
   const payload = text ? JSON.parse(text) : {};
 
@@ -114,12 +281,41 @@ async function extractB64Json(response: Response): Promise<ImageClientResult> {
     throw new Error(typeof message === "string" ? message : JSON.stringify(message));
   }
 
-  const imageData = payload.data?.[0]?.b64_json;
-  if (!imageData) {
+  const results = (payload.data ?? [])
+    .filter((item: { b64_json?: string }) => Boolean(item?.b64_json))
+    .map((item: { b64_json: string; revised_prompt?: string; mime_type?: string }) => ({
+      b64Json: item.b64_json,
+      revisedPrompt: item.revised_prompt,
+      mimeType: item.mime_type,
+    }));
+  if (!results.length) {
     throw new Error("响应中没有 data[0].b64_json。");
   }
-  return {
-    b64Json: imageData,
-    revisedPrompt: payload.data?.[0]?.revised_prompt,
-  };
+  return results;
+}
+
+function normalizeBatchCount(count: unknown) {
+  const numericCount = typeof count === "number" ? count : Number(count);
+  if (!Number.isFinite(numericCount)) return 1;
+  return Math.max(1, Math.round(numericCount));
+}
+
+async function blobToDataUrl(blob: Blob) {
+  const buffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let index = 0; index < bytes.length; index += 1) {
+    binary += String.fromCharCode(bytes[index] ?? 0);
+  }
+  return `data:${blob.type || "application/octet-stream"};base64,${btoa(binary)}`;
+}
+
+async function blobToBase64(blob: Blob) {
+  const buffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let index = 0; index < bytes.length; index += 1) {
+    binary += String.fromCharCode(bytes[index] ?? 0);
+  }
+  return btoa(binary);
 }

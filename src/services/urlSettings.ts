@@ -7,6 +7,7 @@ import type {
 
 const URL_SETTING_KEYS = [
   "settings",
+  "apiProvider",
   "apiBaseUrl",
   "apiUrl",
   "apiKey",
@@ -134,6 +135,7 @@ function getSettingsPatchFromPayload(payload: SettingsPayload | null): SettingsP
 function getApiSettingsPatchFromPayload(payload: SettingsPayload | null): SettingsPatch {
   const patch: SettingsPatch = {};
   const apiBaseUrl = readString(payload, "apiBaseUrl", "apiUrl");
+  const apiProvider = normalizeApiProvider(readString(payload, "apiProvider", "provider"));
   const apiBaseUrlMode = normalizeApiBaseUrlMode(readString(payload, "apiBaseUrlMode"));
   const apiMode = normalizeApiMode(readString(payload, "apiMode"));
   const streamImages = normalizeBoolean(readUnknown(payload, "streamImages"));
@@ -143,6 +145,7 @@ function getApiSettingsPatchFromPayload(payload: SettingsPayload | null): Settin
   const apiKey = readString(payload, "apiKey");
   const model = readString(payload, "model");
 
+  if (apiProvider) patch.apiProvider = apiProvider;
   if (apiBaseUrl !== undefined) {
     patch.apiBaseUrlMode = apiBaseUrlMode ?? "origin";
     patch.apiBaseUrl = patch.apiBaseUrlMode === "origin"
@@ -195,6 +198,9 @@ function getQuerySettingsPatch(searchParams: URLSearchParams): SettingsPatch {
 function getApiSettingsPatchFromSearchParams(searchParams: URLSearchParams): SettingsPatch {
   const patch: SettingsPatch = {};
   const apiBaseUrl = searchParams.get("apiBaseUrl") ?? searchParams.get("apiUrl");
+  const apiProvider = normalizeApiProvider(
+    searchParams.get("apiProvider") ?? searchParams.get("provider"),
+  );
   const apiBaseUrlMode = normalizeApiBaseUrlMode(searchParams.get("apiBaseUrlMode"));
   const apiMode = normalizeApiMode(searchParams.get("apiMode"));
   const streamImages = normalizeBoolean(searchParams.get("streamImages"));
@@ -204,6 +210,7 @@ function getApiSettingsPatchFromSearchParams(searchParams: URLSearchParams): Set
   const apiKey = searchParams.get("apiKey");
   const model = searchParams.get("model");
 
+  if (apiProvider) patch.apiProvider = apiProvider;
   if (apiBaseUrl !== null) {
     patch.apiBaseUrlMode = apiBaseUrlMode ?? "origin";
     patch.apiBaseUrl = patch.apiBaseUrlMode === "origin"
@@ -318,6 +325,12 @@ function normalizeApiBaseUrlMode(value: unknown): ApiBaseUrlMode | undefined {
 
 function normalizeApiMode(value: unknown): AppSettings["apiMode"] | undefined {
   return value === "images" || value === "responses" ? value : undefined;
+}
+
+function normalizeApiProvider(value: unknown): AppSettings["apiProvider"] | undefined {
+  return value === "openai" || value === "grok" || value === "gemini"
+    ? value
+    : undefined;
 }
 
 function normalizeBoolean(value: unknown) {

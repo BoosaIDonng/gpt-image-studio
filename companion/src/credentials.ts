@@ -6,6 +6,7 @@ const CONFIG_DIR = join(homedir(), ".gpt-image-studio");
 const CREDENTIALS_FILE = join(CONFIG_DIR, "credentials.json");
 
 type Credentials = {
+  provider?: "openai" | "grok" | "gemini";
   apiBaseUrl: string;
   apiKey: string;
   savedAt: string;
@@ -22,11 +23,11 @@ export function loadCredentials(): Credentials | null {
   }
 }
 
-export function saveCredentials(apiBaseUrl: string, apiKey: string): void {
+export function saveCredentials(apiBaseUrl: string, apiKey: string, provider: "openai" | "grok" | "gemini" = "openai"): void {
   if (!existsSync(CONFIG_DIR)) {
     mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
   }
-  const data: Credentials = { apiBaseUrl, apiKey, savedAt: new Date().toISOString() };
+  const data: Credentials = { provider, apiBaseUrl, apiKey, savedAt: new Date().toISOString() };
   writeFileSync(CREDENTIALS_FILE, JSON.stringify(data, null, 2), { mode: 0o600 });
   chmodSync(CREDENTIALS_FILE, 0o600);
 }

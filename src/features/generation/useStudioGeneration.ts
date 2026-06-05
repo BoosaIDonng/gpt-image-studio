@@ -25,7 +25,7 @@ type UseStudioGenerationInput = {
   composerText: Ref<string>;
   createConversationRecord: (input: CreateConversationRecordInput) => Promise<Conversation>;
   currentGenerationParams: () => GenerationParams;
-  currentPromptRequestSettings: () => PromptRequestSettings;
+  currentPromptRequestSettings: (prompt?: string) => PromptRequestSettings;
   customSizeError: ComputedRef<string>;
   imageAssets: Ref<ImageAsset[]>;
   imageById: (id: string) => ImageAsset | undefined;

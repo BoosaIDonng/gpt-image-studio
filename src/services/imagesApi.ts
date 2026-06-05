@@ -1,5 +1,11 @@
 import type { ApiMode, GenerationParams, PromptMode, PromptWordbanks } from "../types/studio";
-import { buildImagePrompt } from "./promptBuilder";
+import { buildFinalRequestPrompt } from "./promptRequest";
+export {
+  PROMPT_REWRITE_GUARD_PREFIX,
+  applyPromptRewriteGuard,
+  buildFinalRequestPrompt,
+  normalizePromptRewriteGuardText,
+} from "./promptRequest";
 
 type PartialImageEvent = {
   b64Json: string;
@@ -17,6 +23,7 @@ type GenerateImageInput = {
   promptWordbanks?: PromptWordbanks;
   promptRewriteGuardEnabled?: boolean;
   promptRewriteGuardText?: string;
+  ragContext?: string;
   streamImages?: boolean;
   streamPartialImages?: number;
   onPartialImage?: (event: PartialImageEvent) => void;
@@ -64,80 +71,62 @@ type StreamCompletedImageItem = {
 
 export type ImageApiResult = {
   b64Json: string;
+  requestPrompt?: string;
   revisedPrompt?: string;
 };
 
-export const PROMPT_REWRITE_GUARD_PREFIX =
-  "Use the following text as the complete prompt. Do not rewrite it:";
-
-export function normalizePromptRewriteGuardText(text?: string) {
-  const normalized = text?.trim();
-  return normalized || PROMPT_REWRITE_GUARD_PREFIX;
-}
-
-export function applyPromptRewriteGuard(
-  prompt: string,
-  enabled: boolean,
-  guardText?: string,
-) {
-  if (!enabled) return prompt;
-  const normalizedGuardText = normalizePromptRewriteGuardText(guardText);
-  if (prompt.startsWith(`${normalizedGuardText}\n`)) return prompt;
-  return `${normalizedGuardText}\n${prompt}`;
-}
-
 export async function generateImage(input: GenerateImageInput) {
   const params = imageApiParams(input.model, input.params, input.apiMode);
-  const modePrompt = buildImagePrompt({
+  const prompt = buildFinalRequestPrompt({
     prompt: input.prompt,
-    mode: input.promptMode ?? "default",
-    wordbanks: input.promptWordbanks,
+    promptMode: input.promptMode,
+    promptWordbanks: input.promptWordbanks,
+    promptRewriteGuardEnabled: input.promptRewriteGuardEnabled,
+    promptRewriteGuardText: input.promptRewriteGuardText,
+    ragContext: input.ragContext,
   });
-  const prompt = applyPromptRewriteGuard(
-    modePrompt,
-    input.promptRewriteGuardEnabled ?? false,
-    input.promptRewriteGuardText,
-  );
 
   if ((input.apiMode ?? "images") === "responses") {
-    return generateImageViaResponses({
+    const result = await generateImageViaResponses({
       ...input,
       prompt,
       params: input.params,
     });
+    return { ...result, requestPrompt: prompt };
   }
 
-  return generateImageViaImagesApi({
+  const result = await generateImageViaImagesApi({
     ...input,
     prompt,
     requestParams: params,
   });
+  return { ...result, requestPrompt: prompt };
 }
 
 export async function editImage(input: EditImageInput) {
-  const modePrompt = buildImagePrompt({
+  const prompt = buildFinalRequestPrompt({
     prompt: input.prompt,
-    mode: input.promptMode ?? "default",
-    wordbanks: input.promptWordbanks,
+    promptMode: input.promptMode,
+    promptWordbanks: input.promptWordbanks,
+    promptRewriteGuardEnabled: input.promptRewriteGuardEnabled,
+    promptRewriteGuardText: input.promptRewriteGuardText,
+    ragContext: input.ragContext,
   });
-  const prompt = applyPromptRewriteGuard(
-    modePrompt,
-    input.promptRewriteGuardEnabled ?? false,
-    input.promptRewriteGuardText,
-  );
 
   if ((input.apiMode ?? "images") === "responses") {
-    return editImageViaResponses({
+    const result = await editImageViaResponses({
       ...input,
       prompt,
     });
+    return { ...result, requestPrompt: prompt };
   }
 
-  return editImageViaImagesApi({
+  const result = await editImageViaImagesApi({
     ...input,
     prompt,
     requestParams: imageApiParams(input.model, input.params, input.apiMode),
   });
+  return { ...result, requestPrompt: prompt };
 }
 
 async function generateImageViaImagesApi(input: GenerateImageInput & {

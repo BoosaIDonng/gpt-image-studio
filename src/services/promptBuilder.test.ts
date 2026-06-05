@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildImagePrompt, selectInspirationTerms } from "./promptBuilder";
 import { promptWordbanks } from "./promptWordbanks";
+import type { PromptWordbanks } from "../types/studio";
 
 describe("buildImagePrompt", () => {
   it("returns the original prompt unchanged in default mode", () => {
@@ -40,5 +41,25 @@ describe("buildImagePrompt", () => {
 
     expect(terms.length).toBe(5);
     expect(terms.some((term) => adultInspiration.includes(term))).toBe(true);
+  });
+
+  it("uses matched wordbank terms before fallback inspiration in prompt modes", () => {
+    const wordbanks: PromptWordbanks = {
+      pose: {
+        safe: ["dynamic pose", "sitting on chair", "standing"],
+        creative: [],
+        nsfw: [],
+      },
+      adultInspiration: [],
+    };
+
+    const prompt = buildImagePrompt({
+      prompt: "画一个女孩坐在椅子上",
+      mode: "safe",
+      seed: "fixed",
+      wordbanks,
+    });
+
+    expect(prompt).toContain("灵感词：sitting on chair");
   });
 });

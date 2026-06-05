@@ -13,6 +13,7 @@ import { defaultPromptWordbanks } from "./promptWordbanks";
 
 const currentSettings: AppSettings = {
   connectionMode: "direct",
+  apiProvider: "openai",
   apiKey: "sk-current",
   apiBaseUrl: "https://api.packyapi.com/v1/images",
   apiBaseUrlMode: "full",
@@ -32,6 +33,8 @@ const currentSettings: AppSettings = {
     },
   ],
   favoritePrompts: [],
+  ragEnabled: false,
+  ragTopK: 4,
   defaults: {
     size: "1:1",
     resolution: "1k",
@@ -62,6 +65,38 @@ describe("URL settings", () => {
       connectionMode: "direct",
     });
     expect(next?.defaults).toEqual(currentSettings.defaults);
+  });
+
+  it("builds Grok provider settings from URL params", () => {
+    const params = new URLSearchParams(
+      "apiProvider=grok&apiUrl=https://api.x.ai/v1&apiBaseUrlMode=full&apiKey=xai-url&model=grok-imagine-image-quality",
+    );
+
+    const next = buildSettingsFromUrlParams(currentSettings, params);
+
+    expect(next).toMatchObject({
+      apiProvider: "grok",
+      apiBaseUrl: "https://api.x.ai/v1",
+      apiBaseUrlMode: "full",
+      apiKey: "xai-url",
+      model: "grok-imagine-image-quality",
+    });
+  });
+
+  it("builds Gemini provider settings from URL params", () => {
+    const params = new URLSearchParams(
+      "apiProvider=gemini&apiUrl=https://generativelanguage.googleapis.com&apiKey=gemini-url&model=gemini-3.1-flash-image-preview",
+    );
+
+    const next = buildSettingsFromUrlParams(currentSettings, params);
+
+    expect(next).toMatchObject({
+      apiProvider: "gemini",
+      apiBaseUrl: "https://generativelanguage.googleapis.com",
+      apiBaseUrlMode: "origin",
+      apiKey: "gemini-url",
+      model: "gemini-3.1-flash-image-preview",
+    });
   });
 
   it("normalizes a /v1 responses base URL back to the origin in origin mode", () => {
@@ -193,7 +228,7 @@ describe("URL settings", () => {
 
   it("clears known URL settings without removing unrelated params", () => {
     const params = new URLSearchParams(
-      "apiKey=sk-url&model=x&settings=ignored&prompt=hello&connectionMode=localCompanion&foo=bar",
+      "apiProvider=grok&apiKey=sk-url&model=x&settings=ignored&prompt=hello&connectionMode=localCompanion&foo=bar",
     );
 
     expect(hasUrlSettingParams(params)).toBe(true);

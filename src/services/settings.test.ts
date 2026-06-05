@@ -21,6 +21,7 @@ vi.mock("./db", async (importOriginal) => {
 
 const fullSettings: AppSettings = {
   connectionMode: "direct",
+  apiProvider: "openai",
   apiKey: "sk-test",
   apiBaseUrl: "https://api.packyapi.com/v1/images",
   apiBaseUrlMode: "full",
@@ -40,6 +41,8 @@ const fullSettings: AppSettings = {
     },
   ],
   favoritePrompts: [],
+  ragEnabled: false,
+  ragTopK: 4,
   defaults: {
     size: "1:1",
     resolution: "1k",
@@ -82,6 +85,8 @@ describe("settings service", () => {
       promptRewriteGuardText: _ignoredPromptRewriteGuardText,
       promptRewriteGuardHistory: _ignoredPromptRewriteGuardHistory,
       favoritePrompts: _ignoredFavoritePrompts,
+      ragEnabled: _ignoredRagEnabled,
+      ragTopK: _ignoredRagTopK,
       promptMode: _ignoredPromptMode,
       promptWordbanks: _ignoredPromptWordbanks,
       ...legacySettings
@@ -110,20 +115,88 @@ describe("settings service", () => {
       },
     ]);
     expect(result?.favoritePrompts).toEqual([]);
+    expect(result?.ragEnabled).toBe(false);
+    expect(result?.ragTopK).toBe(4);
   });
 
-  it("normalizes any stored custom model back to gpt-image-2", async () => {
+  it("normalizes stored RAG top-k into the supported range", async () => {
     mocks.getFromStore.mockResolvedValue({
       key: "app",
       value: {
         ...fullSettings,
-        model: "custom-model",
+        ragEnabled: true,
+        ragTopK: 99,
       },
     });
 
     const result = await loadSettings();
 
+    expect(result?.ragEnabled).toBe(true);
+    expect(result?.ragTopK).toBe(12);
+  });
+
+  it("normalizes old settings to the OpenAI provider", async () => {
+    const { apiProvider: _ignoredApiProvider, ...legacySettings } = fullSettings;
+    mocks.getFromStore.mockResolvedValue({
+      key: "app",
+      value: legacySettings,
+    });
+
+    const result = await loadSettings();
+
+    expect(result?.apiProvider).toBe("openai");
     expect(result?.model).toBe("gpt-image-2");
+  });
+
+  it("preserves a stored Grok provider and model", async () => {
+    mocks.getFromStore.mockResolvedValue({
+      key: "app",
+      value: {
+        ...fullSettings,
+        apiProvider: "grok",
+        apiBaseUrl: "https://api.x.ai/v1",
+        model: "grok-imagine-image-quality",
+      },
+    });
+
+    const result = await loadSettings();
+
+    expect(result?.apiProvider).toBe("grok");
+    expect(result?.model).toBe("grok-imagine-image-quality");
+  });
+
+  it("preserves a stored Gemini provider and defaults an empty Gemini model to the preview image model", async () => {
+    mocks.getFromStore.mockResolvedValue({
+      key: "app",
+      value: {
+        ...fullSettings,
+        apiProvider: "gemini",
+        apiBaseUrl: "https://generativelanguage.googleapis.com",
+        model: "",
+      },
+    });
+
+    const result = await loadSettings();
+
+    expect(result?.apiProvider).toBe("gemini");
+    expect(result?.model).toBe("gemini-3.1-flash-image-preview");
+  });
+
+  it("migrates the old Gemini default model to the available preview image model", async () => {
+    mocks.getFromStore.mockResolvedValue({
+      key: "app",
+      value: {
+        ...fullSettings,
+        apiProvider: "gemini",
+        apiBaseUrl: "https://generativelanguage.googleapis.com",
+        model: "gemini-3.1-flash-image",
+      },
+    });
+
+    const result = await loadSettings();
+
+    expect(result?.apiProvider).toBe("gemini");
+    expect(result?.model).toBe("gemini-3.1-flash-image-preview");
   });
 
   it("saves settings record", async () => {

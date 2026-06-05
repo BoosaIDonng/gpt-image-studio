@@ -9,10 +9,14 @@ import type {
 const props = defineProps<{
   modelValue: PromptMode;
   wordbanks: PromptWordbanks;
+  ragEnabled: boolean;
+  ragTopK: number;
 }>();
 
 const emit = defineEmits<{
   "update:modelValue": [value: PromptMode];
+  "update:ragEnabled": [value: boolean];
+  "update:ragTopK": [value: number];
   saveWordbank: [section: PromptWordbankSectionKey, terms: string[]];
   restoreDefaultWordbank: [section: PromptWordbankSectionKey];
 }>();
@@ -110,6 +114,12 @@ function restoreDefault() {
   emit("restoreDefaultWordbank", activeSection.value);
 }
 
+function updateRagTopK(value: string) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return;
+  emit("update:ragTopK", Math.min(12, Math.max(1, Math.trunc(numeric))));
+}
+
 function parseTerms(text: string) {
   const seen = new Set<string>();
   return text
@@ -169,6 +179,38 @@ function getWordbankTerms(wordbanks: PromptWordbanks, section: PromptWordbankSec
           {{ option.description }}
         </span>
       </button>
+    </div>
+
+    <div class="rounded-lg border border-gray-200 bg-white px-3 py-3">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h4 class="text-sm font-semibold text-gray-900">RAG 参考</h4>
+          <p class="mt-1 text-xs leading-relaxed text-gray-500">
+            从项目词库、收藏 Prompt、历史 Prompt 中检索相近内容，并只作为最终请求 Prompt 的参考。
+          </p>
+        </div>
+        <button
+          class="cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors"
+          :class="ragEnabled ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
+          type="button"
+          @click="emit('update:ragEnabled', !ragEnabled)"
+        >
+          {{ ragEnabled ? "已开启" : "已关闭" }}
+        </button>
+      </div>
+
+      <label class="mt-3 flex max-w-xs items-center gap-3 text-xs text-gray-500">
+        <span class="shrink-0">参考条数</span>
+        <input
+          class="h-8 w-20 rounded-md border border-gray-300 px-2 text-sm text-gray-900 outline-none transition-colors focus:border-gray-500 disabled:bg-gray-50 disabled:text-gray-400"
+          :disabled="!ragEnabled"
+          max="12"
+          min="1"
+          type="number"
+          :value="ragTopK"
+          @change="updateRagTopK(($event.target as HTMLInputElement).value)"
+        >
+      </label>
     </div>
 
     <div class="border-t border-gray-200 pt-5">

@@ -13,6 +13,7 @@ import { useStudioImages } from "../../features/images";
 import { useStudioSettings } from "../../features/settings";
 import { withNetworkRetry } from "../../services/networkRetry";
 import { clonePromptWordbanks } from "../../services/promptWordbanks";
+import { collectRagDocuments, retrieveRagContext } from "../../services/rag";
 import {
   deleteConversationDraft,
   deleteConversationDrafts,
@@ -74,6 +75,7 @@ export function useStudioViewModel() {
     composerText,
     editModeEnabled,
     isLibraryOpen,
+    ragExcludedMatchIds,
   } = storeToRefs(composerState);
   const isSettingsOpen = ref(false);
   const legacyComposerText = readStorage(STORAGE_KEYS.draftComposerText, "");
@@ -119,6 +121,7 @@ export function useStudioViewModel() {
   }
 
   const directImagesClient = createDirectImagesClient({
+    getApiProvider: () => settings.apiProvider.value,
     getApiBaseUrl: () => settings.apiBaseUrl.value,
     getApiBaseUrlMode: () => settings.apiBaseUrlMode.value,
     getApiMode: () => settings.apiMode.value,
@@ -130,9 +133,22 @@ export function useStudioViewModel() {
   const localCompanionImagesClient = createLocalCompanionImagesClient({
     getCompanionUrl: () => settings.companionUrl.value,
     getSessionToken: () => settings.companionSessionToken.value,
+    getApiProvider: () => settings.apiProvider.value,
     getModel: () => settings.model.value,
   });
   const imageClient: ImageClient = {
+    canGenerateBatch() {
+      if (
+        settings.connectionMode.value === "localCompanion" &&
+        settings.apiMode.value !== "images"
+      ) {
+        return false;
+      }
+      const client = settings.connectionMode.value === "localCompanion"
+        ? localCompanionImagesClient
+        : directImagesClient;
+      return client.canGenerateBatch?.() ?? false;
+    },
     generate(input) {
       if (
         settings.connectionMode.value === "localCompanion" &&
@@ -143,6 +159,27 @@ export function useStudioViewModel() {
       const fn = () => settings.connectionMode.value === "localCompanion"
         ? localCompanionImagesClient.generate(input)
         : directImagesClient.generate(input);
+      return withNetworkRetry(
+        fn,
+        () => settings.autoRetryOnNetworkError.value,
+        input.onNetworkRetry,
+      );
+    },
+    generateBatch(input) {
+      if (
+        settings.connectionMode.value === "localCompanion" &&
+        settings.apiMode.value !== "images"
+      ) {
+        throw new Error("本地 Companion 当前仅支持 Images API。");
+      }
+      const client = settings.connectionMode.value === "localCompanion"
+        ? localCompanionImagesClient
+        : directImagesClient;
+      const fn = () => client.generateBatch
+        ? client.generateBatch(input)
+        : Promise.all(
+            Array.from({ length: input.count }, () => client.generate(input)),
+          );
       return withNetworkRetry(
         fn,
         () => settings.autoRetryOnNetworkError.value,
@@ -191,13 +228,31 @@ export function useStudioViewModel() {
     updateConversationSummary: conversations.updateConversationSummary,
   });
 
-  function currentPromptRequestSettings(): PromptRequestSettings {
+  function currentPromptRequestSettings(prompt?: string): PromptRequestSettings {
     return {
       promptMode: settings.promptMode.value,
       promptWordbanks: clonePromptWordbanks(settings.promptWordbanks.value),
       promptRewriteGuardEnabled: settings.promptRewriteGuardEnabled.value,
       promptRewriteGuardText: settings.promptRewriteGuardText.value,
+      ragContext: ragContextForPrompt(prompt),
     };
+  }
+
+  function ragContextForPrompt(prompt?: string) {
+    const query = prompt?.trim();
+    if (!settings.ragEnabled.value || !query) return undefined;
+
+    return retrieveRagContext({
+      query,
+      documents: collectRagDocuments({
+        wordbanks: settings.promptWordbanks.value,
+        favoritePrompts: settings.favoritePrompts.value,
+        messages: messages.value,
+        imageAssets: images.imageAssets.value,
+      }),
+      excludedIds: ragExcludedMatchIds.value,
+      topK: settings.ragTopK.value,
+    }).context || undefined;
   }
   const { restoreFromStorage } = useStudioRestore({
     activeConversationId: conversations.activeConversationId,
@@ -328,6 +383,10 @@ export function useStudioViewModel() {
     },
     { deep: true },
   );
+
+  watch(composerText, () => {
+    composerState.clearRagExclusions();
+  });
 
   function createDefaultDraft(conversationId: string): ConversationDraft {
     return {
@@ -549,6 +608,16 @@ export function useStudioViewModel() {
     persistSettingsChange();
   }
 
+  function setRagEnabled(value: boolean) {
+    settings.ragEnabled.value = value;
+    persistSettingsChange();
+  }
+
+  function setRagTopK(value: number) {
+    settings.ragTopK.value = value;
+    persistSettingsChange();
+  }
+
   function savePromptWordbank(section: PromptWordbankSectionKey, terms: string[]) {
     settings.savePromptWordbank(section, terms);
     persistSettingsChange();
@@ -709,6 +778,7 @@ export function useStudioViewModel() {
   });
   const settingsModal = proxyRefs({
     autoRetryOnNetworkError: settings.autoRetryOnNetworkError,
+    apiProvider: settings.apiProvider,
     apiMode: settings.apiMode,
     apiBaseUrl: settings.apiBaseUrl,
     apiBaseUrlMode: settings.apiBaseUrlMode,
@@ -718,6 +788,8 @@ export function useStudioViewModel() {
     companionUrl: settings.companionUrl,
     connectionMode: settings.connectionMode,
     favoritePrompts: settings.favoritePrompts,
+    ragEnabled: settings.ragEnabled,
+    ragTopK: settings.ragTopK,
     promptMode: settings.promptMode,
     promptWordbanks: settings.promptWordbanks,
     promptRewriteGuardEnabled: settings.promptRewriteGuardEnabled,
@@ -742,6 +814,8 @@ export function useStudioViewModel() {
     savePromptRewriteGuardText,
     savePromptWordbank,
     setPromptMode,
+    setRagEnabled,
+    setRagTopK,
     setPromptRewriteGuardEnabled,
     streamImages: settings.streamImages,
     streamPartialImages: settings.streamPartialImages,

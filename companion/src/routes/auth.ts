@@ -14,7 +14,7 @@ export async function authRoutes(app: FastifyInstance) {
       };
     }
     return {
-      provider: "openai",
+      provider: creds.provider ?? "openai",
       mode: "api_key" as const,
       ready: true,
       accountLabel: maskApiKey(creds.apiKey),

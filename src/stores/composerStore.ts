@@ -11,6 +11,7 @@ export const useComposerStore = defineStore("composer", () => {
   const isLibraryOpen = ref(false);
   const isConversationSidebarOpen = ref(false);
   const selectingEditImageId = ref("");
+  const ragExcludedMatchIds = ref<string[]>([]);
 
   function toggleEditor(key: EditorKey) {
     activeEditor.value = activeEditor.value === key ? null : key;
@@ -49,6 +50,22 @@ export const useComposerStore = defineStore("composer", () => {
     isLibraryOpen.value = value;
   }
 
+  function excludeRagMatch(id: string) {
+    if (!ragExcludedMatchIds.value.includes(id)) {
+      ragExcludedMatchIds.value.push(id);
+    }
+  }
+
+  function restoreRagMatch(id: string) {
+    ragExcludedMatchIds.value = ragExcludedMatchIds.value.filter(
+      (item) => item !== id,
+    );
+  }
+
+  function clearRagExclusions() {
+    ragExcludedMatchIds.value = [];
+  }
+
   return {
     activeEditor,
     activeEditMaskImageId,
@@ -57,11 +74,15 @@ export const useComposerStore = defineStore("composer", () => {
     editModeEnabled,
     isConversationSidebarOpen,
     isLibraryOpen,
+    ragExcludedMatchIds,
     selectingEditImageId,
     applyEditSelection,
     clearEditSelection,
     closeAllEditors,
+    clearRagExclusions,
+    excludeRagMatch,
     openConversations,
+    restoreRagMatch,
     setConversationSidebarOpen,
     setEditModeEnabled,
     setLibraryOpen,

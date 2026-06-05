@@ -41,6 +41,7 @@ describe("images API requests", () => {
       }),
     ).resolves.toEqual({
       b64Json: "generated-image",
+      requestPrompt: "画一张图",
       revisedPrompt: undefined,
     });
 
@@ -95,7 +96,7 @@ describe("images API requests", () => {
       }),
     );
 
-    await generateImage({
+    const result = await generateImage({
       apiBaseUrl: "https://api.example.test/v1/images",
       apiBaseUrlMode: "full",
       apiKey: "sk-test",
@@ -107,6 +108,32 @@ describe("images API requests", () => {
 
     const requestBody = JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string);
     expect(requestBody.prompt).toBe(`${PROMPT_REWRITE_GUARD_PREFIX}\n画一张图`);
+    expect(result).toMatchObject({
+      requestPrompt: `${PROMPT_REWRITE_GUARD_PREFIX}\n画一张图`,
+    });
+  });
+
+  it("adds RAG context before the original prompt for image generation", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        data: [{ b64_json: "generated-image" }],
+      }),
+    );
+
+    const result = await generateImage({
+      apiBaseUrl: "https://api.example.test/v1/images",
+      apiBaseUrlMode: "full",
+      apiKey: "sk-test",
+      model: "gpt-image-2",
+      prompt: "画一张雨夜街景",
+      ragContext: "RAG 参考内容：\n1. cinematic rain street",
+      params: generationParams,
+    });
+
+    const requestBody = JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string);
+    expect(requestBody.prompt).toContain("RAG 参考内容：");
+    expect(requestBody.prompt).toContain("用户原始提示词：\n画一张雨夜街景");
+    expect(result.requestPrompt).toBe(requestBody.prompt);
   });
 
   it("applies prompt mode before the prompt rewrite guard", async () => {
@@ -204,6 +231,7 @@ describe("images API requests", () => {
       }),
     ).resolves.toEqual({
       b64Json: "edited-image",
+      requestPrompt: "改一下图",
       revisedPrompt: "rewritten edit",
     });
 
@@ -238,6 +266,7 @@ describe("images API requests", () => {
       }),
     ).resolves.toEqual({
       b64Json: "responses-image",
+      requestPrompt: "画一张图",
       revisedPrompt: "responses rewrite",
     });
 
@@ -292,6 +321,7 @@ describe("images API requests", () => {
       }),
     ).resolves.toEqual({
       b64Json: "final-image",
+      requestPrompt: "画一张图",
       revisedPrompt: "stream rewrite",
     });
 
@@ -337,6 +367,7 @@ describe("images API requests", () => {
       }),
     ).resolves.toEqual({
       b64Json: "final-image",
+      requestPrompt: "画一张图",
       revisedPrompt: "responses stream rewrite",
     });
 

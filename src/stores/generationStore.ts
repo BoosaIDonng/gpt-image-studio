@@ -19,6 +19,10 @@ import { isoTimestamp, timestampFromCreatedAt } from "../shared/dateTime";
 import { formatError, isApiConfigurationError } from "../shared/errors";
 import { createId } from "../shared/id";
 import { createObjectUrl, revokeObjectUrl } from "../shared/objectUrls";
+import {
+  analyzeModerationRejection,
+  formatModerationAdvice,
+} from "../services/moderationAdvice";
 import type {
   Conversation,
   GenerationParams,
@@ -44,7 +48,7 @@ type GenerationStoreContext = {
     input: CreateConversationRecordInput,
   ) => Promise<Conversation>;
   currentGenerationParams: () => GenerationParams;
-  currentPromptRequestSettings: () => PromptRequestSettings;
+  currentPromptRequestSettings: (prompt?: string) => PromptRequestSettings;
   customSizeError: ComputedRef<string>;
   imageAssets: Ref<ImageAsset[]>;
   imageById: (id: string) => ImageAsset | undefined;
@@ -147,7 +151,7 @@ export const useGenerationStore = defineStore("generation", () => {
       input.value.activeEditSourceImageId.value || undefined;
     const generationParams = input.value.currentGenerationParams();
     const imageCount = normalizeImageCount(generationParams.imageCount);
-    const promptRequestSettings = input.value.currentPromptRequestSettings();
+    const promptRequestSettings = input.value.currentPromptRequestSettings(text);
     const userMessage: Message = {
       id: createId("m"),
       conversationId,
@@ -204,7 +208,7 @@ export const useGenerationStore = defineStore("generation", () => {
           assistantMessage.generationParams ?? input.value.currentGenerationParams(),
         promptRequestSettings:
           assistantMessage.promptRequestSettings ??
-          input.value.currentPromptRequestSettings(),
+          input.value.currentPromptRequestSettings(text),
         prompt: text,
         referencedImageIds: references,
         editSourceImageId,
@@ -250,7 +254,7 @@ export const useGenerationStore = defineStore("generation", () => {
             generationParams,
             promptRequestSettings:
               message.promptRequestSettings ??
-              input.value.currentPromptRequestSettings(),
+              input.value.currentPromptRequestSettings(userMessage.content),
             prompt: userMessage.content,
             referencedImageIds: message.referencedImageIds,
             editSourceImageId: message.editSourceImageId,
@@ -323,7 +327,7 @@ export const useGenerationStore = defineStore("generation", () => {
           generationParams,
           promptRequestSettings:
             message.promptRequestSettings ??
-            input.value.currentPromptRequestSettings(),
+            input.value.currentPromptRequestSettings(userMessage.content),
           prompt: userMessage.content,
           referencedImageIds: message.referencedImageIds,
           editSourceImageId: message.editSourceImageId,
@@ -347,7 +351,7 @@ export const useGenerationStore = defineStore("generation", () => {
           base64ToBlob(event.b64Json, outputFormatToMimeType(params.outputFormat)),
         );
       };
-      const imageResult = job.referencedImageIds.length
+      const imageResults = job.referencedImageIds.length
         ? await requestImageEdit(
             job.prompt,
             job.referencedImageIds,
@@ -358,59 +362,33 @@ export const useGenerationStore = defineStore("generation", () => {
             (retryAttempt) => updateMessageNetworkRetry(job.assistantMessageId, retryAttempt),
             onPartialImage,
           )
-        : await input.value.imageClient.generate({
-            prompt: job.prompt,
-            params,
-            promptRequestSettings: job.promptRequestSettings,
-            onNetworkRetry: (retryAttempt) =>
-              updateMessageNetworkRetry(job.assistantMessageId, retryAttempt),
-            onPartialImage,
-          });
+        : await requestImageGeneration(job, params, onPartialImage);
+      const resultList = Array.isArray(imageResults) ? imageResults : [imageResults];
       const now = Date.now();
-      const createdAt = isoTimestamp(now);
       const generationDurationMs = Math.max(0, now - job.startedAtMs);
-      const mimeType = outputFormatToMimeType(params.outputFormat);
-      const blob = base64ToBlob(imageResult.b64Json, mimeType);
-      const dimensions = await readImageDimensions(blob);
-      const imageId = createId("img");
-      const blobKey = createId("blob");
-      const imageAsset: ImageAsset = {
-        id: imageId,
-        blobKey,
-        name: titleFromPrompt(job.prompt),
-        source: "generated",
-        mimeType,
-        width: dimensions?.width,
-        height: dimensions?.height,
-        sizeBytes: blob.size,
-        conversationId: input.value.conversationExists(job.conversationId)
-          ? job.conversationId
-          : undefined,
-        messageId: hasMessage(job.assistantMessageId)
-          ? job.assistantMessageId
-          : undefined,
-        prompt: job.prompt,
-        revisedPrompt: imageResult.revisedPrompt,
-        referencedImageIds: job.referencedImageIds,
-        editSourceImageId: job.editSourceImageId,
-        generationDurationMs,
-        createdAt,
-        updatedAt: createdAt,
-        previewUrl: createObjectUrl(blob),
-      };
+      const savedImages = await Promise.all(
+        resultList.map((imageResult) =>
+          buildGeneratedImageAsset(job, imageResult, params, generationDurationMs),
+        ),
+      );
 
       input.value.imageAssets.value = [
-        imageAsset,
+        ...savedImages.map(({ imageAsset }) => imageAsset),
         ...input.value.imageAssets.value,
       ];
       markJobSuccess(job.id);
-      const assistantMessage = applyJobAggregateToMessage(job, {
-        imageId,
+      let assistantMessage: Message | undefined;
+      savedImages.forEach(({ imageAsset }) => {
+        assistantMessage = applyJobAggregateToMessage(job, {
+          imageId: imageAsset.id,
+        });
       });
 
       const saveTasks: Promise<unknown>[] = [
-        saveImageBlob(blobKey, blob),
-        saveImageAsset(toPlainImageAsset(imageAsset)),
+        ...savedImages.flatMap(({ blob, imageAsset }) => [
+          saveImageBlob(imageAsset.blobKey, blob),
+          saveImageAsset(toPlainImageAsset(imageAsset)),
+        ]),
       ];
       if (assistantMessage) {
         saveTasks.push(enqueueMessageSave(assistantMessage));
@@ -418,7 +396,13 @@ export const useGenerationStore = defineStore("generation", () => {
       await Promise.all(saveTasks);
       await input.value.refreshStorageUsage();
     } catch (error) {
-      const message = formatError(error);
+      const rawMessage = formatError(error);
+      const moderationAdvice = formatModerationAdvice(
+        analyzeModerationRejection(rawMessage, job.prompt),
+      );
+      const message = moderationAdvice
+        ? `${rawMessage}\n\n${moderationAdvice}`
+        : rawMessage;
       if (isApiConfigurationError(error)) {
         input.value.onApiConfigurationError?.(error);
       }
@@ -433,6 +417,80 @@ export const useGenerationStore = defineStore("generation", () => {
       }
       await input.value.refreshStorageUsage();
     }
+  }
+
+  function requestImageGeneration(
+    job: GenerationJob,
+    params: GenerationParams,
+    onPartialImage: (event: { b64Json: string }) => void,
+  ) {
+    const commonInput = {
+      prompt: job.prompt,
+      params,
+      promptRequestSettings: job.promptRequestSettings,
+      onNetworkRetry: (retryAttempt: number) =>
+        updateMessageNetworkRetry(job.assistantMessageId, retryAttempt),
+      onPartialImage,
+    };
+
+    if (
+      job.batchImageCount &&
+      job.batchImageCount > 1 &&
+      input.value.imageClient.canGenerateBatch?.() &&
+      input.value.imageClient.generateBatch
+    ) {
+      return input.value.imageClient.generateBatch({
+        ...commonInput,
+        count: job.batchImageCount,
+      });
+    }
+
+    return input.value.imageClient.generate(commonInput);
+  }
+
+  async function buildGeneratedImageAsset(
+    job: GenerationJob,
+    imageResult: {
+      b64Json: string;
+      requestPrompt?: string;
+      revisedPrompt?: string;
+      mimeType?: string;
+    },
+    params: GenerationParams,
+    generationDurationMs: number,
+  ): Promise<{ blob: Blob; imageAsset: ImageAsset & { blobKey: string } }> {
+    const createdAt = isoTimestamp();
+    const mimeType = imageResult.mimeType ?? outputFormatToMimeType(params.outputFormat);
+    const blob = base64ToBlob(imageResult.b64Json, mimeType);
+    const dimensions = await readImageDimensions(blob);
+    const blobKey = createId("blob");
+    const imageAsset: ImageAsset & { blobKey: string } = {
+      id: createId("img"),
+      blobKey,
+      name: titleFromPrompt(job.prompt),
+      source: "generated",
+      mimeType,
+      width: dimensions?.width,
+      height: dimensions?.height,
+      sizeBytes: blob.size,
+      conversationId: input.value.conversationExists(job.conversationId)
+        ? job.conversationId
+        : undefined,
+      messageId: hasMessage(job.assistantMessageId)
+        ? job.assistantMessageId
+        : undefined,
+      prompt: job.prompt,
+      requestPrompt: imageResult.requestPrompt,
+      revisedPrompt: imageResult.revisedPrompt,
+      referencedImageIds: job.referencedImageIds,
+      editSourceImageId: job.editSourceImageId,
+      generationDurationMs,
+      createdAt,
+      updatedAt: createdAt,
+      previewUrl: createObjectUrl(blob),
+    };
+
+    return { blob, imageAsset };
   }
 
   async function requestImageEdit(
@@ -640,9 +698,30 @@ export const useGenerationStore = defineStore("generation", () => {
     jobInput: Omit<GenerationJob, "id" | "status" | "startedAtMs">,
     count: number,
   ) {
-    return Array.from({ length: normalizeImageCount(count) }, () =>
+    const imageCount = normalizeImageCount(count);
+    if (canBatchGenerate(jobInput, imageCount)) {
+      return [
+        createJob({
+          ...jobInput,
+          batchImageCount: imageCount,
+        }),
+      ];
+    }
+
+    return Array.from({ length: imageCount }, () =>
       createJob(jobInput),
     );
+  }
+
+  function canBatchGenerate(
+    jobInput: Omit<GenerationJob, "id" | "status" | "startedAtMs">,
+    count: number,
+  ) {
+    return count > 1 &&
+      jobInput.referencedImageIds.length === 0 &&
+      !jobInput.editSourceImageId &&
+      !jobInput.editMaskImageId &&
+      Boolean(input.value.imageClient.canGenerateBatch?.());
   }
 
   function runImageRequests(createdJobs: GenerationJob[]) {
@@ -854,6 +933,7 @@ function toPlainMessage(message: Message): Message {
             message.promptRequestSettings.promptRewriteGuardEnabled,
           promptRewriteGuardText:
             message.promptRequestSettings.promptRewriteGuardText,
+          ragContext: message.promptRequestSettings.ragContext,
         }
       : undefined,
     networkRetryAttempt: message.networkRetryAttempt,
@@ -877,6 +957,7 @@ function toPlainImageAsset(imageAsset: ImageAsset): ImageAsset {
     conversationId: imageAsset.conversationId,
     messageId: imageAsset.messageId,
     prompt: imageAsset.prompt,
+    requestPrompt: imageAsset.requestPrompt,
     revisedPrompt: imageAsset.revisedPrompt,
     referencedImageIds: imageAsset.referencedImageIds
       ? [...imageAsset.referencedImageIds]

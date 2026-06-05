@@ -8,10 +8,11 @@ import {
 } from "./imagesApi";
 import { normalizeFavoritePrompts } from "./favoritePrompts";
 import { normalizePromptWordbanks } from "./promptWordbanks";
-import { FIXED_IMAGE_MODEL } from "../shared/models";
+import { GEMINI_IMAGE_MODEL, defaultModelForProvider } from "../shared/models";
 import type {
   ApiMode,
   ApiBaseUrlMode,
+  ApiProvider,
   AppSettings,
   ConnectionMode,
   PromptMode,
@@ -42,7 +43,7 @@ export function saveSettings(settings: AppSettings) {
     key: SETTINGS_KEY,
     value: {
       ...settings,
-      model: FIXED_IMAGE_MODEL,
+      model: normalizeModel(settings.apiProvider, settings.model),
     },
   });
 }
@@ -50,6 +51,7 @@ export function saveSettings(settings: AppSettings) {
 type StoredAppSettings = Omit<
   AppSettings,
   | "connectionMode"
+  | "apiProvider"
   | "apiBaseUrlMode"
   | "apiMode"
   | "streamImages"
@@ -60,8 +62,11 @@ type StoredAppSettings = Omit<
   | "promptRewriteGuardText"
   | "promptRewriteGuardHistory"
   | "favoritePrompts"
+  | "ragEnabled"
+  | "ragTopK"
 > & {
   connectionMode?: ConnectionMode;
+  apiProvider?: ApiProvider;
   apiBaseUrlMode?: ApiBaseUrlMode;
   apiMode?: ApiMode;
   streamImages?: boolean;
@@ -70,25 +75,29 @@ type StoredAppSettings = Omit<
   promptRewriteGuardText?: string;
   promptRewriteGuardHistory?: PromptRewriteGuardHistoryItem[];
   favoritePrompts?: unknown;
+  ragEnabled?: boolean;
+  ragTopK?: unknown;
   promptMode?: PromptMode;
   promptWordbanks?: unknown;
   defaults: StoredGenerationParams;
 };
 
 function normalizeSettings(settings: StoredAppSettings): AppSettings {
+  const apiProvider = normalizeApiProvider(settings.apiProvider);
   const promptRewriteGuardText = normalizePromptRewriteGuardText(
     settings.promptRewriteGuardText,
   );
   return {
     ...settings,
     connectionMode: settings.connectionMode ?? "direct",
+    apiProvider,
     apiBaseUrlMode: settings.apiBaseUrlMode === "full" ? "full" : "origin",
     apiMode: settings.apiMode === "responses" ? "responses" : "images",
     streamImages: settings.streamImages ?? false,
     streamPartialImages: normalizeStreamPartialImages(
       settings.streamPartialImages,
     ),
-    model: FIXED_IMAGE_MODEL,
+    model: normalizeModel(apiProvider, settings.model),
     promptMode: normalizePromptMode(settings.promptMode),
     promptWordbanks: normalizePromptWordbanks(settings.promptWordbanks),
     promptRewriteGuardEnabled: settings.promptRewriteGuardEnabled ?? true,
@@ -102,8 +111,24 @@ function normalizeSettings(settings: StoredAppSettings): AppSettings {
         },
       ],
     favoritePrompts: normalizeFavoritePrompts(settings.favoritePrompts),
+    ragEnabled: settings.ragEnabled ?? false,
+    ragTopK: normalizeRagTopK(settings.ragTopK),
     defaults: normalizeGenerationParams(settings.defaults),
   };
+}
+
+function normalizeApiProvider(provider: ApiProvider | undefined): ApiProvider {
+  if (provider === "grok") return "grok";
+  if (provider === "gemini") return "gemini";
+  return "openai";
+}
+
+function normalizeModel(provider: ApiProvider, model: string | undefined) {
+  const trimmed = model?.trim();
+  if (provider === "gemini" && trimmed === "gemini-3.1-flash-image") {
+    return GEMINI_IMAGE_MODEL;
+  }
+  return trimmed || defaultModelForProvider(provider);
 }
 
 function normalizeStreamPartialImages(value: unknown): 0 | 1 | 2 | 3 {
@@ -123,4 +148,10 @@ function normalizePromptMode(mode: PromptMode | undefined): PromptMode {
   }
 
   return "default";
+}
+
+function normalizeRagTopK(value: unknown) {
+  const numeric = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(numeric)) return 4;
+  return Math.min(12, Math.max(1, Math.trunc(numeric)));
 }

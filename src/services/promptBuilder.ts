@@ -1,5 +1,6 @@
 import type { PromptMode, PromptWordbanks } from "../types/studio";
 import { promptWordbanks as defaultPromptWordbanks } from "./promptWordbanks";
+import { matchPromptWordbankTerms } from "./promptWordbankMatcher";
 
 export type BuildPromptInput = {
   prompt: string;
@@ -27,11 +28,12 @@ export function buildImagePrompt(input: BuildPromptInput) {
   if (input.mode === "default") return input.prompt;
 
   const mode = input.mode;
-  const inspirationTerms = selectInspirationTerms(
+  const inspirationTerms = matchPromptWordbankTerms({
     mode,
-    input.seed ?? input.prompt,
-    input.wordbanks,
-  );
+    prompt: input.prompt,
+    seed: input.seed ?? input.prompt,
+    wordbanks: input.wordbanks,
+  }).terms;
   const inspirationBlock = inspirationTerms.length
     ? inspirationTerms.join(", ")
     : "无";
