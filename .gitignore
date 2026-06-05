@@ -11,9 +11,14 @@ node_modules
 dist
 dist-ssr
 companion/dist
+coverage
+.env
+.env.*
+!.env.example
 *.local
 folder-alias.json
 private-folder-alias.json
+docs/superpowers
 
 # Editor directories and files
 .vscode/*
