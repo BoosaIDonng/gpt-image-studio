@@ -1,5 +1,5 @@
 export type ChatMessage = {
-  role: "user" | "assistant";
+  role: "system" | "user" | "assistant";
   content: string;
 };
 
@@ -9,14 +9,19 @@ const DEFAULT_MODEL = "openai/gpt-oss-120b";
 export async function streamChatReply(
   messages: ChatMessage[],
   onDelta: (delta: string) => void,
+  projectContext?: ChatMessage,
 ): Promise<string> {
+  const outgoingMessages = projectContext
+    ? [projectContext, ...messages]
+    : messages;
+
   const response = await fetch(DEFAULT_WORKER_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: DEFAULT_MODEL,
       use_builtin_persona: true,
-      messages,
+      messages: outgoingMessages,
     }),
   });
 
