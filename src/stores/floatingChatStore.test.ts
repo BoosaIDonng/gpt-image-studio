@@ -20,7 +20,7 @@ describe("floating chat store", () => {
   it("forwards hidden project context without storing it in visible messages", async () => {
     const store = useFloatingChatStore();
     const projectContext: ChatMessage = {
-      role: "system",
+      role: "user",
       content: "项目上下文",
     };
     mocks.streamChatReply.mockImplementation(

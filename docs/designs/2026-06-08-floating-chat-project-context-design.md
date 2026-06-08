@@ -24,10 +24,10 @@
 
 ## 方案
 
-前端在发送助手请求前构造一条隐藏的上下文消息，并把它放在助手消息列表之前。该消息使用普通 chat messages 兼容形态，内容以明确标题包裹，例如：
+前端在发送助手请求前构造一条隐藏的上下文消息，并把它放在助手消息列表之前。该消息使用 `user` role，而不是 `system` role，因为当前部署的 Worker 与 `openai/gpt-oss-120b` 组合会忽略前置 `system` 上下文。内容以明确标题包裹，例如：
 
 ```text
-以下是 GPT Image Studio 当前项目上下文，仅用于理解用户意图。不要原样复述，除非用户要求。
+以下是 GPT Image Studio 当前项目上下文，用于回答下一条用户消息。不要原样复述上下文，除非用户要求。
 ...
 ```
 
@@ -56,7 +56,7 @@
 - `useSettingsStore()` 提供供应商、模型、生成参数和 RAG 设置。
 - `collectRagDocuments()` 与 `retrieveRagContext()` 复用现有 RAG 计算。
 
-`FloatingChat.vue` 调用 `chat.send(projectContext)`。`floatingChatStore` 将上下文交给 `streamChatReply()`。`floatingChatService` 在请求体中发送 `[contextMessage, ...messages]`，但 store 里的 `messages` 仍只保存用户可见对话。
+`FloatingChat.vue` 调用 `chat.send(projectContext)`。`floatingChatStore` 将上下文交给 `streamChatReply()`。`floatingChatService` 在请求体中发送 `[contextMessage, ...messages]`，其中 `contextMessage.role` 是 `user`。store 里的 `messages` 仍只保存用户可见对话。
 
 ## 错误处理
 

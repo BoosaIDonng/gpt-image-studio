@@ -30,7 +30,7 @@ describe("floating chat service", () => {
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(streamResponse());
     const context: ChatMessage = {
-      role: "system",
+      role: "user",
       content: "项目上下文",
     };
 

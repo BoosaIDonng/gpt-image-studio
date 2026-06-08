@@ -34,7 +34,7 @@ export type FloatingChatProjectContextInput = {
 };
 
 export type FloatingChatProjectContextMessage = {
-  role: "system";
+  role: "user";
   content: string;
 };
 
@@ -47,7 +47,8 @@ export function buildFloatingChatProjectContext(
   input: FloatingChatProjectContextInput,
 ): FloatingChatProjectContextMessage {
   const lines = [
-    "以下是 GPT Image Studio 当前项目上下文，仅用于理解用户意图。不要原样复述，除非用户要求。",
+    "以下是 GPT Image Studio 当前项目上下文，用于回答下一条用户消息。不要原样复述上下文，除非用户要求。",
+    "如果用户问“当前在做什么图”，这里的“图”指 AI 图片创作，不是数据图表。",
     "",
     "## 当前输入",
     safeText(input.composerText) || "空",
@@ -69,7 +70,7 @@ export function buildFloatingChatProjectContext(
   ];
 
   return {
-    role: "system",
+    role: "user",
     content: lines.join("\n").trim(),
   };
 }

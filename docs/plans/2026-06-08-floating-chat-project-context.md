@@ -110,7 +110,7 @@ describe("floating chat project context", () => {
       },
     });
 
-    expect(context.role).toBe("system");
+    expect(context.role).toBe("user");
     expect(context.content).toContain("GPT Image Studio 当前项目上下文");
     expect(context.content).toContain("帮我延续这个雨夜电影感");
     expect(context.content).toContain("雨夜街景");
@@ -228,7 +228,8 @@ export function buildFloatingChatProjectContext(
   input: FloatingChatProjectContextInput,
 ): ChatMessage {
   const lines = [
-    "以下是 GPT Image Studio 当前项目上下文，仅用于理解用户意图。不要原样复述，除非用户要求。",
+    "以下是 GPT Image Studio 当前项目上下文，用于回答下一条用户消息。不要原样复述上下文，除非用户要求。",
+    "如果用户问“当前在做什么图”，这里的“图”指 AI 图片创作，不是数据图表。",
     "",
     "## 当前输入",
     safeText(input.composerText) || "空",
@@ -250,7 +251,7 @@ export function buildFloatingChatProjectContext(
   ];
 
   return {
-    role: "system",
+    role: "user",
     content: lines.join("\n").trim(),
   };
 }
@@ -393,7 +394,7 @@ describe("floating chat service", () => {
       .spyOn(globalThis, "fetch")
       .mockResolvedValue(streamResponse());
     const context: ChatMessage = {
-      role: "system",
+      role: "user",
       content: "项目上下文",
     };
 
@@ -653,4 +654,4 @@ Expected: only ignored or known local temporary files remain. Do not push. Wait 
 
 - Spec coverage: the plan implements hidden message context, no Worker protocol change, redaction, compact summaries, RAG summary, and unchanged visible chat history.
 - Placeholder scan: passed; no open-ended implementation steps remain.
-- Type consistency: `ChatMessage` gains `system`; the builder returns `ChatMessage`; the store and service pass the same optional context object.
+- Type consistency: `ChatMessage` allows `system` for compatibility, but the project context builder returns `user` because the deployed Worker/model reads that form reliably; the store and service pass the same optional context object.

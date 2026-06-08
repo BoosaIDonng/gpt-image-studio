@@ -78,7 +78,7 @@ describe("floating chat project context", () => {
       },
     });
 
-    expect(context.role).toBe("system");
+    expect(context.role).toBe("user");
     expect(context.content).toContain("GPT Image Studio 当前项目上下文");
     expect(context.content).toContain("帮我延续这个雨夜电影感");
     expect(context.content).toContain("雨夜街景");
