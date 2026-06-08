@@ -6,7 +6,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 
-> 在线体验：<a href="https://image.idurspace.cn" target="_blank">image.honlnk.com</a>
+> 在线体验：<a href="https://image.idurspace.cn" target="_blank">image.idurspace.cn</a>
 
 本项目是一个本地优先的 AI 图片创作工作台，通过聊天式界面调用 OpenAI 兼容 Images API 进行图片生成、编辑和管理。默认数据保存在浏览器本地；如需把 API 凭据留在本机而不是浏览器中，可以配合本地 `Companion` 使用。
 
