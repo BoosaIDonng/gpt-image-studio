@@ -71,10 +71,49 @@ describe("RAG", () => {
     expect(documents.map((document) => document.source)).toEqual(["wordbank"]);
     expect(documents.map((document) => document.text)).toEqual(["cinematic rain street"]);
     expect(documents[0].sourceImageId).toBe("img-1");
+    expect(documents[0].sourceImageIds).toEqual(["img-1"]);
     expect(documents[0].title).toBe("成功图片匹配词库: city");
     expect(documents.map((document) => document.text)).not.toContain(favorites[0].text);
     expect(documents.map((document) => document.text)).not.toContain(messages[0].content);
     expect(documents.map((document) => document.text)).not.toContain(images[0].requestPrompt);
+  });
+
+  it("merges the same wordbank term across successful images for retrieval", () => {
+    const documents = collectRagDocuments({
+      wordbanks: {
+        pose: {
+          safe: ["soft window light"],
+          creative: [],
+          nsfw: [],
+        },
+        adultInspiration: [],
+      },
+      imageAssets: [
+        {
+          id: "img-red",
+          name: "red room",
+          source: "generated",
+          prompt: "red room portrait with soft window light",
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+        {
+          id: "img-blue",
+          name: "blue room",
+          source: "generated",
+          prompt: "blue loft portrait with soft window light",
+          createdAt: "2026-01-02T00:00:00.000Z",
+        },
+      ],
+    });
+    const result = retrieveRagContext({
+      query: "blue loft",
+      documents,
+      topK: 3,
+    });
+
+    expect(documents).toHaveLength(1);
+    expect(documents[0].sourceImageIds).toEqual(["img-red", "img-blue"]);
+    expect(result.items.map((item) => item.text)).toEqual(["soft window light"]);
   });
 
   it("retrieves the most similar local-vector matches", () => {
@@ -210,6 +249,7 @@ describe("RAG", () => {
           title: "成功图片匹配词库: city",
           text: "cinematic rain street",
           sourceImageId: "img-1",
+          sourceImageIds: ["img-1"],
           rawScore: 0.4,
           score: 0.5,
           sourceWeight: 1.25,
@@ -220,6 +260,7 @@ describe("RAG", () => {
           title: "成功图片匹配词库: portrait",
           text: "sitting on chair",
           sourceImageId: "img-2",
+          sourceImageIds: ["img-2"],
           rawScore: 0.3,
           score: 0.38,
           sourceWeight: 1.25,
@@ -230,6 +271,7 @@ describe("RAG", () => {
           title: "成功图片匹配词库: portrait",
           text: "soft window light",
           sourceImageId: "img-2",
+          sourceImageIds: ["img-2"],
           rawScore: 0.2,
           score: 0.25,
           sourceWeight: 1.25,
@@ -240,6 +282,7 @@ describe("RAG", () => {
           title: "成功图片匹配词库: room",
           text: "dramatic rim light",
           sourceImageId: "img-3",
+          sourceImageIds: ["img-3"],
           rawScore: 0.18,
           score: 0.23,
           sourceWeight: 1.25,

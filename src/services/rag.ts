@@ -10,6 +10,7 @@ export type RagDocument = {
   text: string;
   searchText?: string;
   sourceImageId?: string;
+  sourceImageIds?: string[];
 };
 
 export type RagMatch = RagDocument & {
@@ -48,7 +49,7 @@ const SOURCE_WEIGHTS: Record<RagDocumentSource, number> = {
 
 export function collectRagDocuments(input: CollectRagDocumentsInput): RagDocument[] {
   const documents: RagDocument[] = [];
-  const seen = new Set<string>();
+  const documentsByText = new Map<string, RagDocument>();
 
   input.imageAssets
     .filter(isSuccessfulGeneratedImage)
@@ -60,13 +61,14 @@ export function collectRagDocuments(input: CollectRagDocumentsInput): RagDocumen
         image.id,
         input.wordbanks,
       ).forEach((term, index) => {
-        addDocument(documents, seen, {
+        addDocument(documents, documentsByText, {
           id: `image-wordbank:${image.id}:${index}`,
           source: "wordbank",
           title: `成功图片匹配词库: ${image.name}`,
           text: term,
           searchText,
           sourceImageId: image.id,
+          sourceImageIds: [image.id],
         });
       });
     });
@@ -170,8 +172,8 @@ export function buildRagMatchBarState(input: {
   const visibleItems = input.items.slice(0, visibleLimit);
   const sourceImageIds = new Set(
     input.items
-      .map((item) => item.sourceImageId)
-      .filter((id): id is string => Boolean(id)),
+      .flatMap((item) => item.sourceImageIds ?? item.sourceImageId ?? [])
+      .filter(Boolean),
   );
   const excludedCount = input.excludedItems?.length ?? 0;
 
@@ -187,16 +189,39 @@ export function buildRagMatchBarState(input: {
 
 function addDocument(
   documents: RagDocument[],
-  seen: Set<string>,
+  documentsByText: Map<string, RagDocument>,
   document: RagDocument,
 ) {
   const text = normalizeText(document.text);
-  if (!text || seen.has(text)) return;
-  seen.add(text);
-  documents.push({
+  if (!text) return;
+
+  const existingDocument = documentsByText.get(text);
+  if (existingDocument) {
+    mergeRagDocument(existingDocument, document);
+    return;
+  }
+
+  const nextDocument = {
     ...document,
     text,
-  });
+  };
+  documentsByText.set(text, nextDocument);
+  documents.push(nextDocument);
+}
+
+function mergeRagDocument(target: RagDocument, document: RagDocument) {
+  const nextSearchText = normalizeText(document.searchText);
+  if (nextSearchText && target.searchText !== nextSearchText) {
+    target.searchText = normalizeText(`${target.searchText ?? ""} ${nextSearchText}`);
+  }
+
+  const sourceImageIds = target.sourceImageIds ?? (
+    target.sourceImageId ? [target.sourceImageId] : []
+  );
+  if (document.sourceImageId && !sourceImageIds.includes(document.sourceImageId)) {
+    sourceImageIds.push(document.sourceImageId);
+  }
+  target.sourceImageIds = sourceImageIds;
 }
 
 function vectorize(text: string) {

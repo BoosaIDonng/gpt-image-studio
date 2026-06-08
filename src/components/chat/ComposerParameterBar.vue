@@ -219,7 +219,7 @@ function ragWeightedScoreLabel(score: number) {
                 <div>
                   <div class="text-xs font-semibold text-gray-800">RAG 命中</div>
                   <div class="mt-0.5 text-[11px] text-gray-500">
-                    词库优先，其次收藏 Prompt，再次历史 Prompt
+                    仅使用成功图片命中的词库参考
                   </div>
                 </div>
                 <button
