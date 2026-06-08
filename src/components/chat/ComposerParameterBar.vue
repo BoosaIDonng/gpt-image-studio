@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { useComposerStore } from "../../stores/composerStore";
 import { useImagesStore } from "../../stores/imagesStore";
 import { useSettingsStore } from "../../stores/settingsStore";
@@ -14,7 +14,6 @@ const emit = defineEmits<{
 const composer = useComposerStore();
 const images = useImagesStore();
 const settings = useSettingsStore();
-const isPromptPreviewOpen = ref(false);
 const promptModeLabel = computed(() => {
   const labels = {
     default: "默认",
@@ -110,7 +109,7 @@ function ragWeightedScoreLabel(score: number) {
       class="cursor-pointer rounded-full bg-gray-900 px-2 py-0.5 text-[11px] text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
       type="button"
       :disabled="!previewPrompt"
-      @click="isPromptPreviewOpen = true"
+      @click="composer.openPromptPreview()"
     >
       预览 Prompt
     </button>
@@ -185,9 +184,9 @@ function ragWeightedScoreLabel(score: number) {
 
     <Teleport to="body">
       <div
-        v-if="isPromptPreviewOpen"
+        v-if="composer.isPromptPreviewOpen"
         class="fixed inset-0 z-50 flex items-end justify-center bg-black/35 px-3 py-4 sm:items-center"
-        @click="isPromptPreviewOpen = false"
+        @click="composer.closePromptPreview()"
       >
         <section
           class="w-full max-w-3xl overflow-hidden rounded-lg bg-white shadow-2xl"
@@ -204,7 +203,7 @@ function ragWeightedScoreLabel(score: number) {
               class="cursor-pointer rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
               type="button"
               aria-label="关闭"
-              @click="isPromptPreviewOpen = false"
+              @click="composer.closePromptPreview()"
             >
               <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                 <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
@@ -312,7 +311,7 @@ function ragWeightedScoreLabel(score: number) {
             <button
               class="cursor-pointer rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white transition-colors hover:bg-gray-800"
               type="button"
-              @click="isPromptPreviewOpen = false"
+              @click="composer.closePromptPreview()"
             >
               关闭
             </button>
