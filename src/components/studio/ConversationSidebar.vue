@@ -58,7 +58,7 @@ function closeSidebar() {
           <div class="truncate text-sm font-semibold text-white">
             GPT Image Studio
           </div>
-          <div class="truncate text-xs text-gray-500">Honlnk</div>
+          <div class="truncate text-xs text-gray-500">BoosaIDonng</div>
         </div>
       </div>
       <button
