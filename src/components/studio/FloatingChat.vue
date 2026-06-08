@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import { nextTick, ref, watch } from "vue";
+import { buildFloatingChatProjectContext } from "../../services/floatingChatContext";
 import { useFloatingChatStore } from "../../stores/floatingChatStore";
 import { useComposerStore } from "../../stores/composerStore";
+import { useConversationsStore } from "../../stores/conversationsStore";
+import { useImagesStore } from "../../stores/imagesStore";
+import { useSettingsStore } from "../../stores/settingsStore";
 
 const chat = useFloatingChatStore();
 const composer = useComposerStore();
+const conversations = useConversationsStore();
+const images = useImagesStore();
+const settings = useSettingsStore();
 const listRef = ref<HTMLDivElement | null>(null);
 
 watch(
@@ -19,12 +26,46 @@ watch(
 function handleKeydown(e: KeyboardEvent) {
   if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
     e.preventDefault();
-    chat.send();
+    sendWithProjectContext();
   }
 }
 
 function insertToComposer(content: string) {
   composer.composerText = content;
+}
+
+function sendWithProjectContext() {
+  chat.send(buildProjectContext());
+}
+
+function buildProjectContext() {
+  return buildFloatingChatProjectContext({
+    composerText: composer.composerText,
+    activeConversationTitle: conversations.activeConversation?.title,
+    recentMessages: conversations.activeMessages,
+    activeAttachments: images.activeAttachments,
+    generation: {
+      apiProvider: settings.apiProvider,
+      apiMode: settings.apiMode,
+      connectionMode: settings.connectionMode,
+      model: settings.model,
+      size: settings.activeSizePreset,
+      resolution: settings.sizeResolution,
+      width: settings.imageWidth,
+      height: settings.imageHeight,
+      imageCount: settings.imageCount,
+      quality: settings.quality,
+      background: settings.background,
+      outputFormat: settings.outputFormat,
+    },
+    rag: {
+      enabled: settings.ragEnabled,
+      topK: settings.ragTopK,
+      promptWordbanks: settings.promptWordbanks,
+      imageAssets: images.imageAssets,
+      excludedIds: composer.ragExcludedMatchIds,
+    },
+  });
 }
 </script>
 
@@ -123,7 +164,7 @@ function insertToComposer(content: string) {
           class="self-end cursor-pointer rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
           type="button"
           :disabled="!chat.input.trim() || chat.isStreaming"
-          @click="chat.send"
+          @click="sendWithProjectContext"
         >
           {{ chat.isStreaming ? '...' : '发送' }}
         </button>

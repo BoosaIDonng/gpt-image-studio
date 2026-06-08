@@ -18,7 +18,7 @@ export const useFloatingChatStore = defineStore("floatingChat", () => {
     error.value = "";
   }
 
-  async function send() {
+  async function send(projectContext?: ChatMessage) {
     const text = input.value.trim();
     if (!text || isStreaming.value) return;
 
@@ -36,6 +36,7 @@ export const useFloatingChatStore = defineStore("floatingChat", () => {
           const msg = messages.value[assistantIdx];
           if (msg) msg.content += delta;
         },
+        projectContext,
       );
     } catch (e) {
       error.value = e instanceof Error ? e.message : "请求失败";
