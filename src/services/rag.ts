@@ -1,10 +1,5 @@
-import type {
-  FavoritePrompt,
-  ImageAsset,
-  Message,
-  PromptWordbankSectionKey,
-  PromptWordbanks,
-} from "../types/studio";
+import type { ImageAsset, PromptWordbanks } from "../types/studio";
+import { matchPromptWordbankTerms } from "./promptWordbankMatcher";
 
 export type RagDocumentSource = "wordbank" | "favorite" | "history";
 
@@ -13,6 +8,7 @@ export type RagDocument = {
   source: RagDocumentSource;
   title: string;
   text: string;
+  searchText?: string;
 };
 
 export type RagMatch = RagDocument & {
@@ -23,8 +19,6 @@ export type RagMatch = RagDocument & {
 
 type CollectRagDocumentsInput = {
   wordbanks: PromptWordbanks;
-  favoritePrompts: FavoritePrompt[];
-  messages: Message[];
   imageAssets: ImageAsset[];
 };
 
@@ -42,85 +36,62 @@ const SOURCE_WEIGHTS: Record<RagDocumentSource, number> = {
   history: 1,
 };
 
-const WORD_BANK_SECTIONS: Array<{
-  key: PromptWordbankSectionKey;
-  label: string;
-  terms: (wordbanks: PromptWordbanks) => string[];
-}> = [
-  {
-    key: "pose.safe",
-    label: "安全词库",
-    terms: (wordbanks) => wordbanks.pose.safe,
-  },
-  {
-    key: "pose.creative",
-    label: "创意词库",
-    terms: (wordbanks) => wordbanks.pose.creative,
-  },
-  {
-    key: "pose.nsfw",
-    label: "开放词库",
-    terms: (wordbanks) => wordbanks.pose.nsfw,
-  },
-  {
-    key: "adultInspiration",
-    label: "开放灵感",
-    terms: (wordbanks) => wordbanks.adultInspiration,
-  },
-];
-
 export function collectRagDocuments(input: CollectRagDocumentsInput): RagDocument[] {
   const documents: RagDocument[] = [];
   const seen = new Set<string>();
 
-  for (const section of WORD_BANK_SECTIONS) {
-    section.terms(input.wordbanks).forEach((term, index) => {
-      addDocument(documents, seen, {
-        id: `wordbank:${section.key}:${index}`,
-        source: "wordbank",
-        title: section.label,
-        text: term,
+  input.imageAssets
+    .filter(isSuccessfulGeneratedImage)
+    .forEach((image) => {
+      const searchText = successfulImagePromptText(image);
+      matchedWordbankTermsFromImage(image, input.wordbanks).forEach((term, index) => {
+        addDocument(documents, seen, {
+          id: `image-wordbank:${image.id}:${index}`,
+          source: "wordbank",
+          title: `成功图片匹配词库: ${image.name}`,
+          text: term,
+          searchText,
+        });
       });
     });
-  }
-
-  input.favoritePrompts.forEach((prompt) => {
-    addDocument(documents, seen, {
-      id: `favorite:${prompt.id}`,
-      source: "favorite",
-      title: prompt.title,
-      text: prompt.text,
-    });
-  });
-
-  input.messages
-    .filter((message) => message.role === "user")
-    .forEach((message) => {
-      addDocument(documents, seen, {
-        id: `message:${message.id}`,
-        source: "history",
-        title: "历史用户 Prompt",
-        text: message.content,
-      });
-    });
-
-  input.imageAssets.forEach((image) => {
-    ([
-      ["prompt", image.prompt],
-      ["request", image.requestPrompt],
-      ["revised", image.revisedPrompt],
-    ] as Array<[string, string | undefined]>).forEach(([kind, text]) => {
-      if (typeof text !== "string") return;
-      addDocument(documents, seen, {
-        id: `image:${image.id}:${kind}`,
-        source: "history",
-        title: `历史图片 Prompt: ${image.name}`,
-        text,
-      });
-    });
-  });
 
   return documents;
+}
+
+function isSuccessfulGeneratedImage(image: ImageAsset) {
+  return image.source === "generated" && !image.isEditMask && !image.isTransientMask;
+}
+
+function matchedWordbankTermsFromImage(
+  image: ImageAsset,
+  wordbanks: PromptWordbanks,
+) {
+  const terms: string[] = [];
+
+  for (const prompt of successfulImagePromptTexts(image)) {
+    matchPromptWordbankTerms({
+      prompt,
+      mode: "adult",
+      wordbanks,
+      seed: `${image.id}:${prompt}`,
+    }).matchedTerms.forEach((term) => pushUnique(terms, term));
+  }
+
+  return terms;
+}
+
+function successfulImagePromptText(image: ImageAsset) {
+  return successfulImagePromptTexts(image).join(" ");
+}
+
+function successfulImagePromptTexts(image: ImageAsset) {
+  return [image.prompt, image.requestPrompt, image.revisedPrompt]
+    .map(normalizeText)
+    .filter(Boolean);
+}
+
+function pushUnique(items: string[], item: string) {
+  if (!items.includes(item)) items.push(item);
 }
 
 export function retrieveRagContext(input: RetrieveRagContextInput) {
@@ -133,7 +104,10 @@ export function retrieveRagContext(input: RetrieveRagContextInput) {
     .filter((document) => !excludedIds.has(document.id))
     .map((document) => ({
       ...document,
-      rawScore: cosineSimilarity(queryVector, vectorize(document.text)),
+      rawScore: cosineSimilarity(
+        queryVector,
+        vectorize(document.searchText ?? document.text),
+      ),
       sourceWeight: SOURCE_WEIGHTS[document.source],
     }))
     .map((item) => ({

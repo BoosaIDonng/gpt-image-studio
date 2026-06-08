@@ -25,6 +25,7 @@ import {
   normalizeWordbankTerms,
 } from "../services/promptWordbanks";
 import { saveSettings } from "../services/settings";
+import { GROK_SUPPORTED_RATIOS, GROK_SUPPORTED_RESOLUTIONS } from "../services/grokImagesApi";
 import { isoTimestamp } from "../shared/dateTime";
 import { createId } from "../shared/id";
 import { readJsonStorage, readStorage, writeStorage } from "../shared/localStorage";
@@ -107,6 +108,11 @@ export const useSettingsStore = defineStore("settings", () => {
   );
   const promptRewriteGuardEnabled = ref(true);
   const promptRewriteGuardText = ref(PROMPT_REWRITE_GUARD_PREFIX);
+  const promptExpandEnabled = ref(false);
+  const chatApiKey = ref("");
+  const chatApiBaseUrl = ref("");
+  const chatModel = ref("");
+  const chatSystemPrompt = ref("");
   const autoRetryOnNetworkError = ref(false);
   const favoritePrompts = ref<FavoritePrompt[]>([]);
   const ragEnabled = ref(false);
@@ -132,10 +138,22 @@ export const useSettingsStore = defineStore("settings", () => {
   const imageCountPresets = IMAGE_COUNT_PRESETS;
   const activeSizePreset = ref<GenerationParams["size"]>("auto");
   const sizeResolution = ref<SizeResolution>("1k");
-  const sizeRatioOptions = SIZE_RATIO_OPTIONS;
-  const sizeResolutionOptions = SIZE_RESOLUTION_OPTIONS.map(
-    ({ value, label }) => ({ value, label }),
+  const sizeRatioOptions = computed(() =>
+    apiProvider.value === "grok"
+      ? SIZE_RATIO_OPTIONS.filter((opt) =>
+          GROK_SUPPORTED_RATIOS.includes(opt.value as typeof GROK_SUPPORTED_RATIOS[number]),
+        )
+      : SIZE_RATIO_OPTIONS,
   );
+  const sizeResolutionOptions = computed(() =>
+    (apiProvider.value === "grok"
+      ? SIZE_RESOLUTION_OPTIONS.filter((opt) =>
+          GROK_SUPPORTED_RESOLUTIONS.includes(opt.value as typeof GROK_SUPPORTED_RESOLUTIONS[number]),
+        )
+      : SIZE_RESOLUTION_OPTIONS
+    ).map(({ value, label }) => ({ value, label })),
+  );
+  const grokCustomSizeDisabled = computed(() => apiProvider.value === "grok");
   const quality = ref<GenerationParams["quality"]>("auto");
   const background = ref<GenerationParams["background"]>("auto");
   const outputFormat = ref<GenerationParams["outputFormat"]>("png");
@@ -235,6 +253,11 @@ export const useSettingsStore = defineStore("settings", () => {
     autoRetryOnNetworkError.value = settings.autoRetryOnNetworkError ?? false;
     ragEnabled.value = settings.ragEnabled ?? false;
     ragTopK.value = normalizeRagTopK(settings.ragTopK);
+    promptExpandEnabled.value = settings.promptExpandEnabled ?? false;
+    chatApiKey.value = settings.chatApiKey ?? "";
+    chatApiBaseUrl.value = settings.chatApiBaseUrl ?? "";
+    chatModel.value = settings.chatModel ?? "";
+    chatSystemPrompt.value = settings.chatSystemPrompt ?? "";
     promptRewriteGuardHistory.value = normalizePromptRewriteGuardHistory(
       settings.promptRewriteGuardHistory,
       promptRewriteGuardText.value,
@@ -279,6 +302,11 @@ export const useSettingsStore = defineStore("settings", () => {
       favoritePrompts: favoritePrompts.value.map(toPlainFavoritePrompt),
       ragEnabled: ragEnabled.value,
       ragTopK: normalizeRagTopK(ragTopK.value),
+      promptExpandEnabled: promptExpandEnabled.value,
+      chatApiKey: chatApiKey.value.trim(),
+      chatApiBaseUrl: chatApiBaseUrl.value.trim(),
+      chatModel: chatModel.value.trim(),
+      chatSystemPrompt: chatSystemPrompt.value.trim(),
       autoRetryOnNetworkError: autoRetryOnNetworkError.value,
       defaults: currentGenerationParams(),
       storageMode: "indexeddb",
@@ -335,6 +363,18 @@ export const useSettingsStore = defineStore("settings", () => {
     if (apiMode.value === "responses") apiMode.value = "images";
     if (streamImages.value) streamImages.value = false;
     if (background.value === "transparent") background.value = "auto";
+    if (provider === "grok") {
+      if (
+        activeSizePreset.value === "custom" ||
+        (activeSizePreset.value !== "auto" &&
+          !GROK_SUPPORTED_RATIOS.includes(activeSizePreset.value as typeof GROK_SUPPORTED_RATIOS[number]))
+      ) {
+        applySizePreset("1:1");
+      }
+      if (!GROK_SUPPORTED_RESOLUTIONS.includes(sizeResolution.value as typeof GROK_SUPPORTED_RESOLUTIONS[number])) {
+        applySizeResolution("1k");
+      }
+    }
     if (
       !model.value ||
       model.value === FIXED_IMAGE_MODEL ||
@@ -504,6 +544,11 @@ export const useSettingsStore = defineStore("settings", () => {
     promptRewriteGuardEnabled,
     promptRewriteGuardHistory,
     promptRewriteGuardText,
+    promptExpandEnabled,
+    chatApiKey,
+    chatApiBaseUrl,
+    chatModel,
+    chatSystemPrompt,
     quality,
     qualityLabel,
     qualityOptions,
@@ -512,6 +557,7 @@ export const useSettingsStore = defineStore("settings", () => {
     sizeRatioOptions,
     sizeResolution,
     sizeResolutionOptions,
+    grokCustomSizeDisabled,
     deletePromptRewriteGuardHistoryItem,
     restoreDefaultPromptRewriteGuardText,
     restoreDefaultPromptWordbank,

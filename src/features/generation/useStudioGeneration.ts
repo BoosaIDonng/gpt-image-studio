@@ -30,6 +30,11 @@ type UseStudioGenerationInput = {
   imageAssets: Ref<ImageAsset[]>;
   imageById: (id: string) => ImageAsset | undefined;
   imageClient: ImageClient;
+  promptExpandEnabled: Ref<boolean>;
+  chatApiKey: Ref<string>;
+  chatApiBaseUrl: Ref<string>;
+  chatModel: Ref<string>;
+  chatSystemPrompt: Ref<string>;
   messages: Ref<Message[]>;
   onApiConfigurationError?: (error: unknown) => void;
   onStorageError: (error: unknown) => void;

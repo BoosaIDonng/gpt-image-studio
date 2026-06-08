@@ -2,7 +2,7 @@
 
 GPT Image Studio 会将当前本地项目导出为一个完整 ZIP 备份。
 
-备份包含会话、消息、图片元数据、不含 API key 的应用设置，以及图片 Blob。它的目标是恢复当前浏览器本地工作区，不是做跨用户同步。
+备份包含会话、消息、图片元数据、不含 API key 与 Chat API key 的应用设置，以及图片 Blob。它的目标是恢复当前浏览器本地工作区，不是做跨用户同步。
 
 ## ZIP 结构
 
@@ -25,7 +25,7 @@ type BackupManifest = {
 
 当前版本：`1`。
 
-`excludes` 当前包含 `apiKey`，用于明确说明备份不会包含 API key。
+`excludes` 当前包含 `apiKey` 和 `chatApiKey`，用于明确说明备份不会包含 API key 或 Chat API key。
 
 ## Data 文件
 
@@ -34,7 +34,7 @@ type BackupData = {
   conversations: Conversation[];
   messages: Message[];
   imageAssets: ImageAsset[];
-  settings?: Omit<AppSettings, "apiKey">;
+  settings?: Omit<AppSettings, "apiKey" | "chatApiKey">;
 };
 ```
 
@@ -56,8 +56,8 @@ blobs/${encodeURIComponent(blobKey)}
 
 重要约束：
 
-- 恢复设置时保留当前已有 API key。
-- 备份设置永远不会引入 API key。
+- 恢复设置时保留当前已有 API key 和 Chat API key。
+- 备份设置永远不会引入 API key 或 Chat API key。
 - 恢复会覆盖当前本地会话、消息、图片资源、图片 Blob 和设置。
 
 后续优化方向：让恢复流程在相关 object store 之间具备原子性，或者在清空当前数据前使用 staging 策略。

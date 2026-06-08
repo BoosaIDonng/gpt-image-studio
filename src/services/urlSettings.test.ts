@@ -35,6 +35,11 @@ const currentSettings: AppSettings = {
   favoritePrompts: [],
   ragEnabled: false,
   ragTopK: 4,
+  promptExpandEnabled: false,
+  chatApiKey: "",
+  chatApiBaseUrl: "",
+  chatModel: "",
+  chatSystemPrompt: "",
   defaults: {
     size: "1:1",
     resolution: "1k",

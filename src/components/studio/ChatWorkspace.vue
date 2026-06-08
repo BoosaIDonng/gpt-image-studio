@@ -187,7 +187,7 @@ function imageFilesFromTransfer(
           正在生成 {{ generation.pendingJobCount }} 张
         </span>
         <a
-          href="https://github.com/honlnk/gpt-image-studio"
+          href="https://github.com/BoosaIDonng/gpt-image-studio"
           target="_blank"
           rel="noopener noreferrer"
           class="cursor-pointer rounded-lg p-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"

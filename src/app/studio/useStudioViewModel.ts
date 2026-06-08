@@ -218,6 +218,11 @@ export function useStudioViewModel() {
     imageAssets: images.imageAssets,
     imageById: images.imageById,
     imageClient,
+    promptExpandEnabled: settings.promptExpandEnabled,
+    chatApiKey: settings.chatApiKey,
+    chatApiBaseUrl: settings.chatApiBaseUrl,
+    chatModel: settings.chatModel,
+    chatSystemPrompt: settings.chatSystemPrompt,
     messages,
     onApiConfigurationError: openApiSettingsFromGenerationError,
     onStorageError: reportStorageError,
@@ -246,8 +251,6 @@ export function useStudioViewModel() {
       query,
       documents: collectRagDocuments({
         wordbanks: settings.promptWordbanks.value,
-        favoritePrompts: settings.favoritePrompts.value,
-        messages: messages.value,
         imageAssets: images.imageAssets.value,
       }),
       excludedIds: ragExcludedMatchIds.value,
@@ -603,6 +606,37 @@ export function useStudioViewModel() {
     persistSettingsChange();
   }
 
+  function setAutoRetryOnNetworkError(value: boolean) {
+    settings.autoRetryOnNetworkError.value = value;
+    persistSettingsChange();
+  }
+
+  function setPromptExpandEnabled(value: boolean) {
+    settings.promptExpandEnabled.value = value;
+    persistSettingsChange();
+  }
+
+  function setChatApiKey(value: string) {
+    settings.chatApiKey.value = value;
+    persistSettingsChange();
+  }
+
+  function setChatApiBaseUrl(value: string) {
+    settings.chatApiBaseUrl.value = value;
+    persistSettingsChange();
+  }
+
+  function setChatModel(value: string) {
+    settings.chatModel.value = value;
+    persistSettingsChange();
+  }
+
+  function setChatSystemPrompt(value: string) {
+    settings.chatSystemPrompt.value = value;
+    persistSettingsChange();
+  }
+
+
   function setPromptMode(value: PromptMode) {
     settings.promptMode.value = value;
     persistSettingsChange();
@@ -778,6 +812,17 @@ export function useStudioViewModel() {
   });
   const settingsModal = proxyRefs({
     autoRetryOnNetworkError: settings.autoRetryOnNetworkError,
+    promptExpandEnabled: settings.promptExpandEnabled,
+    chatApiKey: settings.chatApiKey,
+    chatApiBaseUrl: settings.chatApiBaseUrl,
+    chatModel: settings.chatModel,
+    setPromptExpandEnabled,
+    setAutoRetryOnNetworkError,
+    setChatApiKey,
+    setChatApiBaseUrl,
+    setChatModel,
+    setChatSystemPrompt,
+    chatSystemPrompt: settings.chatSystemPrompt,
     apiProvider: settings.apiProvider,
     apiMode: settings.apiMode,
     apiBaseUrl: settings.apiBaseUrl,
@@ -864,6 +909,8 @@ export function useStudioViewModel() {
   return {
     chat,
     confirmDialog,
+    expandPreview: generation.expandPreview,
+    isExpanding: generation.isExpanding,
     library,
     noticeToast,
     preview,

@@ -9,6 +9,7 @@ const props = defineProps<{
   composerText: string;
   isDragActive: boolean;
   isGenerating: boolean;
+  isExpanding: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -389,10 +390,10 @@ defineExpose({ focusComposer });
       </div>
       <button
         class="ml-1.5 shrink-0 cursor-pointer rounded-lg bg-black px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-30"
-        :disabled="!canSend"
+        :disabled="!canSend || isExpanding"
         type="submit"
       >
-        {{ isGenerating ? "继续发送" : "发送" }}
+        {{ isExpanding ? "扩写中…" : isGenerating ? "继续发送" : "发送" }}
       </button>
     </div>
 

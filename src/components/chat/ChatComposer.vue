@@ -52,6 +52,7 @@ defineExpose({ focusComposer });
         :composer-text="composer.composerText"
         :is-drag-active="isDragActive"
         :is-generating="generation.isGenerating"
+        :is-expanding="generation.isExpanding"
         @import-images="images.importImages"
         @open-favorite-prompt-settings="emit('openFavoritePromptSettings')"
         @submit-message="generation.submitMessage"

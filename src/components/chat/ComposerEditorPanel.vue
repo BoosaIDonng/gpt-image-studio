@@ -54,6 +54,7 @@ function selectRatioMode() {
             比例
           </button>
           <button
+            v-if="!settings.grokCustomSizeDisabled"
             :class="[
               'cursor-pointer rounded border px-1.5 py-0.5 text-xs transition-colors',
               settings.activeSizePreset === 'custom'

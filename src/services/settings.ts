@@ -64,9 +64,19 @@ type StoredAppSettings = Omit<
   | "favoritePrompts"
   | "ragEnabled"
   | "ragTopK"
+  | "promptExpandEnabled"
+  | "chatApiKey"
+  | "chatApiBaseUrl"
+  | "chatModel"
+  | "chatSystemPrompt"
 > & {
   connectionMode?: ConnectionMode;
   apiProvider?: ApiProvider;
+  promptExpandEnabled?: boolean;
+  chatApiKey?: string;
+  chatApiBaseUrl?: string;
+  chatModel?: string;
+  chatSystemPrompt?: string;
   apiBaseUrlMode?: ApiBaseUrlMode;
   apiMode?: ApiMode;
   streamImages?: boolean;
@@ -111,6 +121,11 @@ function normalizeSettings(settings: StoredAppSettings): AppSettings {
         },
       ],
     favoritePrompts: normalizeFavoritePrompts(settings.favoritePrompts),
+    promptExpandEnabled: settings.promptExpandEnabled ?? false,
+    chatApiKey: settings.chatApiKey ?? "",
+    chatApiBaseUrl: settings.chatApiBaseUrl ?? "",
+    chatModel: settings.chatModel ?? "",
+    chatSystemPrompt: settings.chatSystemPrompt ?? "",
     ragEnabled: settings.ragEnabled ?? false,
     ragTopK: normalizeRagTopK(settings.ragTopK),
     defaults: normalizeGenerationParams(settings.defaults),

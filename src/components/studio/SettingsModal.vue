@@ -37,6 +37,11 @@ const props = defineProps<{
   initialBatchPanel?: BatchPanel;
   initialTab?: SettingsTab;
   autoRetryOnNetworkError: boolean;
+  promptExpandEnabled: boolean;
+  chatApiKey: string;
+  chatApiBaseUrl: string;
+  chatModel: string;
+  chatSystemPrompt: string;
   connectionMode: ConnectionMode;
   apiProvider: ApiProvider;
   apiKey: string;
@@ -70,6 +75,11 @@ const emit = defineEmits<{
   importBackup: [file: File];
   previewImage: [id: string];
   "update:autoRetryOnNetworkError": [value: boolean];
+  "update:promptExpandEnabled": [value: boolean];
+  "update:chatApiKey": [value: string];
+  "update:chatApiBaseUrl": [value: string];
+  "update:chatModel": [value: string];
+  "update:chatSystemPrompt": [value: string];
   "update:connectionMode": [value: ConnectionMode];
   "update:apiProvider": [value: ApiProvider];
   "update:apiKey": [value: string];
@@ -216,7 +226,17 @@ function forwardSavePromptWordbank(
             <GeneralSettingsPanel
               v-if="activeTab === 'general'"
               :auto-retry-on-network-error="autoRetryOnNetworkError"
+              :prompt-expand-enabled="promptExpandEnabled"
+              :chat-api-key="chatApiKey"
+              :chat-api-base-url="chatApiBaseUrl"
+              :chat-model="chatModel"
+              :chat-system-prompt="chatSystemPrompt"
               @update:auto-retry-on-network-error="emit('update:autoRetryOnNetworkError', $event)"
+              @update:prompt-expand-enabled="emit('update:promptExpandEnabled', $event)"
+              @update:chat-api-key="emit('update:chatApiKey', $event)"
+              @update:chat-api-base-url="emit('update:chatApiBaseUrl', $event)"
+              @update:chat-model="emit('update:chatModel', $event)"
+              @update:chat-system-prompt="emit('update:chatSystemPrompt', $event)"
             />
 
             <ApiSettingsPanel

@@ -86,6 +86,11 @@ const settings: AppSettings = {
   favoritePrompts: [],
   ragEnabled: false,
   ragTopK: 4,
+  promptExpandEnabled: false,
+  chatApiKey: "sk-chat-secret",
+  chatApiBaseUrl: "",
+  chatModel: "",
+  chatSystemPrompt: "",
   defaults: {
     size: "1:1",
     resolution: "1k",
@@ -128,7 +133,7 @@ describe("studio backups", () => {
     expect(manifest).toMatchObject({
       app: "gpt-image-studio",
       version: 1,
-      excludes: ["apiKey"],
+      excludes: ["apiKey", "chatApiKey"],
     });
     expect(data.settings).toEqual({
       connectionMode: settings.connectionMode,
@@ -147,11 +152,16 @@ describe("studio backups", () => {
       favoritePrompts: settings.favoritePrompts,
       ragEnabled: settings.ragEnabled,
       ragTopK: settings.ragTopK,
+      promptExpandEnabled: settings.promptExpandEnabled,
+      chatApiBaseUrl: settings.chatApiBaseUrl,
+      chatModel: settings.chatModel,
+      chatSystemPrompt: settings.chatSystemPrompt,
       autoRetryOnNetworkError: settings.autoRetryOnNetworkError,
       defaults: settings.defaults,
       storageMode: settings.storageMode,
     });
     expect(JSON.stringify(data)).not.toContain("sk-secret");
+    expect(JSON.stringify(data)).not.toContain("sk-chat-secret");
     expect(data.imageAssets[0]).not.toHaveProperty("previewUrl");
     expect(data.imageAssets[0].requestPrompt).toBe(imageAsset.requestPrompt);
     expect(await files.get("blobs/blob%201")!.text()).toBe("image-data");
@@ -212,13 +222,21 @@ describe("studio backups", () => {
           promptWordbanks: settings.promptWordbanks,
           ragEnabled: settings.ragEnabled,
           ragTopK: settings.ragTopK,
+          promptExpandEnabled: settings.promptExpandEnabled,
+          chatApiBaseUrl: settings.chatApiBaseUrl,
+          chatModel: settings.chatModel,
+          chatSystemPrompt: settings.chatSystemPrompt,
           defaults: settings.defaults,
           storageMode: settings.storageMode,
         },
       },
       blobs: [{ name: "blobs/blob%201", content: "image-data" }],
     });
-    mocks.loadSettings.mockResolvedValue({ ...settings, apiKey: "sk-current" });
+    mocks.loadSettings.mockResolvedValue({
+      ...settings,
+      apiKey: "sk-current",
+      chatApiKey: "sk-chat-current",
+    });
 
     await restoreStudioBackup(fileFromBlob(backup));
 
@@ -242,6 +260,7 @@ describe("studio backups", () => {
     expect(mocks.saveSettings).toHaveBeenCalledWith({
       ...settings,
       apiKey: "sk-current",
+      chatApiKey: "sk-chat-current",
     });
   });
 

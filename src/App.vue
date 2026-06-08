@@ -5,6 +5,8 @@ import ImageLibrary from "./components/studio/ImageLibrary.vue";
 import ImagePreviewModal from "./components/studio/ImagePreviewModal.vue";
 import SettingsModal from "./components/studio/SettingsModal.vue";
 import ConfirmDialog from "./components/ui/ConfirmDialog.vue";
+import ExpandPreviewModal from "./components/ui/ExpandPreviewModal.vue";
+import FloatingChat from "./components/studio/FloatingChat.vue";
 import NoticeToast from "./components/ui/NoticeToast.vue";
 import RenameDialog from "./components/ui/RenameDialog.vue";
 import { useStudioViewModel } from "./app/studio";
@@ -45,6 +47,11 @@ const studio = useStudioViewModel();
       v-model:stream-images="studio.settingsModal.streamImages"
       v-model:stream-partial-images="studio.settingsModal.streamPartialImages"
       :auto-retry-on-network-error="studio.settingsModal.autoRetryOnNetworkError"
+      :prompt-expand-enabled="studio.settingsModal.promptExpandEnabled"
+      :chat-api-key="studio.settingsModal.chatApiKey"
+      :chat-api-base-url="studio.settingsModal.chatApiBaseUrl"
+      :chat-model="studio.settingsModal.chatModel"
+      :chat-system-prompt="studio.settingsModal.chatSystemPrompt"
       :companion-paired="studio.settingsModal.companionPaired"
       :companion-session-token="studio.settingsModal.companionSessionToken"
       :companion-url="studio.settingsModal.companionUrl"
@@ -79,10 +86,22 @@ const studio = useStudioViewModel();
       @set-prompt-rewrite-guard-enabled="studio.settingsModal.setPromptRewriteGuardEnabled"
       @update-favorite-prompt="studio.settingsModal.updateFavoritePrompt"
       @update:companion-session-token="studio.settingsModal.companionSessionToken = $event"
-      @update:auto-retry-on-network-error="studio.settingsModal.autoRetryOnNetworkError = $event"
+      @update:auto-retry-on-network-error="studio.settingsModal.setAutoRetryOnNetworkError($event)"
+      @update:prompt-expand-enabled="studio.settingsModal.setPromptExpandEnabled($event)"
+      @update:chat-api-key="studio.settingsModal.setChatApiKey($event)"
+      @update:chat-api-base-url="studio.settingsModal.setChatApiBaseUrl($event)"
+      @update:chat-model="studio.settingsModal.setChatModel($event)"
+      @update:chat-system-prompt="studio.settingsModal.setChatSystemPrompt($event)"
       @update:prompt-mode="studio.settingsModal.setPromptMode"
       @update:rag-enabled="studio.settingsModal.setRagEnabled"
       @update:rag-top-k="studio.settingsModal.setRagTopK"
+    />
+
+    <ExpandPreviewModal
+      v-if="studio.expandPreview.value"
+      :original-prompt="studio.expandPreview.value!.originalPrompt"
+      :expanded-prompt="studio.expandPreview.value!.expandedPrompt"
+      @confirm="(action: string, text?: string) => studio.expandPreview.value?.onConfirm(action as any, text)"
     />
 
     <ImagePreviewModal
@@ -121,5 +140,7 @@ const studio = useStudioViewModel();
       @cancel="studio.confirmDialog.cancel"
       @confirm="studio.confirmDialog.confirm"
     />
+
+    <FloatingChat />
   </main>
 </template>

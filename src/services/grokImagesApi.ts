@@ -64,6 +64,7 @@ export async function generateGrokImages(input: GrokImageBatchInput): Promise<Gr
 }
 
 async function requestGrokImages(input: GrokImageInput, count: number): Promise<GrokImageApiResult[]> {
+  const sizeFields = buildGrokSizeFields(input.params);
   const response = await fetch(buildGrokEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "generations"), {
     method: "POST",
     headers: {
@@ -74,6 +75,7 @@ async function requestGrokImages(input: GrokImageInput, count: number): Promise<
       model: input.model,
       prompt: input.prompt,
       ...(count > 1 ? { n: count } : {}),
+      ...sizeFields,
       response_format: "b64_json",
     }),
   });
@@ -95,6 +97,7 @@ export async function editGrokImage(input: GrokEditInput): Promise<GrokImageApiR
     input.images.map((image) => blobToDataUrl(image.blob)),
   );
   const imagePayload = buildGrokEditImagePayload(imageDataUrls);
+  const sizeFields = buildGrokSizeFields(input.params);
 
   const response = await fetch(buildGrokEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "edits"), {
     method: "POST",
@@ -106,6 +109,7 @@ export async function editGrokImage(input: GrokEditInput): Promise<GrokImageApiR
       model: input.model,
       prompt: input.prompt,
       ...imagePayload,
+      ...sizeFields,
       response_format: "b64_json",
     }),
   });
@@ -128,10 +132,31 @@ function buildGrokEditImagePayload(imageDataUrls: string[]) {
     : { images: references };
 }
 
+export const GROK_SUPPORTED_RATIOS = ["1:1", "16:9", "9:16", "4:3", "3:4"] as const;
+export const GROK_SUPPORTED_RESOLUTIONS = ["1k", "2k"] as const;
+
 function validateGrokParams(params: GenerationParams) {
   if (params.background === "transparent") {
     throw new Error("Grok 图片接口当前不支持透明背景输出。");
   }
+  if (params.size === "custom") {
+    throw new Error("Grok 图片接口不支持自定义宽高，请使用比例选项。");
+  }
+  if (params.size !== "auto" && !GROK_SUPPORTED_RATIOS.includes(params.size as typeof GROK_SUPPORTED_RATIOS[number])) {
+    throw new Error(`Grok 图片接口不支持 ${params.size} 比例，仅支持 ${GROK_SUPPORTED_RATIOS.join("、")}。`);
+  }
+  if (!GROK_SUPPORTED_RESOLUTIONS.includes(params.resolution as typeof GROK_SUPPORTED_RESOLUTIONS[number])) {
+    throw new Error(`Grok 图片接口不支持 ${params.resolution} 分辨率，仅支持 1K 和 2K。`);
+  }
+}
+
+function buildGrokSizeFields(params: GenerationParams) {
+  const fields: { aspect_ratio?: string; resolution?: string } = {};
+  if (params.size !== "auto" && params.size !== "custom") {
+    fields.aspect_ratio = params.size;
+  }
+  fields.resolution = params.resolution;
+  return fields;
 }
 
 function normalizeGrokImageCount(count: unknown) {

@@ -203,7 +203,7 @@ function closeSidebar() {
         alt=""
         aria-hidden="true"
       />
-      <div class="text-xs text-gray-500">GPT Image Studio - Honlnk</div>
+      <div class="text-xs text-gray-500">GPT Image Studio - BoosaIDonng</div>
     </div>
   </aside>
 </template>

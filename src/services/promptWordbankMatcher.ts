@@ -44,13 +44,19 @@ const TRIGGER_RULES: TriggerRule[] = [
   },
   {
     id: "lying",
-    triggers: ["躺", "躺着", "床", "lying", "lie", "bed", "on stomach"],
-    terms: ["lying", "lying on back", "lying on bed", "on stomach", "lie on your side"],
+    triggers: ["躺", "躺着", "床", "lying", "lie", "bed"],
+    terms: ["lying", "lying on back", "on stomach", "Lie on your side"],
+    conflictGroup: "lying",
+  },
+  {
+    id: "on-stomach",
+    triggers: ["趴", "趴着", "俯卧", "on stomach"],
+    terms: ["on stomach"],
     conflictGroup: "lying",
   },
   {
     id: "kneel",
-    triggers: ["跪", "跪姿", "kneel", "wariza"],
+    triggers: ["跪", "跪姿", "跪坐", "kneel", "wariza"],
     terms: ["kneel", "wariza"],
     conflictGroup: "kneel",
   },
@@ -61,14 +67,10 @@ const TRIGGER_RULES: TriggerRule[] = [
     conflictGroup: "walking",
   },
   {
-    id: "window-light",
-    triggers: ["窗", "窗边", "window"],
-    terms: ["soft window light"],
-  },
-  {
-    id: "rain-street",
-    triggers: ["雨", "雨夜", "街头", "rain", "street"],
-    terms: ["cinematic rain street"],
+    id: "squatting",
+    triggers: ["蹲", "蹲着", "蹲下", "squat", "squatting"],
+    terms: ["squatting"],
+    conflictGroup: "squatting",
   },
   {
     id: "selfie",
@@ -85,14 +87,25 @@ const TRIGGER_RULES: TriggerRule[] = [
     triggers: ["头发", "发型", "hair"],
     terms: ["hands in hair", "adjusting hair", "tying hair"],
   },
+  {
+    id: "looking-back",
+    triggers: ["回头", "转身", "over shoulder", "looking back"],
+    terms: ["looking over shoulder"],
+  },
+  {
+    id: "bent-over",
+    triggers: ["弯腰", "俯身", "bent over"],
+    terms: ["bent over"],
+  },
 ];
 
 const CONFLICT_GROUP_TERMS: Record<string, string[]> = {
-  sitting: ["sitting", "chair", "bed", "figure four sitting"],
-  standing: ["standing", "walk", "standing split"],
-  lying: ["lying", "lie ", "on stomach", "prostrate", "fetal position"],
+  sitting: ["sitting", "chair", "figure four sitting"],
+  standing: ["standing", "standing split"],
+  lying: ["lying", "lie on", "on stomach", "prostrate", "fetal position"],
   kneel: ["kneel", "wariza", "all fours"],
   walking: ["walk"],
+  squatting: ["squat"],
 };
 
 const SAFE_INTENT_PATTERNS = [
@@ -166,13 +179,14 @@ export function matchPromptWordbankTerms(
     return false;
   });
 
-  const matchedTerms = availableTerms.filter((term) =>
+  const targetCount = targetTermCount(input.mode);
+  const allMatchedTerms = availableTerms.filter((term) =>
     selectedRules.some((rule) => ruleMatchesTerm(rule, term)) ||
     promptKey.includes(normalizeForMatch(term)),
   );
-  const targetCount = targetTermCount(input.mode);
+  const matchedTerms = allMatchedTerms.slice(0, targetCount);
   const fallbackTerms = pickDeterministic(
-    availableTerms.filter((term) => !matchedTerms.includes(term)),
+    availableTerms.filter((term) => !allMatchedTerms.includes(term)),
     Math.max(0, targetCount - matchedTerms.length),
     `${input.seed ?? input.prompt}:wordbank-match`,
   );

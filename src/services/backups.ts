@@ -43,6 +43,7 @@ type StoredMessage = Omit<Message, "generationParams"> & {
 type StoredBackupSettings = Omit<
   AppSettings,
   | "apiKey"
+  | "chatApiKey"
   | "defaults"
   | "promptMode"
   | "promptWordbanks"
@@ -78,13 +79,13 @@ export async function createStudioBackup() {
     app: "gpt-image-studio",
     version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
-    excludes: ["apiKey"],
+    excludes: ["apiKey", "chatApiKey"],
   };
   const data: BackupData = {
     conversations,
     messages,
     imageAssets: imageAssets.map(stripPreviewUrl),
-    settings: settings ? stripApiKey(settings) : undefined,
+    settings: settings ? stripApiKeys(settings) : undefined,
   };
   const entries = [
     jsonEntry(MANIFEST_FILE, manifest),
@@ -112,6 +113,7 @@ export async function restoreStudioBackup(file: File) {
     ? {
         ...data.settings,
         apiKey: currentSettings?.apiKey ?? "",
+        chatApiKey: currentSettings?.chatApiKey ?? "",
         promptMode: data.settings.promptMode ?? "default",
         promptWordbanks: normalizePromptWordbanks(data.settings.promptWordbanks),
         promptRewriteGuardEnabled:
@@ -185,8 +187,14 @@ function stripPreviewUrl(asset: ImageAsset): ImageAsset {
   return plainAsset;
 }
 
-function stripApiKey(settings: AppSettings): Omit<AppSettings, "apiKey"> {
-  const { apiKey: _apiKey, ...safeSettings } = settings;
+function stripApiKeys(
+  settings: AppSettings,
+): Omit<AppSettings, "apiKey" | "chatApiKey"> {
+  const {
+    apiKey: _apiKey,
+    chatApiKey: _chatApiKey,
+    ...safeSettings
+  } = settings;
   return safeSettings;
 }
 

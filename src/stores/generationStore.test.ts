@@ -12,7 +12,12 @@ import type {
 import { useGenerationStore } from "./generationStore";
 
 const mocks = vi.hoisted(() => ({
+  expandPrompt: vi.fn(),
   saveMessage: vi.fn(),
+}));
+
+vi.mock("../services/promptExpander", () => ({
+  expandPrompt: mocks.expandPrompt,
 }));
 
 vi.mock("../services/messages", () => ({
@@ -74,6 +79,11 @@ describe("generation store", () => {
         generate: vi.fn(() => new Promise<never>(() => undefined)),
         edit: vi.fn(),
       },
+      promptExpandEnabled: ref(false),
+      chatApiKey: ref(""),
+      chatApiBaseUrl: ref(""),
+      chatModel: ref(""),
+      chatSystemPrompt: ref(""),
       messages,
       onStorageError: vi.fn(),
       conversationExists: () => true,
@@ -138,6 +148,11 @@ describe("generation store", () => {
         ),
         edit: vi.fn(),
       },
+      promptExpandEnabled: ref(false),
+      chatApiKey: ref(""),
+      chatApiBaseUrl: ref(""),
+      chatModel: ref(""),
+      chatSystemPrompt: ref(""),
       messages,
       onStorageError: vi.fn(),
       conversationExists: () => true,
@@ -156,4 +171,73 @@ describe("generation store", () => {
     expect(messages.value[1]?.errorMessage).toContain("fully clothed");
     expect(messages.value[1]?.errorMessage).not.toMatch(/nsfw|nude|nipples/i);
   });
+
+  it("ignores a second submit while prompt expansion is still running", async () => {
+    const store = useGenerationStore();
+    const conversation: Conversation = {
+      id: "c1",
+      title: "会话",
+      summary: "文字生成图片",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    };
+    const messages = ref<Message[]>([]);
+    const composerText = ref("画一张雨夜街景");
+    const imageClient = {
+      generate: vi.fn(() => new Promise<never>(() => undefined)),
+      edit: vi.fn(),
+    };
+    const expandDeferred = createDeferred<string>();
+    mocks.expandPrompt.mockReturnValue(expandDeferred.promise);
+
+    store.configureGenerationStore({
+      activeConversationId: ref(conversation.id),
+      activeConversation: computed(() => conversation),
+      attachedImages: ref([]),
+      activeEditMaskImageId: ref(""),
+      activeEditSourceImageId: ref(""),
+      composerText,
+      createConversationRecord: vi.fn(),
+      currentGenerationParams: () => generationParams,
+      currentPromptRequestSettings: (): PromptRequestSettings => ({
+        promptMode: "default",
+        promptWordbanks: defaultPromptWordbanks,
+        promptRewriteGuardEnabled: false,
+        promptRewriteGuardText: PROMPT_REWRITE_GUARD_PREFIX,
+      }),
+      customSizeError: computed(() => ""),
+      imageAssets: ref([]),
+      imageById: () => undefined,
+      imageClient,
+      promptExpandEnabled: ref(true),
+      chatApiKey: ref("sk-chat"),
+      chatApiBaseUrl: ref("https://chat.example.test"),
+      chatModel: ref("chat-model"),
+      chatSystemPrompt: ref(""),
+      messages,
+      onStorageError: vi.fn(),
+      conversationExists: () => true,
+      persistConversation: vi.fn(),
+      refreshStorageUsage: vi.fn(),
+      updateConversationSummary: vi.fn(() => conversation),
+    });
+
+    const firstSubmit = store.submitMessage();
+    const secondSubmit = store.submitMessage();
+
+    try {
+      expect(mocks.expandPrompt).toHaveBeenCalledTimes(1);
+    } finally {
+      expandDeferred.resolve("画一张雨夜街景");
+      await Promise.all([firstSubmit, secondSubmit]);
+    }
+    expect(imageClient.generate).toHaveBeenCalledTimes(1);
+  });
 });
+
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((innerResolve) => {
+    resolve = innerResolve;
+  });
+  return { promise, resolve };
+}

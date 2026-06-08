@@ -123,6 +123,11 @@ export type PromptRequestSettings = {
 export type AppSettings = {
   connectionMode: ConnectionMode;
   apiProvider: ApiProvider;
+  promptExpandEnabled: boolean;
+  chatApiKey: string;
+  chatApiBaseUrl: string;
+  chatModel: string;
+  chatSystemPrompt: string;
   apiKey: string;
   apiBaseUrl: string;
   apiBaseUrlMode: ApiBaseUrlMode;

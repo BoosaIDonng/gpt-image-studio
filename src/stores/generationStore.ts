@@ -12,6 +12,7 @@ import {
   saveImageBlob,
 } from "../services/imageAssets";
 import { readImageDimensions } from "../services/imageMetadata";
+import { expandPrompt } from "../services/promptExpander";
 import { base64ToBlob } from "../services/imagesApi";
 import { saveMessage } from "../services/messages";
 import { clonePromptWordbanks } from "../services/promptWordbanks";
@@ -53,6 +54,11 @@ type GenerationStoreContext = {
   imageAssets: Ref<ImageAsset[]>;
   imageById: (id: string) => ImageAsset | undefined;
   imageClient: ImageClient;
+  promptExpandEnabled: Ref<boolean>;
+  chatApiKey: Ref<string>;
+  chatApiBaseUrl: Ref<string>;
+  chatModel: Ref<string>;
+  chatSystemPrompt: Ref<string>;
   messages: Ref<Message[]>;
   onApiConfigurationError?: (error: unknown) => void;
   onStorageError: (error: unknown) => void;
@@ -72,6 +78,14 @@ export const useGenerationStore = defineStore("generation", () => {
   const partialPreviewUrls = ref<Record<string, string>>({});
   let context: GenerationStoreContext | null = null;
   const messageSaveQueues = new Map<string, Promise<unknown>>();
+
+  type ExpandPreview = {
+    originalPrompt: string;
+    expandedPrompt: string;
+    onConfirm: (action: "custom" | "original" | "cancel", text?: string) => void;
+  };
+  const expandPreview = ref<ExpandPreview | null>(null);
+  const isExpanding = ref(false);
 
   const input = computed(() => getContext());
   const pendingJobCount = computed(
@@ -128,12 +142,54 @@ export const useGenerationStore = defineStore("generation", () => {
   );
 
   async function submitMessage() {
-    if (!canSend.value) return;
+    if (!canSend.value || isExpanding.value) return;
 
+    const ctx = input.value;
+    const rawText = ctx.composerText.value.trim() || "基于引用图片继续编辑。";
+
+    // 扩写预览拦截
+    const useV1 = ctx.promptExpandEnabled.value && ctx.chatApiKey.value && ctx.chatApiBaseUrl.value && ctx.chatModel.value;
+
+    if (useV1) {
+      isExpanding.value = true;
+      let expanded = rawText;
+      try {
+        expanded = await expandPrompt(rawText, {
+          chatApiKey: ctx.chatApiKey.value,
+          chatApiBaseUrl: ctx.chatApiBaseUrl.value,
+          chatModel: ctx.chatModel.value,
+          chatSystemPrompt: ctx.chatSystemPrompt.value,
+        });
+      } catch (e) {
+        console.error("[expand] failed:", e);
+        expanded = rawText;
+      } finally {
+        isExpanding.value = false;
+      }
+
+      if (expanded !== rawText) {
+        await new Promise<void>((resolve) => {
+          expandPreview.value = {
+            originalPrompt: rawText,
+            expandedPrompt: expanded,
+            onConfirm: (action, customText) => {
+              expandPreview.value = null;
+              if (action === "custom" && customText) doSubmit(customText);
+              else if (action === "original") doSubmit(rawText);
+              resolve();
+            },
+          };
+        });
+        return;
+      }
+    }
+
+    doSubmit(rawText);
+  }
+
+  async function doSubmit(text: string) {
     const now = Date.now();
     const createdAt = isoTimestamp(now);
-    const text =
-      input.value.composerText.value.trim() || "基于引用图片继续编辑。";
     const conversation =
       input.value.activeConversation.value ??
       (await input.value.createConversationRecord({
@@ -832,6 +888,8 @@ export const useGenerationStore = defineStore("generation", () => {
     activeConversationPendingJobs,
     canSend,
     configureGenerationStore,
+    expandPreview,
+    isExpanding,
     imageModeLabel,
     isGenerating,
     pendingJobCountByConversation,

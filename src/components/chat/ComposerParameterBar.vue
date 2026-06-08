@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useComposerStore } from "../../stores/composerStore";
-import { useConversationsStore } from "../../stores/conversationsStore";
 import { useImagesStore } from "../../stores/imagesStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { buildFinalRequestPrompt } from "../../services/promptRequest";
@@ -13,7 +12,6 @@ const emit = defineEmits<{
 }>();
 
 const composer = useComposerStore();
-const conversations = useConversationsStore();
 const images = useImagesStore();
 const settings = useSettingsStore();
 const isPromptPreviewOpen = ref(false);
@@ -38,8 +36,6 @@ const previewSourcePrompt = computed(() =>
 const ragDocuments = computed(() =>
   collectRagDocuments({
     wordbanks: settings.promptWordbanks,
-    favoritePrompts: settings.favoritePrompts,
-    messages: conversations.messages,
     imageAssets: images.imageAssets,
   }),
 );

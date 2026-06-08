@@ -61,32 +61,18 @@ const images: ImageAsset[] = [
 ];
 
 describe("RAG", () => {
-  it("collects documents from wordbanks, favorites, user messages, and image prompts", () => {
+  it("collects wordbank terms matched from successful generated image prompts", () => {
     const documents = collectRagDocuments({
       wordbanks,
-      favoritePrompts: favorites,
-      messages,
       imageAssets: images,
     });
 
-    expect(documents.map((document) => document.source)).toEqual([
-      "wordbank",
-      "wordbank",
-      "wordbank",
-      "wordbank",
-      "wordbank",
-      "wordbank",
-      "favorite",
-      "history",
-      "history",
-      "history",
-      "history",
-    ]);
-    expect(documents.map((document) => document.text)).toContain("cinematic rain street");
-    expect(documents.map((document) => document.text)).toContain(favorites[0].text);
-    expect(documents.map((document) => document.text)).toContain(messages[0].content);
-    expect(documents.map((document) => document.text)).toContain(images[0].prompt);
-    expect(documents.map((document) => document.text)).toContain(images[0].requestPrompt);
+    expect(documents.map((document) => document.source)).toEqual(["wordbank"]);
+    expect(documents.map((document) => document.text)).toEqual(["cinematic rain street"]);
+    expect(documents[0].title).toBe("成功图片匹配词库: city");
+    expect(documents.map((document) => document.text)).not.toContain(favorites[0].text);
+    expect(documents.map((document) => document.text)).not.toContain(messages[0].content);
+    expect(documents.map((document) => document.text)).not.toContain(images[0].requestPrompt);
   });
 
   it("retrieves the most similar local-vector matches", () => {
@@ -94,17 +80,48 @@ describe("RAG", () => {
       query: "neon rainy street portrait",
       documents: collectRagDocuments({
         wordbanks,
-        favoritePrompts: favorites,
-        messages,
         imageAssets: images,
       }),
       topK: 3,
     });
 
-    expect(result.items).toHaveLength(3);
+    expect(result.items).toHaveLength(1);
     expect(result.items[0].text).toContain("cinematic rain street");
     expect(result.context).toContain("RAG 参考内容");
     expect(result.context).toContain("cinematic rain street");
+  });
+
+  it("uses wordbank terms matched from successful generated image prompts instead of raw conversation text", () => {
+    const documents = collectRagDocuments({
+      wordbanks: {
+        pose: {
+          safe: ["sitting on chair"],
+          creative: ["cinematic rain street"],
+          nsfw: ["spread legs"],
+        },
+        adultInspiration: ["editorial mood"],
+      },
+      imageAssets: [
+        {
+          id: "success-image",
+          name: "成功图片",
+          source: "generated",
+          prompt: "画一个女孩坐在椅子上",
+          requestPrompt: "画一个女孩坐在椅子上",
+          createdAt: "2026-01-02T00:00:00.000Z",
+        },
+      ],
+    });
+    const result = retrieveRagContext({
+      query: "新图也坐在椅子上",
+      documents,
+      topK: 3,
+    });
+
+    expect(documents.map((document) => document.text)).toEqual(["sitting on chair"]);
+    expect(result.context).toContain("sitting on chair");
+    expect(result.context).not.toContain("cinematic rain street");
+    expect(result.context).not.toContain("画一个女孩坐在椅子上");
   });
 
   it("prioritizes project wordbank matches over other sources when scores are close", () => {
@@ -146,16 +163,14 @@ describe("RAG", () => {
       query: "cinematic rain street neon reflection",
       documents: collectRagDocuments({
         wordbanks,
-        favoritePrompts: favorites,
-        messages,
         imageAssets: images,
       }),
-      excludedIds: ["favorite:fav-1"],
+      excludedIds: ["image-wordbank:img-1:0"],
       topK: 5,
     });
 
-    expect(result.items.map((item) => item.id)).not.toContain("favorite:fav-1");
-    expect(result.context).not.toContain(favorites[0].text);
+    expect(result.items.map((item) => item.id)).not.toContain("image-wordbank:img-1:0");
+    expect(result.context).not.toContain("cinematic rain street");
   });
 
   it("builds a compact RAG context block without duplicates", () => {

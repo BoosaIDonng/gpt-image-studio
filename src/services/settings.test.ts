@@ -43,6 +43,11 @@ const fullSettings: AppSettings = {
   favoritePrompts: [],
   ragEnabled: false,
   ragTopK: 4,
+  promptExpandEnabled: false,
+  chatApiKey: "",
+  chatApiBaseUrl: "",
+  chatModel: "",
+  chatSystemPrompt: "",
   defaults: {
     size: "1:1",
     resolution: "1k",
@@ -87,6 +92,11 @@ describe("settings service", () => {
       favoritePrompts: _ignoredFavoritePrompts,
       ragEnabled: _ignoredRagEnabled,
       ragTopK: _ignoredRagTopK,
+      promptExpandEnabled: _ignoredPromptExpandEnabled,
+      chatApiKey: _ignoredChatApiKey,
+      chatApiBaseUrl: _ignoredChatApiBaseUrl,
+      chatModel: _ignoredChatModel,
+      chatSystemPrompt: _ignoredChatSystemPrompt,
       promptMode: _ignoredPromptMode,
       promptWordbanks: _ignoredPromptWordbanks,
       ...legacySettings
@@ -117,6 +127,11 @@ describe("settings service", () => {
     expect(result?.favoritePrompts).toEqual([]);
     expect(result?.ragEnabled).toBe(false);
     expect(result?.ragTopK).toBe(4);
+    expect(result?.promptExpandEnabled).toBe(false);
+    expect(result?.chatApiKey).toBe("");
+    expect(result?.chatApiBaseUrl).toBe("");
+    expect(result?.chatModel).toBe("");
+    expect(result?.chatSystemPrompt).toBe("");
   });
 
   it("normalizes stored RAG top-k into the supported range", async () => {
