@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { FavoritePrompt, ImageAsset, Message, PromptWordbanks } from "../types/studio";
 import {
   buildRagContextBlock,
+  buildRagMatchBarState,
   collectRagDocuments,
   retrieveRagContext,
 } from "./rag";
@@ -69,6 +70,7 @@ describe("RAG", () => {
 
     expect(documents.map((document) => document.source)).toEqual(["wordbank"]);
     expect(documents.map((document) => document.text)).toEqual(["cinematic rain street"]);
+    expect(documents[0].sourceImageId).toBe("img-1");
     expect(documents[0].title).toBe("成功图片匹配词库: city");
     expect(documents.map((document) => document.text)).not.toContain(favorites[0].text);
     expect(documents.map((document) => document.text)).not.toContain(messages[0].content);
@@ -197,5 +199,99 @@ describe("RAG", () => {
 
     expect(block.match(/cinematic rain street/g)).toHaveLength(1);
     expect(block).toContain("仅作为参考，不要覆盖用户原始提示词");
+  });
+
+  it("builds compact match-bar state from active and excluded RAG matches", () => {
+    const state = buildRagMatchBarState({
+      items: [
+        {
+          id: "image-wordbank:img-1:0",
+          source: "wordbank",
+          title: "成功图片匹配词库: city",
+          text: "cinematic rain street",
+          sourceImageId: "img-1",
+          rawScore: 0.4,
+          score: 0.5,
+          sourceWeight: 1.25,
+        },
+        {
+          id: "image-wordbank:img-2:0",
+          source: "wordbank",
+          title: "成功图片匹配词库: portrait",
+          text: "sitting on chair",
+          sourceImageId: "img-2",
+          rawScore: 0.3,
+          score: 0.38,
+          sourceWeight: 1.25,
+        },
+        {
+          id: "image-wordbank:img-2:1",
+          source: "wordbank",
+          title: "成功图片匹配词库: portrait",
+          text: "soft window light",
+          sourceImageId: "img-2",
+          rawScore: 0.2,
+          score: 0.25,
+          sourceWeight: 1.25,
+        },
+        {
+          id: "image-wordbank:img-3:0",
+          source: "wordbank",
+          title: "成功图片匹配词库: room",
+          text: "dramatic rim light",
+          sourceImageId: "img-3",
+          rawScore: 0.18,
+          score: 0.23,
+          sourceWeight: 1.25,
+        },
+      ],
+      excludedItems: [
+        {
+          id: "image-wordbank:img-4:0",
+          source: "wordbank",
+          title: "成功图片匹配词库: old",
+          text: "old excluded term",
+          sourceImageId: "img-4",
+          rawScore: 0.1,
+          score: 0.13,
+          sourceWeight: 1.25,
+        },
+      ],
+      maxVisibleItems: 3,
+    });
+
+    expect(state.visibleItems.map((item) => item.text)).toEqual([
+      "cinematic rain street",
+      "sitting on chair",
+      "soft window light",
+    ]);
+    expect(state.activeCount).toBe(4);
+    expect(state.hiddenItemCount).toBe(1);
+    expect(state.excludedCount).toBe(1);
+    expect(state.sourceImageCount).toBe(3);
+    expect(state.shouldShow).toBe(true);
+  });
+
+  it("keeps the match bar visible when only excluded matches remain", () => {
+    const state = buildRagMatchBarState({
+      items: [],
+      excludedItems: [
+        {
+          id: "image-wordbank:img-1:0",
+          source: "wordbank",
+          title: "成功图片匹配词库: city",
+          text: "cinematic rain street",
+          sourceImageId: "img-1",
+          rawScore: 0,
+          score: 0,
+          sourceWeight: 1.25,
+        },
+      ],
+    });
+
+    expect(state.visibleItems).toEqual([]);
+    expect(state.activeCount).toBe(0);
+    expect(state.excludedCount).toBe(1);
+    expect(state.shouldShow).toBe(true);
   });
 });

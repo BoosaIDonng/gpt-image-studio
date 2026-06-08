@@ -9,12 +9,22 @@ export type RagDocument = {
   title: string;
   text: string;
   searchText?: string;
+  sourceImageId?: string;
 };
 
 export type RagMatch = RagDocument & {
   rawScore: number;
   score: number;
   sourceWeight: number;
+};
+
+export type RagMatchBarState = {
+  visibleItems: RagMatch[];
+  activeCount: number;
+  hiddenItemCount: number;
+  excludedCount: number;
+  sourceImageCount: number;
+  shouldShow: boolean;
 };
 
 type CollectRagDocumentsInput = {
@@ -56,6 +66,7 @@ export function collectRagDocuments(input: CollectRagDocumentsInput): RagDocumen
           title: `成功图片匹配词库: ${image.name}`,
           text: term,
           searchText,
+          sourceImageId: image.id,
         });
       });
     });
@@ -150,6 +161,30 @@ export function buildRagContextBlock(items: RagMatch[]) {
   ].join("\n");
 }
 
+export function buildRagMatchBarState(input: {
+  items: RagMatch[];
+  excludedItems?: RagMatch[];
+  maxVisibleItems?: number;
+}): RagMatchBarState {
+  const visibleLimit = normalizeVisibleItemCount(input.maxVisibleItems);
+  const visibleItems = input.items.slice(0, visibleLimit);
+  const sourceImageIds = new Set(
+    input.items
+      .map((item) => item.sourceImageId)
+      .filter((id): id is string => Boolean(id)),
+  );
+  const excludedCount = input.excludedItems?.length ?? 0;
+
+  return {
+    visibleItems,
+    activeCount: input.items.length,
+    hiddenItemCount: Math.max(0, input.items.length - visibleItems.length),
+    excludedCount,
+    sourceImageCount: sourceImageIds.size,
+    shouldShow: input.items.length > 0 || excludedCount > 0,
+  };
+}
+
 function addDocument(
   documents: RagDocument[],
   seen: Set<string>,
@@ -225,5 +260,11 @@ function normalizeText(text: unknown) {
 function normalizeTopK(topK: unknown) {
   const numeric = typeof topK === "number" ? topK : Number(topK);
   if (!Number.isFinite(numeric)) return 4;
+  return Math.min(12, Math.max(1, Math.trunc(numeric)));
+}
+
+function normalizeVisibleItemCount(count: unknown) {
+  const numeric = typeof count === "number" ? count : Number(count);
+  if (!Number.isFinite(numeric)) return 3;
   return Math.min(12, Math.max(1, Math.trunc(numeric)));
 }
