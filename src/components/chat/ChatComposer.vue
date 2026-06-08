@@ -5,6 +5,7 @@ import { useGenerationStore } from "../../stores/generationStore";
 import { useImagesStore } from "../../stores/imagesStore";
 import ComposerAttachmentList from "./ComposerAttachmentList.vue";
 import ComposerParameterBar from "./ComposerParameterBar.vue";
+import ComposerRagMatchBar from "./ComposerRagMatchBar.vue";
 import PromptInputBox from "./PromptInputBox.vue";
 
 defineProps<{
@@ -44,6 +45,8 @@ defineExpose({ focusComposer });
         @preview-image="emit('previewImage', $event)"
         @remove-attachment="emit('removeAttachment', $event)"
       />
+
+      <ComposerRagMatchBar />
 
       <PromptInputBox
         ref="promptInputRef"
