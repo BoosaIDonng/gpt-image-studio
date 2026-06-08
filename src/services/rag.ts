@@ -43,8 +43,13 @@ export function collectRagDocuments(input: CollectRagDocumentsInput): RagDocumen
   input.imageAssets
     .filter(isSuccessfulGeneratedImage)
     .forEach((image) => {
-      const searchText = successfulImagePromptText(image);
-      matchedWordbankTermsFromImage(image, input.wordbanks).forEach((term, index) => {
+      const promptTexts = successfulImagePromptTexts(image);
+      const searchText = promptTexts.join(" ");
+      matchedWordbankTermsFromImage(
+        promptTexts,
+        image.id,
+        input.wordbanks,
+      ).forEach((term, index) => {
         addDocument(documents, seen, {
           id: `image-wordbank:${image.id}:${index}`,
           source: "wordbank",
@@ -63,25 +68,22 @@ function isSuccessfulGeneratedImage(image: ImageAsset) {
 }
 
 function matchedWordbankTermsFromImage(
-  image: ImageAsset,
+  promptTexts: string[],
+  imageId: string,
   wordbanks: PromptWordbanks,
 ) {
   const terms: string[] = [];
 
-  for (const prompt of successfulImagePromptTexts(image)) {
+  for (const prompt of promptTexts) {
     matchPromptWordbankTerms({
       prompt,
       mode: "adult",
       wordbanks,
-      seed: `${image.id}:${prompt}`,
+      seed: `${imageId}:${prompt}`,
     }).matchedTerms.forEach((term) => pushUnique(terms, term));
   }
 
   return terms;
-}
-
-function successfulImagePromptText(image: ImageAsset) {
-  return successfulImagePromptTexts(image).join(" ");
 }
 
 function successfulImagePromptTexts(image: ImageAsset) {

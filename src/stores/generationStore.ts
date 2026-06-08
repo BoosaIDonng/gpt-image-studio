@@ -146,45 +146,69 @@ export const useGenerationStore = defineStore("generation", () => {
 
     const ctx = input.value;
     const rawText = ctx.composerText.value.trim() || "基于引用图片继续编辑。";
+    const prompt = await promptAfterExpansionPreview(rawText, ctx);
+    if (!prompt) return;
 
-    // 扩写预览拦截
-    const useV1 = ctx.promptExpandEnabled.value && ctx.chatApiKey.value && ctx.chatApiBaseUrl.value && ctx.chatModel.value;
+    doSubmit(prompt);
+  }
 
-    if (useV1) {
-      isExpanding.value = true;
-      let expanded = rawText;
-      try {
-        expanded = await expandPrompt(rawText, {
-          chatApiKey: ctx.chatApiKey.value,
-          chatApiBaseUrl: ctx.chatApiBaseUrl.value,
-          chatModel: ctx.chatModel.value,
-          chatSystemPrompt: ctx.chatSystemPrompt.value,
-        });
-      } catch (e) {
-        console.error("[expand] failed:", e);
-        expanded = rawText;
-      } finally {
-        isExpanding.value = false;
-      }
+  async function promptAfterExpansionPreview(
+    rawText: string,
+    ctx: GenerationStoreContext,
+  ) {
+    if (!canExpandPrompt(ctx)) return rawText;
 
-      if (expanded !== rawText) {
-        await new Promise<void>((resolve) => {
-          expandPreview.value = {
-            originalPrompt: rawText,
-            expandedPrompt: expanded,
-            onConfirm: (action, customText) => {
-              expandPreview.value = null;
-              if (action === "custom" && customText) doSubmit(customText);
-              else if (action === "original") doSubmit(rawText);
-              resolve();
-            },
-          };
-        });
-        return;
-      }
+    const expanded = await expandPromptOrOriginal(rawText, ctx);
+    if (expanded === rawText) return rawText;
+
+    return waitForExpandPreviewChoice(rawText, expanded);
+  }
+
+  function canExpandPrompt(ctx: GenerationStoreContext) {
+    return Boolean(
+      ctx.promptExpandEnabled.value &&
+      ctx.chatApiKey.value &&
+      ctx.chatApiBaseUrl.value &&
+      ctx.chatModel.value,
+    );
+  }
+
+  async function expandPromptOrOriginal(
+    rawText: string,
+    ctx: GenerationStoreContext,
+  ) {
+    isExpanding.value = true;
+    try {
+      return await expandPrompt(rawText, {
+        chatApiKey: ctx.chatApiKey.value,
+        chatApiBaseUrl: ctx.chatApiBaseUrl.value,
+        chatModel: ctx.chatModel.value,
+        chatSystemPrompt: ctx.chatSystemPrompt.value,
+      });
+    } catch (error) {
+      console.error("[expand] failed:", error);
+      return rawText;
+    } finally {
+      isExpanding.value = false;
     }
+  }
 
-    doSubmit(rawText);
+  function waitForExpandPreviewChoice(
+    rawText: string,
+    expanded: string,
+  ) {
+    return new Promise<string | null>((resolve) => {
+      expandPreview.value = {
+        originalPrompt: rawText,
+        expandedPrompt: expanded,
+        onConfirm: (action, customText) => {
+          expandPreview.value = null;
+          if (action === "custom" && customText) resolve(customText);
+          else if (action === "original") resolve(rawText);
+          else resolve(null);
+        },
+      };
+    });
   }
 
   async function doSubmit(text: string) {
