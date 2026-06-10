@@ -10,7 +10,10 @@ describe("companion security config", () => {
     const config = createSecurityConfig();
 
     expect(config.channel).toBe("stable");
-    expect(config.allowedOrigins).toEqual(["https://image.honlnk.com"]);
+    expect(config.allowedOrigins).toEqual([
+      "https://image.honlnk.com",
+      "https://image.idurspace.cn",
+    ]);
   });
 
   it("allows local development origins only in dev channel", () => {
@@ -28,10 +31,11 @@ describe("companion security config", () => {
   });
 
   it("checks request origins against the allow list", () => {
-    const allowedOrigins = ["https://image.honlnk.com"];
+    const allowedOrigins = ["https://image.honlnk.com", "https://image.idurspace.cn"];
 
     expect(isOriginAllowed(undefined, allowedOrigins)).toBe(true);
     expect(isOriginAllowed("https://image.honlnk.com", allowedOrigins)).toBe(true);
+    expect(isOriginAllowed("https://image.idurspace.cn", allowedOrigins)).toBe(true);
     expect(isOriginAllowed("http://localhost:8888", allowedOrigins)).toBe(false);
   });
 });

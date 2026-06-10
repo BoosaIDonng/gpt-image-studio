@@ -19,6 +19,7 @@ export function useStudioConversations(input: UseStudioConversationsInput) {
     createConversationRecord: conversations.createConversationRecord,
     deleteConversation: conversations.deleteConversation,
     deleteConversations: conversations.deleteConversations,
+    deleteSingleMessage: conversations.deleteSingleMessage,
     persistConversation: conversations.persistConversation,
     renameConversation: conversations.renameConversation,
     selectConversation: conversations.selectConversation,

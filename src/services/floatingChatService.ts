@@ -6,21 +6,27 @@ export type ChatMessage = {
 const DEFAULT_WORKER_URL = "https://unlimited.354561650.workers.dev/api/chat";
 const DEFAULT_MODEL = "openai/gpt-oss-120b";
 
+export type StreamChatReplyOptions = {
+  useBuiltinPersona?: boolean;
+};
+
 export async function streamChatReply(
   messages: ChatMessage[],
   onDelta: (delta: string) => void,
   projectContext?: ChatMessage,
+  options: StreamChatReplyOptions = {},
 ): Promise<string> {
   const outgoingMessages = projectContext
     ? [projectContext, ...messages]
     : messages;
+  const useBuiltinPersona = options.useBuiltinPersona ?? true;
 
   const response = await fetch(DEFAULT_WORKER_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: DEFAULT_MODEL,
-      use_builtin_persona: true,
+      use_builtin_persona: useBuiltinPersona,
       messages: outgoingMessages,
     }),
   });

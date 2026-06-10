@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ConversationDraft } from "../types/studio";
+import type { ConversationDraft } from "../../types/studio";
 import {
   deleteConversationDraft,
   deleteConversationDrafts,
@@ -7,7 +7,7 @@ import {
   loadConversationDraft,
   saveConversationDraft,
 } from "./conversationDrafts";
-import { STORE_NAMES } from "./db";
+import { STORE_NAMES } from "../../services/db";
 
 const mocks = vi.hoisted(() => ({
   deleteFromStore: vi.fn(),
@@ -16,8 +16,8 @@ const mocks = vi.hoisted(() => ({
   putInStore: vi.fn(),
 }));
 
-vi.mock("./db", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("./db")>();
+vi.mock("../../services/db", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../services/db")>();
   return {
     ...actual,
     deleteFromStore: mocks.deleteFromStore,
@@ -45,7 +45,7 @@ const draft: ConversationDraft = {
   updatedAtMs: 123,
 };
 
-describe("conversationDrafts service", () => {
+describe("conversationDrafts feature", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

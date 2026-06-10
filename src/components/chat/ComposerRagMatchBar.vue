@@ -7,10 +7,12 @@ import {
   type RagMatch,
 } from "../../services/rag";
 import { useComposerStore } from "../../stores/composerStore";
+import { useConversationsStore } from "../../stores/conversationsStore";
 import { useImagesStore } from "../../stores/imagesStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 
 const composer = useComposerStore();
+const conversations = useConversationsStore();
 const images = useImagesStore();
 const settings = useSettingsStore();
 
@@ -23,6 +25,8 @@ const ragDocuments = computed(() =>
   collectRagDocuments({
     wordbanks: settings.promptWordbanks,
     imageAssets: images.imageAssets,
+    favoritePrompts: settings.favoritePrompts,
+    messages: conversations.activeMessages,
   }),
 );
 

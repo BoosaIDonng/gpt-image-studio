@@ -218,9 +218,28 @@ function grokErrorMessage(status: number, payload: GrokImageApiResponse) {
   const detail = typeof payload.error === "string"
     ? payload.error
     : payload.error?.message || payload.message;
+  if (isGrokBillingError(status, detail)) {
+    return [
+      "Grok 请求失败：HTTP 403：xAI/Grok 账号没有可用额度，或当前 API key 所属账号没有可用订阅权限。",
+      "请在 xAI 控制台充值或确认订阅后重试，也可以临时切换到 OpenAI/Gemini。",
+      detail ? `原始错误：${detail}` : "",
+    ].filter(Boolean).join("\n");
+  }
+
   return detail
     ? `Grok 请求失败：HTTP ${status}：${detail}`
     : `Grok 请求失败：HTTP ${status}`;
+}
+
+function isGrokBillingError(status: number, detail?: string) {
+  if (status !== 403 || !detail) return false;
+  const normalized = detail.toLowerCase();
+  return (
+    normalized.includes("run out of credits") ||
+    normalized.includes("need a grok subscription") ||
+    normalized.includes("add credits") ||
+    normalized.includes("upgrade")
+  );
 }
 
 async function blobToDataUrl(blob: Blob) {

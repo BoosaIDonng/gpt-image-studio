@@ -15,7 +15,6 @@ import { readImageDimensions } from "../services/imageMetadata";
 import { expandPrompt } from "../services/promptExpander";
 import { base64ToBlob } from "../services/imagesApi";
 import { saveMessage } from "../services/messages";
-import { clonePromptWordbanks } from "../services/promptWordbanks";
 import { isoTimestamp, timestampFromCreatedAt } from "../shared/dateTime";
 import { formatError, isApiConfigurationError } from "../shared/errors";
 import { createId } from "../shared/id";
@@ -24,6 +23,18 @@ import {
   analyzeModerationRejection,
   formatModerationAdvice,
 } from "../services/moderationAdvice";
+import {
+  continuedGenerationLabel,
+  filenameFromAsset,
+  handleBeforeUnload,
+  outputFormatToMimeType,
+  pendingGenerationLabel,
+  pendingResultLabel,
+  resultCountLabel,
+  titleFromPrompt,
+  toPlainImageAsset,
+  toPlainMessage,
+} from "./generationStoreUtils";
 import type {
   Conversation,
   GenerationParams,
@@ -300,7 +311,7 @@ export const useGenerationStore = defineStore("generation", () => {
     runImageRequests(createdJobs);
   }
 
-  async function retryMessage(message: Message) {
+  async function retryMessage(message: Message, promptOverride?: string) {
     const generationParams =
       message.generationParams ?? input.value.currentGenerationParams();
     const imageCount = normalizeImageCount(generationParams.imageCount);
@@ -316,26 +327,23 @@ export const useGenerationStore = defineStore("generation", () => {
       input.value.onStorageError,
     );
 
-    const userMessage = [...input.value.messages.value]
-      .reverse()
-      .find(
-        (item) =>
-          item.conversationId === message.conversationId &&
-          item.role === "user" &&
-          timestampFromCreatedAt(item) <= timestampFromCreatedAt(message),
-      );
+    const userMessage = findSourceUserMessage(message);
 
     if (userMessage) {
+      const prompt = promptOverride?.trim() || userMessage.content;
+      const promptRequestSettings = promptOverride?.trim()
+        ? input.value.currentPromptRequestSettings(prompt)
+        : message.promptRequestSettings ??
+          input.value.currentPromptRequestSettings(userMessage.content);
+
       await Promise.all(
         createJobs(
           {
             assistantMessageId: message.id,
             conversationId: message.conversationId,
             generationParams,
-            promptRequestSettings:
-              message.promptRequestSettings ??
-              input.value.currentPromptRequestSettings(userMessage.content),
-            prompt: userMessage.content,
+            promptRequestSettings,
+            prompt,
             referencedImageIds: message.referencedImageIds,
             editSourceImageId: message.editSourceImageId,
             editMaskImageId: message.editMaskImageId,
@@ -925,129 +933,3 @@ export const useGenerationStore = defineStore("generation", () => {
     submitMessage,
   };
 });
-
-function handleBeforeUnload(event: BeforeUnloadEvent) {
-  event.preventDefault();
-  event.returnValue = "";
-}
-
-function titleFromPrompt(prompt: string) {
-  return prompt.length > 16 ? `${prompt.slice(0, 16)}...` : prompt;
-}
-
-function filenameFromAsset(asset: ImageAsset) {
-  const extension =
-    asset.mimeType === "image/jpeg"
-      ? "jpeg"
-      : asset.mimeType === "image/webp"
-        ? "webp"
-        : "png";
-
-  return `${asset.name || asset.id}.${extension}`;
-}
-
-function outputFormatToMimeType(outputFormat: GenerationParams["outputFormat"]) {
-  return outputFormat === "jpeg" ? "image/jpeg" : `image/${outputFormat}`;
-}
-
-function resultCountLabel(prefix: string, count: number) {
-  return count > 1 ? `${prefix} ${count} 张图片。` : `${prefix}一张图片。`;
-}
-
-function pendingGenerationLabel(isEdit: boolean, count: number) {
-  if (isEdit) {
-    return count > 1
-      ? `正在基于引用图片生成 ${count} 张编辑结果。`
-      : "正在基于引用图片生成编辑结果。";
-  }
-
-  return count > 1 ? `正在生成 ${count} 张图片。` : "正在生成图片。";
-}
-
-function continuedGenerationLabel(
-  isEdit: boolean,
-  isReplacing: boolean,
-  count: number,
-) {
-  if (isEdit) {
-    if (isReplacing) return "正在重新生成编辑结果。";
-    return count > 1
-      ? `正在继续生成 ${count} 张编辑结果。`
-      : "正在继续生成编辑结果。";
-  }
-
-  if (isReplacing) return "正在重新生成图片。";
-  return count > 1 ? `正在继续生成 ${count} 张图片。` : "正在继续生成图片。";
-}
-
-function pendingResultLabel(
-  isEdit: boolean,
-  generatedCount: number,
-  pendingCount: number,
-) {
-  const generatedPart =
-    generatedCount > 0 ? `已生成 ${generatedCount} 张，` : "";
-  const noun = isEdit ? "编辑结果" : "图片";
-  return `${generatedPart}还有 ${pendingCount} 张${noun}正在生成。`;
-}
-
-function toPlainMessage(message: Message): Message {
-  return {
-    id: message.id,
-    conversationId: message.conversationId,
-    role: message.role,
-    content: message.content,
-    referencedImageIds: [...message.referencedImageIds],
-    resultImageIds: [...message.resultImageIds],
-    status: message.status,
-    createdAt: message.createdAt,
-    generationStartedAt: message.generationStartedAt,
-    generationParams: message.generationParams
-      ? { ...message.generationParams }
-      : undefined,
-    promptRequestSettings: message.promptRequestSettings
-      ? {
-          promptMode: message.promptRequestSettings.promptMode,
-          promptWordbanks: clonePromptWordbanks(
-            message.promptRequestSettings.promptWordbanks,
-          ),
-          promptRewriteGuardEnabled:
-            message.promptRequestSettings.promptRewriteGuardEnabled,
-          promptRewriteGuardText:
-            message.promptRequestSettings.promptRewriteGuardText,
-          ragContext: message.promptRequestSettings.ragContext,
-        }
-      : undefined,
-    networkRetryAttempt: message.networkRetryAttempt,
-    errorMessage: message.errorMessage,
-    editSourceImageId: message.editSourceImageId,
-    editMaskImageId: message.editMaskImageId,
-  };
-}
-
-function toPlainImageAsset(imageAsset: ImageAsset): ImageAsset {
-  return {
-    id: imageAsset.id,
-    blobKey: imageAsset.blobKey,
-    name: imageAsset.name,
-    source: imageAsset.source,
-    tagColor: imageAsset.tagColor,
-    mimeType: imageAsset.mimeType,
-    width: imageAsset.width,
-    height: imageAsset.height,
-    sizeBytes: imageAsset.sizeBytes,
-    conversationId: imageAsset.conversationId,
-    messageId: imageAsset.messageId,
-    prompt: imageAsset.prompt,
-    requestPrompt: imageAsset.requestPrompt,
-    revisedPrompt: imageAsset.revisedPrompt,
-    referencedImageIds: imageAsset.referencedImageIds
-      ? [...imageAsset.referencedImageIds]
-      : undefined,
-    editSourceImageId: imageAsset.editSourceImageId,
-    generationDurationMs: imageAsset.generationDurationMs,
-    isEditMask: imageAsset.isEditMask,
-    createdAt: imageAsset.createdAt,
-    updatedAt: imageAsset.updatedAt,
-  };
-}

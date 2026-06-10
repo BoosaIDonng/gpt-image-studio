@@ -2,6 +2,7 @@ import type {
   ApiMode,
   ApiProvider,
   ConnectionMode,
+  FavoritePrompt,
   GenerationParams,
   ImageAsset,
   Message,
@@ -21,6 +22,8 @@ type FloatingChatRagContext = {
   topK: number;
   promptWordbanks: PromptWordbanks;
   imageAssets: ImageAsset[];
+  favoritePrompts?: FavoritePrompt[];
+  messages?: Message[];
   excludedIds: string[];
 };
 
@@ -129,6 +132,8 @@ function ragLines(input: FloatingChatProjectContextInput) {
     documents: collectRagDocuments({
       wordbanks: input.rag.promptWordbanks,
       imageAssets: input.rag.imageAssets,
+      favoritePrompts: input.rag.favoritePrompts,
+      messages: input.rag.messages,
     }),
     excludedIds: input.rag.excludedIds,
     topK: input.rag.topK,

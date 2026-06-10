@@ -15,12 +15,13 @@ const emit = defineEmits<{
   continueEdit: [id: string];
   generateAnother: [message: Message];
   previewImage: [id: string];
+  renameImage: [id: string];
   refreshImage: [message: Message, imageId: string];
 }>();
 
 function attachActionLabel() {
-  if (!props.image) return "不可引用";
-  return props.isAttached ? "已引用" : "加入引用";
+  if (!props.image) return "不可加入参考库";
+  return props.isAttached ? "已在参考库" : "加入参考库";
 }
 </script>
 
@@ -96,7 +97,7 @@ function attachActionLabel() {
                   : 'cursor-pointer text-gray-600 hover:bg-gray-100',
               ]"
               type="button"
-              :disabled="!image"
+              :disabled="!image || isAttached"
               :aria-label="attachActionLabel()"
               @click="emit('attachImage', imageId)"
             >
@@ -126,6 +127,29 @@ function attachActionLabel() {
               >
                 <path d="M12 5v14" />
                 <path d="M5 12h14" />
+              </svg>
+            </button>
+          </Tooltip>
+          <Tooltip text="重命名" preferred-placement="top">
+            <button
+              class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-30"
+              type="button"
+              :disabled="!image"
+              aria-label="重命名"
+              @click="emit('renameImage', imageId)"
+            >
+              <svg
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
               </svg>
             </button>
           </Tooltip>

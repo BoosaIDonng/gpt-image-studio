@@ -62,20 +62,23 @@ const images: ImageAsset[] = [
 ];
 
 describe("RAG", () => {
-  it("collects wordbank terms matched from successful generated image prompts", () => {
+  it("collects wordbank terms and raw prompts from successful generated images", () => {
     const documents = collectRagDocuments({
       wordbanks,
       imageAssets: images,
     });
 
-    expect(documents.map((document) => document.source)).toEqual(["wordbank"]);
-    expect(documents.map((document) => document.text)).toEqual(["cinematic rain street"]);
+    expect(documents.map((document) => document.source)).toEqual(["wordbank", "image"]);
+    expect(documents.map((document) => document.text)).toEqual([
+      "cinematic rain street",
+      "wide city skyline wide city skyline, cinematic rain street rainy city skyline with neon reflection",
+    ]);
     expect(documents[0].sourceImageId).toBe("img-1");
     expect(documents[0].sourceImageIds).toEqual(["img-1"]);
     expect(documents[0].title).toBe("成功图片匹配词库: city");
+    expect(documents[1].title).toBe("成功图片 Prompt: city");
     expect(documents.map((document) => document.text)).not.toContain(favorites[0].text);
     expect(documents.map((document) => document.text)).not.toContain(messages[0].content);
-    expect(documents.map((document) => document.text)).not.toContain(images[0].requestPrompt);
   });
 
   it("merges the same wordbank term across successful images for retrieval", () => {
@@ -106,14 +109,17 @@ describe("RAG", () => {
       ],
     });
     const result = retrieveRagContext({
-      query: "blue loft",
+      query: "soft window light",
       documents,
       topK: 3,
     });
+    const wordbankDocuments = documents.filter(
+      (document) => document.source === "wordbank",
+    );
 
-    expect(documents).toHaveLength(1);
-    expect(documents[0].sourceImageIds).toEqual(["img-red", "img-blue"]);
-    expect(result.items.map((item) => item.text)).toEqual(["soft window light"]);
+    expect(wordbankDocuments).toHaveLength(1);
+    expect(wordbankDocuments[0].sourceImageIds).toEqual(["img-red", "img-blue"]);
+    expect(result.items[0].text).toBe("soft window light");
   });
 
   it("retrieves the most similar local-vector matches", () => {
@@ -126,13 +132,12 @@ describe("RAG", () => {
       topK: 3,
     });
 
-    expect(result.items).toHaveLength(1);
     expect(result.items[0].text).toContain("cinematic rain street");
     expect(result.context).toContain("RAG 参考内容");
     expect(result.context).toContain("cinematic rain street");
   });
 
-  it("uses wordbank terms matched from successful generated image prompts instead of raw conversation text", () => {
+  it("keeps wordbank terms separate from successful generated image prompts", () => {
     const documents = collectRagDocuments({
       wordbanks: {
         pose: {
@@ -159,10 +164,10 @@ describe("RAG", () => {
       topK: 3,
     });
 
-    expect(documents.map((document) => document.text)).toEqual(["sitting on chair"]);
+    expect(documents.map((document) => document.source)).toEqual(["wordbank", "image"]);
+    expect(documents[0].text).toBe("sitting on chair");
     expect(result.context).toContain("sitting on chair");
     expect(result.context).not.toContain("cinematic rain street");
-    expect(result.context).not.toContain("画一个女孩坐在椅子上");
   });
 
   it("prioritizes project wordbank matches over other sources when scores are close", () => {
@@ -336,5 +341,129 @@ describe("RAG", () => {
     expect(state.activeCount).toBe(0);
     expect(state.excludedCount).toBe(1);
     expect(state.shouldShow).toBe(true);
+  });
+
+  it("collects favorites, recent successful user history, and successful image prompts", () => {
+    const documents = collectRagDocuments({
+      wordbanks,
+      imageAssets: images,
+      favoritePrompts: favorites,
+      messages,
+    });
+
+    expect(documents.map((document) => document.source)).toEqual([
+      "wordbank",
+      "image",
+      "favorite",
+      "history",
+    ]);
+    expect(documents.map((document) => document.id)).toContain("image-prompt:img-1");
+    expect(documents.map((document) => document.id)).toContain("favorite:fav-1");
+    expect(documents.map((document) => document.id)).toContain("history:m-1");
+    expect(documents.map((document) => document.text)).toContain(favorites[0].text);
+    expect(documents.map((document) => document.text)).toContain(messages[0].content);
+  });
+
+  it("skips unsafe or non-user history documents", () => {
+    const documents = collectRagDocuments({
+      wordbanks,
+      imageAssets: [],
+      favoritePrompts: [],
+      messages: [
+        {
+          ...messages[0],
+          id: "history-secret",
+          content: "sk-secret blob:http://preview data:image/png;base64,AAAA",
+        },
+        {
+          ...messages[1],
+          id: "assistant-message",
+          role: "assistant",
+          content: "assistant result should not become RAG history",
+        },
+        {
+          ...messages[0],
+          id: "failed-user-message",
+          status: "error",
+          content: "failed user prompt should not become RAG history",
+        },
+      ],
+    });
+
+    expect(documents).toEqual([]);
+  });
+
+  it("prioritizes wordbank matches over favorites and history when text scores are close", () => {
+    const result = retrieveRagContext({
+      query: "cinematic rain street",
+      documents: [
+        {
+          id: "history:close",
+          source: "history",
+          title: "历史 Prompt",
+          text: "cinematic rain street",
+        },
+        {
+          id: "favorite:close",
+          source: "favorite",
+          title: "收藏 Prompt",
+          text: "cinematic rain street",
+        },
+        {
+          id: "wordbank:close",
+          source: "wordbank",
+          title: "成功图片匹配词库: city",
+          text: "cinematic rain street",
+        },
+      ],
+      topK: 3,
+    });
+
+    expect(result.items.map((item) => item.id)).toEqual([
+      "wordbank:close",
+      "favorite:close",
+      "history:close",
+    ]);
+  });
+
+  it("retrieves mixed Chinese and English short-query matches", () => {
+    const result = retrieveRagContext({
+      query: "雨夜 neon",
+      documents: [
+        {
+          id: "history:rain",
+          source: "history",
+          title: "历史 Prompt",
+          text: "雨夜街头 neon reflection portrait",
+        },
+        {
+          id: "favorite:forest",
+          source: "favorite",
+          title: "收藏 Prompt",
+          text: "forest daylight portrait",
+        },
+      ],
+      topK: 2,
+    });
+
+    expect(result.items[0]?.id).toBe("history:rain");
+    expect(result.context).toContain("雨夜街头 neon reflection portrait");
+  });
+
+  it("scores complete short-query token coverage without penalizing extra document context", () => {
+    const result = retrieveRagContext({
+      query: "rain street",
+      documents: [
+        {
+          id: "history:long",
+          source: "history",
+          title: "历史 Prompt",
+          text: "rain street portrait with neon reflection and wet asphalt",
+        },
+      ],
+      topK: 1,
+    });
+
+    expect(result.items[0]?.rawScore).toBe(1);
   });
 });

@@ -168,8 +168,99 @@ describe("generation store", () => {
     });
     expect(messages.value[1]?.errorMessage).toContain("可能触发内容审核的原因");
     expect(messages.value[1]?.errorMessage).toContain("建议改写");
+    expect(messages.value[1]?.errorMessage).toContain("nsfw -> tasteful editorial style");
     expect(messages.value[1]?.errorMessage).toContain("fully clothed");
-    expect(messages.value[1]?.errorMessage).not.toMatch(/nsfw|nude|nipples/i);
+    const saferPromptText =
+      messages.value[1]?.errorMessage?.split("\n").at(-1) ?? "";
+    expect(saferPromptText).not.toMatch(/nsfw|nude|nipples/i);
+  });
+
+  it("retries a failed message with a safer prompt override", async () => {
+    const store = useGenerationStore();
+    const conversation: Conversation = {
+      id: "c1",
+      title: "Retry conversation",
+      summary: "Image generation",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    };
+    const userMessage: Message = {
+      id: "m-user",
+      conversationId: conversation.id,
+      role: "user",
+      content: "nsfw, completely nude, rain street portrait",
+      referencedImageIds: [],
+      resultImageIds: [],
+      status: "success",
+      createdAt: "2026-01-01T00:00:00.000Z",
+    };
+    const assistantMessage: Message = {
+      id: "m-assistant",
+      conversationId: conversation.id,
+      role: "assistant",
+      content: "生成失败",
+      referencedImageIds: [],
+      resultImageIds: [],
+      status: "error",
+      createdAt: "2026-01-01T00:00:01.000Z",
+      generationParams,
+      errorMessage: "HTTP 400: Generated image rejected by content moderation.",
+    };
+    const messages = ref<Message[]>([userMessage, assistantMessage]);
+    mocks.saveMessage.mockResolvedValue(undefined);
+    const imageClient = {
+      generate: vi.fn(() => Promise.reject(new Error("retry stop"))),
+      edit: vi.fn(),
+    };
+    const currentPromptRequestSettings = vi.fn(
+      (prompt?: string): PromptRequestSettings => ({
+        promptMode: "default",
+        promptWordbanks: defaultPromptWordbanks,
+        promptRewriteGuardEnabled: false,
+        promptRewriteGuardText: PROMPT_REWRITE_GUARD_PREFIX,
+        ragContext: prompt ? `retry context: ${prompt}` : undefined,
+      }),
+    );
+
+    store.configureGenerationStore({
+      activeConversationId: ref(conversation.id),
+      activeConversation: computed(() => conversation),
+      attachedImages: ref([]),
+      activeEditMaskImageId: ref(""),
+      activeEditSourceImageId: ref(""),
+      composerText: ref(""),
+      createConversationRecord: vi.fn(),
+      currentGenerationParams: () => generationParams,
+      currentPromptRequestSettings,
+      customSizeError: computed(() => ""),
+      imageAssets: ref([]),
+      imageById: () => undefined,
+      imageClient,
+      promptExpandEnabled: ref(false),
+      chatApiKey: ref(""),
+      chatApiBaseUrl: ref(""),
+      chatModel: ref(""),
+      chatSystemPrompt: ref(""),
+      messages,
+      onStorageError: vi.fn(),
+      conversationExists: () => true,
+      persistConversation: vi.fn(),
+      refreshStorageUsage: vi.fn(),
+      updateConversationSummary: vi.fn(() => conversation),
+    });
+
+    await store.retryMessage(
+      assistantMessage,
+      "fully clothed, rain street portrait",
+    );
+
+    expect(imageClient.generate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: "fully clothed, rain street portrait",
+      }),
+    );
+    expect(currentPromptRequestSettings).toHaveBeenCalledWith(
+      "fully clothed, rain street portrait",
+    );
   });
 
   it("ignores a second submit while prompt expansion is still running", async () => {

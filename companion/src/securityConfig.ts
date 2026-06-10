@@ -10,9 +10,13 @@ export type CompanionSecurityConfig = {
   allowedEditImageMimeTypes: string[];
 };
 
-const STABLE_ORIGINS = ["https://image.honlnk.com"];
+const STABLE_ORIGINS = [
+  "https://image.honlnk.com",
+  "https://image.idurspace.cn",
+];
 const DEV_ORIGINS = [
   "https://image.honlnk.com",
+  "https://image.idurspace.cn",
   "http://127.0.0.1:8888",
   "http://localhost:8888",
 ];

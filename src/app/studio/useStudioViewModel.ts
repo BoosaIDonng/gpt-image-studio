@@ -19,7 +19,7 @@ import {
   deleteConversationDrafts,
   loadConversationDraft,
   saveConversationDraft,
-} from "../../services/conversationDrafts";
+} from "../../features/drafts";
 import { saveSettings } from "../../services/settings";
 import {
   applyUrlSettings,
@@ -252,6 +252,8 @@ export function useStudioViewModel() {
       documents: collectRagDocuments({
         wordbanks: settings.promptWordbanks.value,
         imageAssets: images.imageAssets.value,
+        favoritePrompts: settings.favoritePrompts.value,
+        messages: messages.value,
       }),
       excludedIds: ragExcludedMatchIds.value,
       topK: settings.ragTopK.value,
@@ -323,6 +325,12 @@ export function useStudioViewModel() {
 
   function openFavoritePromptSettings() {
     settingsInitialTab.value = "favoritePrompts";
+    settingsInitialBatchPanel.value = "images";
+    openSettings();
+  }
+
+  function openApiSettings() {
+    settingsInitialTab.value = "api";
     settingsInitialBatchPanel.value = "images";
     openSettings();
   }
@@ -752,12 +760,15 @@ export function useStudioViewModel() {
   const chatActions = {
     closeAllEditors: composerState.closeAllEditors,
     copyText,
+    deleteMessage: conversations.deleteSingleMessage,
     generateAnother: generation.generateAnother,
     loadMessageConfig,
     openConversations: composerState.openConversations,
+    openApiSettings,
     openSettings: openSettingsDefault,
     openFavoritePromptSettings,
     previewImage: previewImageById,
+    renameImage: requestRenameImage,
     removeAttachment: (id: string) => {
       if (
         id === activeEditSourceImageId.value ||
@@ -788,6 +799,7 @@ export function useStudioViewModel() {
       }
       composerState.setEditModeEnabled(value);
     },
+    openImageLibrary: composerState.openImageLibrary,
     setLibraryOpen: composerState.setLibraryOpen,
     applyEditSelection: (sourceImageId: string, maskImageId: string) => {
       const previousMaskId = activeEditMaskImageId.value;

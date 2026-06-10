@@ -1,7 +1,7 @@
-import type { ImageAsset, PromptWordbanks } from "../types/studio";
+import type { FavoritePrompt, ImageAsset, Message, PromptWordbanks } from "../types/studio";
 import { matchPromptWordbankTerms } from "./promptWordbankMatcher";
 
-export type RagDocumentSource = "wordbank" | "favorite" | "history";
+export type RagDocumentSource = "wordbank" | "image" | "favorite" | "history";
 
 export type RagDocument = {
   id: string;
@@ -31,6 +31,9 @@ export type RagMatchBarState = {
 type CollectRagDocumentsInput = {
   wordbanks: PromptWordbanks;
   imageAssets: ImageAsset[];
+  favoritePrompts?: FavoritePrompt[];
+  messages?: Message[];
+  maxHistoryMessages?: number;
 };
 
 type RetrieveRagContextInput = {
@@ -42,10 +45,13 @@ type RetrieveRagContextInput = {
 };
 
 const SOURCE_WEIGHTS: Record<RagDocumentSource, number> = {
-  wordbank: 1.25,
-  favorite: 1.1,
-  history: 1,
+  wordbank: 1.35,
+  favorite: 1.15,
+  image: 1,
+  history: 0.9,
 };
+const MAX_HISTORY_DOCUMENTS = 12;
+const MAX_DOCUMENT_TEXT_LENGTH = 480;
 
 export function collectRagDocuments(input: CollectRagDocumentsInput): RagDocument[] {
   const documents: RagDocument[] = [];
@@ -71,7 +77,36 @@ export function collectRagDocuments(input: CollectRagDocumentsInput): RagDocumen
           sourceImageIds: [image.id],
         });
       });
+
+      addDocument(documents, documentsByText, {
+        id: `image-prompt:${image.id}`,
+        source: "image",
+        title: `成功图片 Prompt: ${image.name}`,
+        text: cleanRagText(searchText),
+        sourceImageId: image.id,
+        sourceImageIds: [image.id],
+      });
     });
+
+  (input.favoritePrompts ?? []).forEach((favorite) => {
+    addDocument(documents, documentsByText, {
+      id: `favorite:${favorite.id}`,
+      source: "favorite",
+      title: favorite.title ? `收藏 Prompt: ${favorite.title}` : "收藏 Prompt",
+      text: cleanRagText(favorite.text),
+    });
+  });
+
+  recentHistoryMessages(input.messages ?? [], input.maxHistoryMessages).forEach(
+    (message) => {
+      addDocument(documents, documentsByText, {
+        id: `history:${message.id}`,
+        source: "history",
+        title: "历史 Prompt",
+        text: cleanRagText(message.content),
+      });
+    },
+  );
 
   return documents;
 }
@@ -105,6 +140,13 @@ function successfulImagePromptTexts(image: ImageAsset) {
     .filter(Boolean);
 }
 
+function recentHistoryMessages(messages: Message[], maxHistoryMessages?: number) {
+  const limit = normalizeHistoryLimit(maxHistoryMessages);
+  return messages
+    .filter((message) => message.role === "user" && message.status === "success")
+    .slice(-limit);
+}
+
 function pushUnique(items: string[], item: string) {
   if (!items.includes(item)) items.push(item);
 }
@@ -112,17 +154,20 @@ function pushUnique(items: string[], item: string) {
 export function retrieveRagContext(input: RetrieveRagContextInput) {
   const topK = normalizeTopK(input.topK);
   const minScore = input.minScore ?? 0.12;
-  const queryVector = vectorize(input.query);
   const excludedIds = new Set(input.excludedIds ?? []);
+  const excludedTexts = new Set(
+    input.documents
+      .filter((document) => excludedIds.has(document.id))
+      .map((document) => normalizeText(document.text))
+      .filter(Boolean),
+  );
 
   const items = input.documents
     .filter((document) => !excludedIds.has(document.id))
+    .filter((document) => !matchesExcludedText(document, excludedTexts))
     .map((document) => ({
       ...document,
-      rawScore: cosineSimilarity(
-        queryVector,
-        vectorize(document.searchText ?? document.text),
-      ),
+      rawScore: scoreRagDocument(input.query, document),
       sourceWeight: SOURCE_WEIGHTS[document.source],
     }))
     .map((item) => ({
@@ -224,12 +269,59 @@ function mergeRagDocument(target: RagDocument, document: RagDocument) {
   target.sourceImageIds = sourceImageIds;
 }
 
+function matchesExcludedText(
+  document: RagDocument,
+  excludedTexts: Set<string>,
+) {
+  if (!excludedTexts.size) return false;
+  const documentText = normalizeText(document.text);
+  if (!documentText) return false;
+  return [...excludedTexts].some((text) => documentText.includes(text));
+}
+
 function vectorize(text: string) {
   const vector = new Map<string, number>();
   for (const token of tokenize(text)) {
     vector.set(token, (vector.get(token) ?? 0) + 1);
   }
   return vector;
+}
+
+function scoreRagDocument(query: string, document: RagDocument) {
+  const queryText = normalizeText(query);
+  const documentText = normalizeText(`${document.searchText ?? ""} ${document.text}`);
+  if (!queryText || !documentText) return 0;
+
+  const vectorScore = cosineSimilarity(vectorize(queryText), vectorize(documentText));
+  const coverageScore = tokenCoverageScore(queryText, documentText);
+  const exactScore = exactTextScore(queryText, documentText);
+  return Math.max(vectorScore, coverageScore, exactScore);
+}
+
+function tokenCoverageScore(query: string, documentText: string) {
+  const queryTokens = uniqueTokens(tokenize(query));
+  if (!queryTokens.length) return 0;
+
+  const documentTokens = new Set(tokenize(documentText));
+  const matchedCount = queryTokens.filter((token) => documentTokens.has(token)).length;
+  return matchedCount / queryTokens.length;
+}
+
+function exactTextScore(query: string, documentText: string) {
+  const normalizedQuery = normalizeForExactMatch(query);
+  const normalizedDocument = normalizeForExactMatch(documentText);
+  if (!normalizedQuery || !normalizedDocument) return 0;
+  if (normalizedDocument.includes(normalizedQuery)) return 1;
+  if (normalizedQuery.includes(normalizedDocument)) return 0.9;
+  return 0;
+}
+
+function uniqueTokens(tokens: string[]) {
+  return [...new Set(tokens)];
+}
+
+function normalizeForExactMatch(text: string) {
+  return text.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
 function tokenize(text: string) {
@@ -282,6 +374,18 @@ function normalizeText(text: unknown) {
   return typeof text === "string" ? text.trim().replace(/\s+/g, " ") : "";
 }
 
+function cleanRagText(text: unknown) {
+  if (typeof text !== "string") return "";
+
+  return text
+    .replace(/sk-[A-Za-z0-9_-]+/g, " ")
+    .replace(/blob:[^\s]+/g, " ")
+    .replace(/data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, MAX_DOCUMENT_TEXT_LENGTH);
+}
+
 function normalizeTopK(topK: unknown) {
   const numeric = typeof topK === "number" ? topK : Number(topK);
   if (!Number.isFinite(numeric)) return 4;
@@ -292,4 +396,10 @@ function normalizeVisibleItemCount(count: unknown) {
   const numeric = typeof count === "number" ? count : Number(count);
   if (!Number.isFinite(numeric)) return 3;
   return Math.min(12, Math.max(1, Math.trunc(numeric)));
+}
+
+function normalizeHistoryLimit(value: unknown) {
+  const numeric = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(numeric)) return MAX_HISTORY_DOCUMENTS;
+  return Math.min(MAX_HISTORY_DOCUMENTS, Math.max(0, Math.trunc(numeric)));
 }

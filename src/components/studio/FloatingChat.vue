@@ -63,6 +63,8 @@ function buildProjectContext() {
       topK: settings.ragTopK,
       promptWordbanks: settings.promptWordbanks,
       imageAssets: images.imageAssets,
+      favoritePrompts: settings.favoritePrompts,
+      messages: conversations.activeMessages,
       excludedIds: composer.ragExcludedMatchIds,
     },
   });

@@ -21,7 +21,7 @@ const emit = defineEmits<{
 const composer = useComposerStore();
 const conversations = useConversationsStore();
 const images = useImagesStore();
-const activeFilter = ref<"current" | "all">("current");
+const activeFilter = ref<"current" | "all">(composer.imageLibraryScope);
 const activeColorFilter = ref<"all" | ImageAsset["tagColor"]>("all");
 const selectedImageId = ref("");
 const libraryImages = computed(() =>
@@ -51,6 +51,13 @@ const selectedImage = computed(() => {
     null
   );
 });
+watch(
+  () => composer.imageLibraryScope,
+  (scope) => {
+    activeFilter.value = scope;
+  },
+);
+
 watch(
   () =>
     [

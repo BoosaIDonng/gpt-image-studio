@@ -9,6 +9,7 @@ import type {
   Message,
 } from "../../types/studio";
 import ChatComposer from "../chat/ChatComposer.vue";
+import CreativeCenterBanner from "./CreativeCenterBanner.vue";
 import EditMaskModal from "../chat/EditMaskModal.vue";
 import MessageList from "../chat/MessageList.vue";
 
@@ -26,16 +27,20 @@ type ChatWorkspaceActions = {
   applyEditSelection: (sourceImageId: string, maskImageId: string) => void;
   closeAllEditors: () => void;
   copyText: (text: string) => void;
+  deleteMessage: (id: string) => void;
   generateAnother: (message: Message) => void;
   loadMessageConfig: (message: Message) => void;
   openConversations: () => void;
+  openApiSettings: () => void;
   openFavoritePromptSettings: () => void;
   openSettings: () => void;
   previewImage: (id: string) => void;
+  renameImage: (id: string) => void;
   refreshImage: (message: Message, imageId: string) => void;
   removeAttachment: (id: string) => void;
-  retryMessage: (message: Message) => void;
+  retryMessage: (message: Message, prompt?: string) => void;
   setEditModeEnabled: (value: boolean) => void;
+  openImageLibrary: (scope?: "current" | "all") => void;
   setLibraryOpen: (value: boolean) => void;
 };
 
@@ -143,6 +148,10 @@ function imageFilesFromTransfer(
     .map((item) => item.getAsFile())
     .filter((file): file is File => Boolean(file));
 }
+
+function failedMessageCount() {
+  return messages.activeMessages.filter((message) => message.status === "error").length;
+}
 </script>
 
 <template>
@@ -225,6 +234,13 @@ function imageFilesFromTransfer(
       </div>
     </header>
 
+    <CreativeCenterBanner
+      :failed-message-count="failedMessageCount()"
+      :message-count="messages.activeMessages.length"
+      @open-api-settings="actions.openApiSettings"
+      @open-library="actions.openImageLibrary('all')"
+    />
+
     <MessageList
       :attached-image-ids="messages.activeAttachmentIds"
       :image-by-id="images.imageById"
@@ -232,11 +248,15 @@ function imageFilesFromTransfer(
       @attach-image="images.attachImage"
       @continue-edit="continueEdit"
       @copy-text="actions.copyText"
+      @delete-message="actions.deleteMessage"
       @generate-another="actions.generateAnother"
       @load-message-config="actions.loadMessageConfig"
       @preview-image="actions.previewImage"
+      @rename-image="actions.renameImage"
       @refresh-image="actions.refreshImage"
-      @retry-message="actions.retryMessage"
+      @retry-message="
+        (message, prompt) => actions.retryMessage(message, prompt)
+      "
     />
 
     <ChatComposer

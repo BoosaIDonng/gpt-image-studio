@@ -1,9 +1,15 @@
 import {
   normalizeGenerationParams,
   type StoredGenerationParams,
-} from "./generationParams";
-import type { ConversationDraft } from "../types/studio";
-import { deleteFromStore, getAllFromStore, getFromStore, putInStore, STORE_NAMES } from "./db";
+} from "../../services/generationParams";
+import type { ConversationDraft } from "../../types/studio";
+import {
+  deleteFromStore,
+  getAllFromStore,
+  getFromStore,
+  putInStore,
+  STORE_NAMES,
+} from "../../services/db";
 
 type StoredConversationDraft = Omit<ConversationDraft, "generationParams"> & {
   generationParams: StoredGenerationParams;
@@ -38,7 +44,9 @@ export async function listConversationDrafts() {
   return drafts.map(normalizeConversationDraft);
 }
 
-function normalizeConversationDraft(draft: StoredConversationDraft): ConversationDraft {
+function normalizeConversationDraft(
+  draft: StoredConversationDraft,
+): ConversationDraft {
   return {
     ...draft,
     generationParams: normalizeGenerationParams(draft.generationParams),

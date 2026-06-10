@@ -74,6 +74,16 @@ describe("floating chat project context", () => {
         topK: 4,
         promptWordbanks: wordbanks,
         imageAssets: images,
+        favoritePrompts: [
+          {
+            id: "fav-rain",
+            title: "雨夜收藏",
+            text: "雨夜电影感 favorite reference",
+            createdAt: "2026-01-01T00:00:00.000Z",
+            updatedAt: "2026-01-01T00:00:00.000Z",
+          },
+        ],
+        messages,
         excludedIds: [],
       },
     });
@@ -86,6 +96,7 @@ describe("floating chat project context", () => {
     expect(context.content).toContain("rain portrait");
     expect(context.content).toContain("gpt-image-2");
     expect(context.content).toContain("cinematic rain street");
+    expect(context.content).toContain("雨夜电影感 favorite reference");
   });
 
   it("redacts sensitive and bulky values", () => {

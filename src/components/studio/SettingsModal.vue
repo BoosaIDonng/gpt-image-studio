@@ -20,10 +20,12 @@ import FavoritePromptsPanel from "../settings/FavoritePromptsPanel.vue";
 import GeneralSettingsPanel from "../settings/GeneralSettingsPanel.vue";
 import PromptGuardSettingsPanel from "../settings/PromptGuardSettingsPanel.vue";
 import PromptModeSettingsPanel from "../settings/PromptModeSettingsPanel.vue";
+import TutorialSettingsPanel from "../settings/TutorialSettingsPanel.vue";
 import ConfirmInputModal from "../ui/ConfirmInputModal.vue";
 
 type SettingsTab =
   | "general"
+  | "tutorial"
   | "api"
   | "promptMode"
   | "favoritePrompts"
@@ -112,6 +114,7 @@ const isRestoreConfirmOpen = ref(false);
 
 const tabs: { key: SettingsTab; label: string }[] = [
   { key: "general", label: "通用" },
+  { key: "tutorial", label: "教程" },
   { key: "api", label: "接口" },
   { key: "promptMode", label: "提示词模式" },
   { key: "favoritePrompts", label: "常用提示词" },
@@ -237,6 +240,15 @@ function forwardSavePromptWordbank(
               @update:chat-api-base-url="emit('update:chatApiBaseUrl', $event)"
               @update:chat-model="emit('update:chatModel', $event)"
               @update:chat-system-prompt="emit('update:chatSystemPrompt', $event)"
+            />
+
+            <TutorialSettingsPanel
+              v-else-if="activeTab === 'tutorial'"
+              :api-key="apiKey"
+              :companion-paired="companionPaired"
+              :connection-mode="connectionMode"
+              :image-count="images.length"
+              :message-count="messages.length"
             />
 
             <ApiSettingsPanel

@@ -1,7 +1,13 @@
 export type ModerationAdvice = {
   isModerationRejection: boolean;
   reasons: string[];
+  riskMatches: PromptRiskMatch[];
   saferPrompt?: string;
+};
+
+export type PromptRiskMatch = {
+  term: string;
+  replacement: string;
 };
 
 type RiskRule = {
@@ -109,9 +115,11 @@ export function analyzeModerationRejection(
     return {
       isModerationRejection: false,
       reasons: [],
+      riskMatches: [],
     };
   }
 
+  const riskMatches = findPromptRiskMatches(prompt);
   const reasons = [
     "接口内容审核拒绝了这次图片生成请求。",
     ...RISK_RULES.filter((rule) =>
@@ -126,6 +134,7 @@ export function analyzeModerationRejection(
   return {
     isModerationRejection: true,
     reasons,
+    riskMatches,
     saferPrompt: prompt ? buildSaferPrompt(prompt) : undefined,
   };
 }
@@ -138,6 +147,15 @@ export function formatModerationAdvice(advice: ModerationAdvice) {
     ...advice.reasons.map((reason) => `- ${reason}`),
   ];
 
+  if (advice.riskMatches.length) {
+    lines.push(
+      "命中风险词：",
+      ...advice.riskMatches.map(
+        (match) => `- ${match.term} -> ${match.replacement}`,
+      ),
+    );
+  }
+
   if (advice.saferPrompt) {
     lines.push(
       "建议改写：保留主体、构图、镜头、光影和氛围，移除露骨或高风险表达。",
@@ -146,6 +164,46 @@ export function formatModerationAdvice(advice: ModerationAdvice) {
   }
 
   return lines.join("\n");
+}
+
+function findPromptRiskMatches(prompt: string): PromptRiskMatch[] {
+  const usedRanges: Array<{ start: number; end: number }> = [];
+  const seen = new Set<string>();
+  const matches: PromptRiskMatch[] = [];
+
+  PROMPT_REPLACEMENTS.forEach(([pattern, replacement]) => {
+    const globalPattern = toGlobalRegExp(pattern);
+    Array.from(prompt.matchAll(globalPattern)).forEach((match) => {
+      const term = match[0]?.trim();
+      if (!term) return;
+
+      const start = match.index ?? -1;
+      const end = start + match[0].length;
+      if (start < 0 || overlapsUsedRange(start, end, usedRanges)) return;
+
+      const key = `${term.toLowerCase()}->${replacement.toLowerCase()}`;
+      if (seen.has(key)) return;
+
+      seen.add(key);
+      usedRanges.push({ start, end });
+      matches.push({ term, replacement });
+    });
+  });
+
+  return matches;
+}
+
+function toGlobalRegExp(pattern: RegExp) {
+  const flags = pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`;
+  return new RegExp(pattern.source, flags);
+}
+
+function overlapsUsedRange(
+  start: number,
+  end: number,
+  ranges: Array<{ start: number; end: number }>,
+) {
+  return ranges.some((range) => start < range.end && end > range.start);
 }
 
 function buildSaferPrompt(prompt: string) {

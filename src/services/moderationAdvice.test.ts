@@ -27,6 +27,28 @@ describe("analyzeModerationRejection", () => {
     expect(advice.saferPrompt).not.toMatch(/nsfw|nude|nipples/i);
   });
 
+  it("returns matched risk terms with replacement suggestions", () => {
+    const advice = analyzeModerationRejection(
+      "HTTP 400: Generated image rejected by content moderation.",
+      "nsfw, completely nude, girl sitting on chair, detailed nipples",
+    );
+
+    expect(advice.riskMatches).toEqual([
+      {
+        term: "nsfw",
+        replacement: "tasteful editorial style",
+      },
+      {
+        term: "completely nude",
+        replacement: "fully clothed",
+      },
+      {
+        term: "detailed nipples",
+        replacement: "elegant silhouette",
+      },
+    ]);
+  });
+
   it("formats moderation advice for image error messages", () => {
     const text = formatModerationAdvice(
       analyzeModerationRejection(

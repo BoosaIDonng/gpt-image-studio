@@ -19,6 +19,8 @@ coverage
 folder-alias.json
 private-folder-alias.json
 docs/superpowers
+.superpowers/
+vite-dev.pid
 
 # Editor directories and files
 .vscode/*

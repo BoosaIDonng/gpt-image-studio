@@ -14,17 +14,20 @@ const props = defineProps<{
   imageById: (id: string) => ImageAsset | undefined;
   message: Message;
   nowMs: number;
+  sourcePrompt?: string;
 }>();
 
 const emit = defineEmits<{
   attachImage: [id: string];
   continueEdit: [id: string];
   copyText: [text: string];
+  deleteMessage: [id: string];
   generateAnother: [message: Message];
   loadMessageConfig: [message: Message];
   previewImage: [id: string];
+  renameImage: [id: string];
   refreshImage: [message: Message, imageId: string];
-  retryMessage: [message: Message];
+  retryMessage: [message: Message, prompt?: string];
 }>();
 
 const attachedImageIds = computed(() => new Set(props.attachedImageIds));
@@ -110,6 +113,7 @@ function stopPendingTimer() {
       v-if="message.role === 'user'"
       :message="message"
       @copy-text="emit('copyText', $event)"
+      @delete-message="emit('deleteMessage', $event)"
       @load-message-config="emit('loadMessageConfig', $event)"
     />
 
@@ -148,6 +152,7 @@ function stopPendingTimer() {
           @continue-edit="emit('continueEdit', $event)"
           @generate-another="emit('generateAnother', $event)"
           @preview-image="emit('previewImage', $event)"
+          @rename-image="emit('renameImage', $event)"
           @refresh-image="
             (message, imageId) => emit('refreshImage', message, imageId)
           "
@@ -163,7 +168,11 @@ function stopPendingTimer() {
         <ErrorGenerationCard
           v-if="message.status === 'error'"
           :message="message"
-          @retry-message="emit('retryMessage', $event)"
+          :source-prompt="sourcePrompt"
+          @copy-text="emit('copyText', $event)"
+          @retry-message="
+            (message, prompt) => emit('retryMessage', message, prompt)
+          "
         />
       </div>
     </article>

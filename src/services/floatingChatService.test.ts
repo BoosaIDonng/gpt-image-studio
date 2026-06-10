@@ -58,4 +58,20 @@ describe("floating chat service", () => {
     const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
     expect(body.messages).toEqual([{ role: "user", content: "你好" }]);
   });
+
+  it("can disable the worker builtin persona for tool requests", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(streamResponse());
+
+    await streamChatReply(
+      [{ role: "user", content: "rewrite this prompt" }],
+      vi.fn(),
+      undefined,
+      { useBuiltinPersona: false },
+    );
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(body.use_builtin_persona).toBe(false);
+  });
 });

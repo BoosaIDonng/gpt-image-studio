@@ -4,7 +4,7 @@ import {
   deleteConversation as deleteConversationRecord,
   saveConversation,
 } from "../services/conversations";
-import { deleteMessage } from "../services/messages";
+import { deleteMessage as deleteMessageRecord } from "../services/messages";
 import { isoTimestamp } from "../shared/dateTime";
 import { formatError } from "../shared/errors";
 import { createId } from "../shared/id";
@@ -77,7 +77,7 @@ export const useConversationsStore = defineStore("conversations", () => {
     try {
       await Promise.all([
         deleteConversationRecord(id),
-        ...deletedMessages.map((message) => deleteMessage(message.id)),
+        ...deletedMessages.map((message) => deleteMessageRecord(message.id)),
       ]);
       await input.refreshStorageUsage();
       feedback.notifySuccess("会话已删除。");
@@ -111,12 +111,38 @@ export const useConversationsStore = defineStore("conversations", () => {
     try {
       await Promise.all([
         ...ids.map((id) => deleteConversationRecord(id)),
-        ...deletedMessages.map((message) => deleteMessage(message.id)),
+        ...deletedMessages.map((message) => deleteMessageRecord(message.id)),
       ]);
       await input.refreshStorageUsage();
       feedback.notifySuccess(`已删除 ${ids.length} 个对话。`);
     } catch (error) {
       feedback.notifyError(`删除对话失败：${formatError(error)}`);
+      input.onStorageError(error);
+    }
+  }
+
+  async function deleteSingleMessage(id: string) {
+    const message = messages.value.find((item) => item.id === id);
+    if (!message) return;
+
+    const input = getContext();
+    const feedback = useFeedbackStore();
+    const confirmed = await feedback.requestConfirmation({
+      title: "删除消息",
+      description: "确定删除这条消息吗？只会移除这一条聊天记录，图片库中的图片会保留。",
+      confirmLabel: "删除消息",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+
+    messages.value = messages.value.filter((item) => item.id !== id);
+
+    try {
+      await deleteMessageRecord(id);
+      await input.refreshStorageUsage();
+      feedback.notifySuccess("消息已删除。");
+    } catch (error) {
+      feedback.notifyError(`删除消息失败：${formatError(error)}`);
       input.onStorageError(error);
     }
   }
@@ -219,6 +245,7 @@ export const useConversationsStore = defineStore("conversations", () => {
     createConversationRecord,
     deleteConversation,
     deleteConversations,
+    deleteSingleMessage,
     persistConversation,
     renameConversation,
     selectConversation,

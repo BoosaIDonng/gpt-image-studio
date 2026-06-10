@@ -148,7 +148,7 @@ program
       return;
     }
     const logFile = managed.logFile;
-    let offset = existsSync(logFile) ? statSync(logFile).size : 0;
+    const offset = existsSync(logFile) ? statSync(logFile).size : 0;
 
     let result: PairWaitResponse;
     try {

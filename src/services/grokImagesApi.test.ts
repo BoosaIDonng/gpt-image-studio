@@ -117,6 +117,26 @@ describe("Grok image API", () => {
     });
   });
 
+  it("explains Grok credit or subscription 403 errors in Chinese", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(jsonResponse({
+        error: {
+          message: "You have run out of credits or need a Grok subscription.",
+        },
+      }, 403));
+
+    await expect(
+      generateGrokImage({
+        apiBaseUrl: "https://api.x.ai/v1",
+        apiBaseUrlMode: "full",
+        apiKey: "xai-test",
+        model: "grok-imagine-image-quality",
+        prompt: "画一张图",
+        params: generationParams,
+      }),
+    ).rejects.toThrow("xAI/Grok 账号没有可用额度");
+  });
+
   it("sends Grok image edits as an image_url JSON object", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(jsonResponse({

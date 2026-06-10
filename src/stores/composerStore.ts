@@ -2,6 +2,8 @@ import { ref } from "vue";
 import { defineStore } from "pinia";
 import type { EditorKey } from "../types/studio";
 
+export type ImageLibraryScope = "current" | "all";
+
 export const useComposerStore = defineStore("composer", () => {
   const activeEditor = ref<EditorKey | null>(null);
   const composerText = ref("");
@@ -9,6 +11,7 @@ export const useComposerStore = defineStore("composer", () => {
   const activeEditSourceImageId = ref("");
   const activeEditMaskImageId = ref("");
   const isLibraryOpen = ref(false);
+  const imageLibraryScope = ref<ImageLibraryScope>("current");
   const isConversationSidebarOpen = ref(false);
   const selectingEditImageId = ref("");
   const ragExcludedMatchIds = ref<string[]>([]);
@@ -51,6 +54,11 @@ export const useComposerStore = defineStore("composer", () => {
     isLibraryOpen.value = value;
   }
 
+  function openImageLibrary(scope: ImageLibraryScope = "current") {
+    imageLibraryScope.value = scope;
+    isLibraryOpen.value = true;
+  }
+
   function openPromptPreview() {
     isPromptPreviewOpen.value = true;
   }
@@ -83,6 +91,7 @@ export const useComposerStore = defineStore("composer", () => {
     editModeEnabled,
     isConversationSidebarOpen,
     isLibraryOpen,
+    imageLibraryScope,
     isPromptPreviewOpen,
     ragExcludedMatchIds,
     selectingEditImageId,
@@ -93,6 +102,7 @@ export const useComposerStore = defineStore("composer", () => {
     clearRagExclusions,
     excludeRagMatch,
     openConversations,
+    openImageLibrary,
     openPromptPreview,
     restoreRagMatch,
     setConversationSidebarOpen,

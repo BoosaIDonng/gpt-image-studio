@@ -211,7 +211,7 @@ function toggleSortDirection(direction: SortDirection): SortDirection {
 
 function compareImages(a: ImageAsset, b: ImageAsset) {
   const direction = imageSortDirection.value === "asc" ? 1 : -1;
-  let result = 0;
+  let result: number;
 
   if (imageSortKey.value === "name") {
     result = compareText(a.name, b.name);

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useComposerStore } from "../../stores/composerStore";
+import { useConversationsStore } from "../../stores/conversationsStore";
 import { useImagesStore } from "../../stores/imagesStore";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { buildFinalRequestPrompt } from "../../services/promptRequest";
@@ -12,6 +13,7 @@ const emit = defineEmits<{
 }>();
 
 const composer = useComposerStore();
+const conversations = useConversationsStore();
 const images = useImagesStore();
 const settings = useSettingsStore();
 const promptModeLabel = computed(() => {
@@ -36,6 +38,8 @@ const ragDocuments = computed(() =>
   collectRagDocuments({
     wordbanks: settings.promptWordbanks,
     imageAssets: images.imageAssets,
+    favoritePrompts: settings.favoritePrompts,
+    messages: conversations.activeMessages,
   }),
 );
 const previewRagResult = computed(() => {
@@ -75,6 +79,7 @@ const previewPrompt = computed(() => {
 
 function ragSourceLabel(source: string) {
   if (source === "wordbank") return "词库";
+  if (source === "image") return "成功图";
   if (source === "favorite") return "收藏";
   return "历史";
 }
