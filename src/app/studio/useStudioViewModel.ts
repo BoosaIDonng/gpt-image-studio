@@ -14,53 +14,20 @@ import { useStudioSettings } from "../../features/settings";
 import { withNetworkRetry } from "../../services/networkRetry";
 import { clonePromptWordbanks } from "../../services/promptWordbanks";
 import { collectRagDocuments, retrieveRagContext } from "../../services/rag";
-import {
-  deleteConversationDraft,
-  deleteConversationDrafts,
-  loadConversationDraft,
-  saveConversationDraft,
-} from "../../features/drafts";
 import { saveSettings } from "../../services/settings";
 import {
   applyUrlSettings,
   getPromptFromUrlParams,
   hasUrlGenerationParams,
 } from "../../services/urlSettings";
-import { readJsonStorage, readStorage } from "../../shared/localStorage";
 import { useComposerStore } from "../../stores/composerStore";
 import type {
-  ConversationDraft,
-  GenerationParams,
-  Message,
-  PromptMode,
   PromptRequestSettings,
-  PromptWordbankSectionKey,
 } from "../../types/studio";
-
-const STORAGE_KEYS = {
-  draftComposerText: "gpt-image-studio:draft-composer-text",
-  draftAttachments: "gpt-image-studio:draft-attachments",
-} as const;
-
-type SettingsTab =
-  | "general"
-  | "api"
-  | "promptMode"
-  | "favoritePrompts"
-  | "prompt"
-  | "backup"
-  | "batch";
-type BatchPanel = "images" | "conversations";
-type RenameDialogState = {
-  isOpen: boolean;
-  conversationId: string;
-  initialTitle: string;
-};
-type RenameImageDialogState = {
-  isOpen: boolean;
-  imageId: string;
-  initialName: string;
-};
+import { useStudioDrafts } from "./useStudioDrafts";
+import { useStudioImagePreview } from "./useStudioImagePreview";
+import { useStudioRenameDialog } from "./useStudioRenameDialog";
+import { useStudioSettingsSync } from "./useStudioSettingsSync";
 
 export function useStudioViewModel() {
   const isHydrated = ref(false);
@@ -77,49 +44,100 @@ export function useStudioViewModel() {
     isLibraryOpen,
     ragExcludedMatchIds,
   } = storeToRefs(composerState);
-  const isSettingsOpen = ref(false);
-  const legacyComposerText = readStorage(STORAGE_KEYS.draftComposerText, "");
-  const legacyAttachedImageIds = readJsonStorage<string[]>(STORAGE_KEYS.draftAttachments, []);
-  let isApplyingDraft = false;
-  let draftSaveTimer: ReturnType<typeof setTimeout> | null = null;
-  let draftSwitchQueue = Promise.resolve();
-
-  const previewImageId = ref("");
-  const settingsInitialTab = ref<SettingsTab | undefined>(undefined);
-  const settingsInitialBatchPanel = ref<BatchPanel>("images");
-  const renameDialog = ref<RenameDialogState>({
-    isOpen: false,
-    conversationId: "",
-    initialTitle: "",
-  });
-  const renameImageDialog = ref<RenameImageDialogState>({
-    isOpen: false,
-    imageId: "",
-    initialName: "",
-  });
   const feedback = useStudioFeedback();
-  const conversations = useStudioConversations({
-    clearDraft: clearConversationDraft,
-    onStorageError: reportStorageError,
-    refreshStorageUsage: refreshImagesStorageUsage,
+
+  // ── 子 composable：预览 ──
+  // images 在后面创建，先用占位；子 composable 仅在函数调用时访问依赖，不存在时序问题
+  let images: ReturnType<typeof useStudioImages>;
+
+  const imagePreview = useStudioImagePreview({
+    imageById: (id) => images.imageById(id),
+    activeAttachments: computed(() => images?.activeAttachments.value ?? []),
+    activeEditSourceImageId,
+    activeEditMaskImageId,
   });
-  const messages = conversations.messages;
-  const images = useStudioImages({
+
+  // ── 子 composable：重命名 ──
+  let conversations: ReturnType<typeof useStudioConversations>;
+
+  const renameDialogs = useStudioRenameDialog({
+    conversations: computed(() => conversations?.conversations.value ?? []),
+    renameConversation: (id, title) => conversations.renameConversation(id, title),
+    imageById: (id) => images.imageById(id),
+    renameImage: (id, name) => images.renameImage(id, name),
+    notifySuccess: feedback.notifySuccess,
+  });
+
+  // ── 子 composable：设置同步 ──
+  const settingsSync = useStudioSettingsSync({
+    saveCurrentSettings: () => settings.saveCurrentSettings(),
+    reportStorageError,
+    notifyError: feedback.notifyError,
+    promptRewriteGuardEnabled: settings.promptRewriteGuardEnabled,
+    autoRetryOnNetworkError: settings.autoRetryOnNetworkError,
+    promptExpandEnabled: settings.promptExpandEnabled,
+    chatApiKey: settings.chatApiKey,
+    chatApiBaseUrl: settings.chatApiBaseUrl,
+    chatModel: settings.chatModel,
+    chatSystemPrompt: settings.chatSystemPrompt,
+    promptMode: settings.promptMode,
+    ragEnabled: settings.ragEnabled,
+    ragTopK: settings.ragTopK,
+    savePromptWordbank: (section, terms) => settings.savePromptWordbank(section, terms),
+    restoreDefaultPromptWordbank: (section) => settings.restoreDefaultPromptWordbank(section),
+    savePromptRewriteGuardText: (text) => settings.savePromptRewriteGuardText(text),
+    restoreDefaultPromptRewriteGuardText: () => settings.restoreDefaultPromptRewriteGuardText(),
+    restorePromptRewriteGuardHistoryItem: (id) => settings.restorePromptRewriteGuardHistoryItem(id),
+    deletePromptRewriteGuardHistoryItem: (id) => settings.deletePromptRewriteGuardHistoryItem(id),
+    addFavoritePrompt: (input) => settings.addFavoritePrompt(input),
+    updateFavoritePrompt: (id, input) => settings.updateFavoritePrompt(id, input),
+    deleteFavoritePrompt: (id) => settings.deleteFavoritePrompt(id),
+  });
+
+  // ── 子 composable：草稿（依赖 conversations/images，先用前向引用） ──
+  const drafts = useStudioDrafts({
+    composerText,
+    editModeEnabled,
+    activeEditSourceImageId,
+    activeEditMaskImageId,
+    clearEditSelection: () => composerState.clearEditSelection(),
+    activeConversationId: computed(() => conversations?.activeConversationId.value ?? ""),
+    selectConversation: (id) => conversations.selectConversation(id),
+    createConversation: () => conversations.createConversation(),
+    deleteConversation: (id) => conversations.deleteConversation(id),
+    deleteConversations: (ids) => conversations.deleteConversations(ids),
+    attachedImages: computed({
+      get: () => images?.attachedImages.value ?? [],
+      set: (v) => { if (images) images.attachedImages.value = v; },
+    }),
+    imageById: (id) => images.imageById(id),
+    messages: computed(() => conversations?.messages.value ?? []),
+    currentGenerationParams: () => settings.currentGenerationParams(),
+    applySizeResolution: (resolution) => settings.applySizeResolution(resolution),
+    applySizePreset: (size) => settings.applySizePreset(size),
+    imageWidth: settings.imageWidth,
+    imageHeight: settings.imageHeight,
+    quality: settings.quality,
+    background: settings.background,
+    outputFormat: settings.outputFormat,
+    notifySuccess: feedback.notifySuccess,
+    reportStorageError,
+  });
+
+  // ── 正式创建 conversations / images ──
+  conversations = useStudioConversations({
+    clearDraft: drafts.clearConversationDraft,
+    onStorageError: reportStorageError,
+    refreshStorageUsage: () => images.refreshStorageUsage(),
+  });
+
+  images = useStudioImages({
     activeConversationId: conversations.activeConversationId,
-    messages,
+    messages: conversations.messages,
     onStorageError: reportStorageError,
   });
 
-  function clearConversationDraft() {
-    images.attachedImages.value = [];
-    composerText.value = "";
-    composerState.clearEditSelection();
-  }
-
-  function refreshImagesStorageUsage() {
-    return images.refreshStorageUsage();
-  }
-
+  // ── Image Client 组装 ──
   const directImagesClient = createDirectImagesClient({
     getApiProvider: () => settings.apiProvider.value,
     getApiBaseUrl: () => settings.apiBaseUrl.value,
@@ -204,35 +222,7 @@ export function useStudioViewModel() {
     },
   };
 
-  const generation = useStudioGeneration({
-    activeConversationId: conversations.activeConversationId,
-    activeConversation: conversations.activeConversation,
-    attachedImages: images.attachedImages,
-    activeEditMaskImageId,
-    activeEditSourceImageId,
-    composerText,
-    createConversationRecord: conversations.createConversationRecord,
-    currentGenerationParams: settings.currentGenerationParams,
-    currentPromptRequestSettings,
-    customSizeError: settings.customSizeError,
-    imageAssets: images.imageAssets,
-    imageById: images.imageById,
-    imageClient,
-    promptExpandEnabled: settings.promptExpandEnabled,
-    chatApiKey: settings.chatApiKey,
-    chatApiBaseUrl: settings.chatApiBaseUrl,
-    chatModel: settings.chatModel,
-    chatSystemPrompt: settings.chatSystemPrompt,
-    messages,
-    onApiConfigurationError: openApiSettingsFromGenerationError,
-    onStorageError: reportStorageError,
-    conversationExists: (id: string) =>
-      conversations.conversations.value.some((item) => item.id === id),
-    persistConversation: conversations.persistConversation,
-    refreshStorageUsage: images.refreshStorageUsage,
-    updateConversationSummary: conversations.updateConversationSummary,
-  });
-
+  // ── RAG 辅助 ──
   function currentPromptRequestSettings(prompt?: string): PromptRequestSettings {
     return {
       promptMode: settings.promptMode.value,
@@ -253,12 +243,44 @@ export function useStudioViewModel() {
         wordbanks: settings.promptWordbanks.value,
         imageAssets: images.imageAssets.value,
         favoritePrompts: settings.favoritePrompts.value,
-        messages: messages.value,
+        messages: conversations.messages.value,
       }),
       excludedIds: ragExcludedMatchIds.value,
       topK: settings.ragTopK.value,
     }).context || undefined;
   }
+
+  // ── Generation ──
+  const generation = useStudioGeneration({
+    activeConversationId: conversations.activeConversationId,
+    activeConversation: conversations.activeConversation,
+    attachedImages: images.attachedImages,
+    activeEditMaskImageId,
+    activeEditSourceImageId,
+    composerText,
+    createConversationRecord: conversations.createConversationRecord,
+    currentGenerationParams: settings.currentGenerationParams,
+    currentPromptRequestSettings,
+    customSizeError: settings.customSizeError,
+    imageAssets: images.imageAssets,
+    imageById: images.imageById,
+    imageClient,
+    promptExpandEnabled: settings.promptExpandEnabled,
+    chatApiKey: settings.chatApiKey,
+    chatApiBaseUrl: settings.chatApiBaseUrl,
+    chatModel: settings.chatModel,
+    chatSystemPrompt: settings.chatSystemPrompt,
+    messages: conversations.messages,
+    onApiConfigurationError: settingsSync.openApiSettingsFromGenerationError,
+    onStorageError: reportStorageError,
+    conversationExists: (id: string) =>
+      conversations.conversations.value.some((item) => item.id === id),
+    persistConversation: conversations.persistConversation,
+    refreshStorageUsage: images.refreshStorageUsage,
+    updateConversationSummary: conversations.updateConversationSummary,
+  });
+
+  // ── Restore / Backup ──
   const { restoreFromStorage } = useStudioRestore({
     activeConversationId: conversations.activeConversationId,
     applySettings: settings.applySettings,
@@ -267,7 +289,7 @@ export function useStudioViewModel() {
     hydrateImagePreviews: images.hydrateImagePreviews,
     imageAssets: images.imageAssets,
     isHydrated,
-    messages,
+    messages: conversations.messages,
     notifyError: feedback.notifyError,
     onStorageError: reportStorageError,
     refreshStorageUsage: images.refreshStorageUsage,
@@ -279,69 +301,14 @@ export function useStudioViewModel() {
     composerText,
     conversations: conversations.conversations,
     imageAssets: images.imageAssets,
-    messages,
+    messages: conversations.messages,
     notifyError: feedback.notifyError,
     notifySuccess: feedback.notifySuccess,
     onStorageError: reportStorageError,
     restoreFromStorage,
   });
-  const previewImage = computed(() => images.imageById(previewImageId.value));
-  const previewMaskUrl = computed(() => {
-    if (previewImageId.value !== activeEditSourceImageId.value) return undefined;
-    const maskAsset = images.imageById(activeEditMaskImageId.value);
-    return maskAsset?.previewUrl;
-  });
-  const attachedImageIds = computed(() =>
-    images.activeAttachments.value.map((image) => image.id),
-  );
 
-  function previewImageById(id: string) {
-    previewImageId.value = id;
-  }
-
-  function closePreview() {
-    previewImageId.value = "";
-  }
-
-  function openSettings() {
-    isSettingsOpen.value = true;
-  }
-
-  function closeSettings() {
-    isSettingsOpen.value = false;
-  }
-
-  function openBatchImageOperations() {
-    settingsInitialTab.value = "batch";
-    settingsInitialBatchPanel.value = "images";
-    openSettings();
-  }
-
-  function openSettingsDefault() {
-    settingsInitialTab.value = undefined;
-    settingsInitialBatchPanel.value = "images";
-    openSettings();
-  }
-
-  function openFavoritePromptSettings() {
-    settingsInitialTab.value = "favoritePrompts";
-    settingsInitialBatchPanel.value = "images";
-    openSettings();
-  }
-
-  function openApiSettings() {
-    settingsInitialTab.value = "api";
-    settingsInitialBatchPanel.value = "images";
-    openSettings();
-  }
-
-  function openApiSettingsFromGenerationError() {
-    settingsInitialTab.value = "api";
-    settingsInitialBatchPanel.value = "images";
-    openSettings();
-    feedback.notifyError("图片接口认证失败，请检查 API key 和接口地址。");
-  }
-
+  // ── 生命周期 ──
   onMounted(() => {
     void restoreFromStorage().then(async () => {
       const urlSearchParams = new URLSearchParams(window.location.search);
@@ -357,19 +324,8 @@ export function useStudioViewModel() {
       const activeConversationId = conversations.activeConversationId.value;
       if (!activeConversationId) return;
 
-      const draft = await loadConversationDraft(activeConversationId).catch(reportStorageError);
-      if (draft) {
-        applyConversationDraft(draft);
-        applyUrlDraftOverrides(urlPrompt, shouldApplyUrlGenerationParams);
-        return;
-      }
-
-      if (legacyComposerText || legacyAttachedImageIds.length) {
-        applyConversationDraft(createLegacyDraft(activeConversationId));
-      } else {
-        applyConversationDraft(createDefaultDraft(activeConversationId));
-      }
-      applyUrlDraftOverrides(urlPrompt, shouldApplyUrlGenerationParams);
+      await drafts.loadAndApplyDraft(activeConversationId);
+      drafts.applyUrlDraftOverrides(urlPrompt, shouldApplyUrlGenerationParams);
     });
   });
 
@@ -389,8 +345,8 @@ export function useStudioViewModel() {
       conversations.activeConversationId,
     ],
     () => {
-      if (!isHydrated.value || isApplyingDraft) return;
-      scheduleSaveActiveDraft();
+      if (!isHydrated.value || drafts.isApplyingDraft()) return;
+      drafts.scheduleSaveActiveDraft();
     },
   );
 
@@ -398,376 +354,34 @@ export function useStudioViewModel() {
     composerState.clearRagExclusions();
   });
 
-  function createDefaultDraft(conversationId: string): ConversationDraft {
-    return {
-      conversationId,
-      composerText: "",
-      attachedImageIds: [],
-      editModeEnabled: false,
-      generationParams: settings.currentGenerationParams(),
-      updatedAtMs: Date.now(),
-    };
-  }
-
-  function createLegacyDraft(conversationId: string): ConversationDraft {
-    return {
-      conversationId,
-      composerText: legacyComposerText,
-      attachedImageIds: legacyAttachedImageIds,
-      editModeEnabled: false,
-      generationParams: settings.currentGenerationParams(),
-      updatedAtMs: Date.now(),
-    };
-  }
-
-  function applyConversationDraft(draft: ConversationDraft) {
-    isApplyingDraft = true;
-    composerText.value = draft.composerText;
-    images.attachedImages.value = draft.attachedImageIds.filter((id) => Boolean(images.imageById(id)));
-    editModeEnabled.value = draft.editModeEnabled;
-    activeEditSourceImageId.value = draft.editSourceImageId ?? "";
-    activeEditMaskImageId.value = draft.editMaskImageId ?? "";
-    applyGenerationParams(draft.generationParams);
-    isApplyingDraft = false;
-  }
-
-  function applyGenerationParams(params: GenerationParams) {
-    settings.applySizeResolution(params.resolution);
-    settings.applySizePreset(params.size);
-    settings.imageWidth.value = params.width;
-    settings.imageHeight.value = params.height;
-    settings.quality.value = params.quality;
-    settings.background.value = params.background;
-    settings.outputFormat.value = params.outputFormat;
-  }
-
-  async function copyText(text: string) {
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        copyTextWithTextarea(text);
-      }
-      feedback.notifySuccess("文本已复制。");
-    } catch (error) {
-      feedback.notifyError("复制失败，请手动选择文本复制。");
-      reportStorageError(error);
-    }
-  }
-
-  function loadMessageConfig(message: Message) {
-    composerText.value = message.content;
-    images.attachedImages.value = message.referencedImageIds.filter((id) =>
-      Boolean(images.imageById(id)),
-    );
-    composerState.clearEditSelection();
-    editModeEnabled.value = false;
-
-    if (message.generationParams) {
-      applyGenerationParams(message.generationParams);
-    }
-
-    const conversationId = conversations.activeConversationId.value;
-    if (conversationId) {
-      void saveConversationDraft(currentConversationDraft(conversationId)).catch(
-        reportStorageError,
-      );
-    }
-    feedback.notifySuccess("已加载到输入面板。");
-  }
-
-  function applyUrlDraftOverrides(
-    prompt: string | undefined,
-    shouldApplyGenerationParams: boolean,
-  ) {
-    if (prompt === undefined && !shouldApplyGenerationParams) return;
-
-    isApplyingDraft = true;
-    if (prompt !== undefined) composerText.value = prompt;
-    if (shouldApplyGenerationParams) {
-      applyGenerationParams(settings.currentGenerationParams());
-    }
-    isApplyingDraft = false;
-    void saveActiveDraft().catch(reportStorageError);
-  }
-
-  function currentConversationDraft(conversationId: string): ConversationDraft {
-    return {
-      conversationId,
-      composerText: composerText.value,
-      attachedImageIds: [...images.attachedImages.value],
-      editModeEnabled: editModeEnabled.value,
-      editSourceImageId: activeEditSourceImageId.value || undefined,
-      editMaskImageId: activeEditMaskImageId.value || undefined,
-      generationParams: settings.currentGenerationParams(),
-      updatedAtMs: Date.now(),
-    };
-  }
-
-  function scheduleSaveActiveDraft() {
-    if (draftSaveTimer) {
-      clearTimeout(draftSaveTimer);
-    }
-    draftSaveTimer = setTimeout(() => {
-      draftSaveTimer = null;
-      void saveActiveDraft();
-    }, 250);
-  }
-
-  async function saveActiveDraft() {
-    const conversationId = conversations.activeConversationId.value;
-    if (!conversationId) return;
-
-    const draft = currentConversationDraft(conversationId);
-    await saveConversationDraft(draft).catch(reportStorageError);
-  }
-
-  function selectConversationWithDraft(id: string) {
-    draftSwitchQueue = draftSwitchQueue
-      .catch(reportStorageError)
-      .then(async () => {
-        await saveActiveDraft();
-        conversations.selectConversation(id);
-        const nextDraft = await loadConversationDraft(id).catch(reportStorageError);
-        if (nextDraft) {
-          applyConversationDraft(nextDraft);
-        } else {
-          applyConversationDraft(createDefaultDraft(id));
-        }
-      });
-  }
-
-  async function createConversationWithDraft() {
-    await saveActiveDraft();
-    await conversations.createConversation();
-    const id = conversations.activeConversationId.value;
-    if (!id) return;
-    applyConversationDraft(createDefaultDraft(id));
-    await saveConversationDraft(currentConversationDraft(id)).catch(reportStorageError);
-  }
-
-  async function renameConversation(id: string) {
-    const conversation = conversations.conversations.value.find((item) => item.id === id);
-    if (!conversation) return;
-    renameDialog.value = {
-      isOpen: true,
-      conversationId: id,
-      initialTitle: conversation.title,
-    };
-  }
-
-  function cancelRenameConversation() {
-    renameDialog.value = {
-      isOpen: false,
-      conversationId: "",
-      initialTitle: "",
-    };
-  }
-
-  async function confirmRenameConversation(nextTitle: string) {
-    const conversationId = renameDialog.value.conversationId;
-    const previousTitle = renameDialog.value.initialTitle;
-    if (!conversationId) return;
-
-    cancelRenameConversation();
-    if (nextTitle === previousTitle) return;
-    await conversations.renameConversation(conversationId, nextTitle);
-    feedback.notifySuccess("会话已重命名。");
-  }
-
-  function requestRenameImage(id: string) {
-    const image = images.imageById(id);
-    if (!image) return;
-    renameImageDialog.value = {
-      isOpen: true,
-      imageId: id,
-      initialName: image.name,
-    };
-  }
-
-  function cancelRenameImage() {
-    renameImageDialog.value = {
-      isOpen: false,
-      imageId: "",
-      initialName: "",
-    };
-  }
-
-  async function confirmRenameImage(nextName: string) {
-    const imageId = renameImageDialog.value.imageId;
-    const previousName = renameImageDialog.value.initialName;
-    if (!imageId) return;
-
-    cancelRenameImage();
-    if (nextName === previousName) return;
-    await images.renameImage(imageId, nextName);
-    feedback.notifySuccess("图片已重命名。");
-  }
-
-  function persistSettingsChange() {
-    void settings.saveCurrentSettings().catch(reportStorageError);
-  }
-
-  function setPromptRewriteGuardEnabled(value: boolean) {
-    settings.promptRewriteGuardEnabled.value = value;
-    persistSettingsChange();
-  }
-
-  function setAutoRetryOnNetworkError(value: boolean) {
-    settings.autoRetryOnNetworkError.value = value;
-    persistSettingsChange();
-  }
-
-  function setPromptExpandEnabled(value: boolean) {
-    settings.promptExpandEnabled.value = value;
-    persistSettingsChange();
-  }
-
-  function setChatApiKey(value: string) {
-    settings.chatApiKey.value = value;
-    persistSettingsChange();
-  }
-
-  function setChatApiBaseUrl(value: string) {
-    settings.chatApiBaseUrl.value = value;
-    persistSettingsChange();
-  }
-
-  function setChatModel(value: string) {
-    settings.chatModel.value = value;
-    persistSettingsChange();
-  }
-
-  function setChatSystemPrompt(value: string) {
-    settings.chatSystemPrompt.value = value;
-    persistSettingsChange();
-  }
-
-
-  function setPromptMode(value: PromptMode) {
-    settings.promptMode.value = value;
-    persistSettingsChange();
-  }
-
-  function setRagEnabled(value: boolean) {
-    settings.ragEnabled.value = value;
-    persistSettingsChange();
-  }
-
-  function setRagTopK(value: number) {
-    settings.ragTopK.value = value;
-    persistSettingsChange();
-  }
-
-  function savePromptWordbank(section: PromptWordbankSectionKey, terms: string[]) {
-    settings.savePromptWordbank(section, terms);
-    persistSettingsChange();
-  }
-
-  function restoreDefaultPromptWordbank(section: PromptWordbankSectionKey) {
-    settings.restoreDefaultPromptWordbank(section);
-    persistSettingsChange();
-  }
-
-  function savePromptRewriteGuardText(text: string) {
-    settings.savePromptRewriteGuardText(text);
-    persistSettingsChange();
-  }
-
-  function restoreDefaultPromptRewriteGuardText() {
-    settings.restoreDefaultPromptRewriteGuardText();
-    persistSettingsChange();
-  }
-
-  function restorePromptRewriteGuardHistoryItem(id: string) {
-    settings.restorePromptRewriteGuardHistoryItem(id);
-    persistSettingsChange();
-  }
-
-  function deletePromptRewriteGuardHistoryItem(id: string) {
-    settings.deletePromptRewriteGuardHistoryItem(id);
-    persistSettingsChange();
-  }
-
-  function addFavoritePrompt(input: { title?: string; text?: string }) {
-    const didAdd = settings.addFavoritePrompt(input);
-    if (didAdd) persistSettingsChange();
-    return didAdd;
-  }
-
-  function updateFavoritePrompt(
-    id: string,
-    input: { title?: string; text?: string },
-  ) {
-    const didUpdate = settings.updateFavoritePrompt(id, input);
-    if (didUpdate) persistSettingsChange();
-    return didUpdate;
-  }
-
-  function deleteFavoritePrompt(id: string) {
-    settings.deleteFavoritePrompt(id);
-    persistSettingsChange();
-  }
-
-  async function deleteConversationWithDraft(id: string) {
-    await conversations.deleteConversation(id);
-    await deleteConversationDraft(id).catch(reportStorageError);
-
-    const activeId = conversations.activeConversationId.value;
-    if (!activeId) return;
-    const draft = await loadConversationDraft(activeId).catch(reportStorageError);
-    if (draft) {
-      applyConversationDraft(draft);
-    } else {
-      applyConversationDraft(createDefaultDraft(activeId));
-    }
-  }
-
-  async function deleteConversationsWithDraft(ids: string[]) {
-    await conversations.deleteConversations(ids);
-    await deleteConversationDrafts(ids).catch(reportStorageError);
-
-    const activeId = conversations.activeConversationId.value;
-    if (!activeId) {
-      clearConversationDraft();
-      return;
-    }
-
-    const draft = await loadConversationDraft(activeId).catch(reportStorageError);
-    if (draft) {
-      applyConversationDraft(draft);
-    } else {
-      applyConversationDraft(createDefaultDraft(activeId));
-    }
-  }
-
+  // ── 组装返回对象 ──
   const sidebar = proxyRefs({
-    createConversation: createConversationWithDraft,
-    deleteConversation: deleteConversationWithDraft,
-    openSettings: openSettingsDefault,
-    renameConversation,
-    selectConversation: selectConversationWithDraft,
+    createConversation: drafts.createConversationWithDraft,
+    deleteConversation: drafts.deleteConversationWithDraft,
+    openSettings: settingsSync.openSettingsDefault,
+    renameConversation: renameDialogs.renameConversation,
+    selectConversation: drafts.selectConversationWithDraft,
   });
   const chatHeader = proxyRefs({
     activeConversation: conversations.activeConversation,
     isLibraryOpen,
   });
   const chatMessages = proxyRefs({
-    activeAttachmentIds: attachedImageIds,
+    activeAttachmentIds: imagePreview.attachedImageIds,
     activeMessages: conversations.activeMessages,
   });
   const chatActions = {
     closeAllEditors: composerState.closeAllEditors,
-    copyText,
+    copyText: drafts.copyText,
     deleteMessage: conversations.deleteSingleMessage,
     generateAnother: generation.generateAnother,
-    loadMessageConfig,
+    loadMessageConfig: drafts.loadMessageConfig,
     openConversations: composerState.openConversations,
-    openApiSettings,
-    openSettings: openSettingsDefault,
-    openFavoritePromptSettings,
-    previewImage: previewImageById,
-    renameImage: requestRenameImage,
+    openApiSettings: settingsSync.openApiSettings,
+    openSettings: settingsSync.openSettingsDefault,
+    openFavoritePromptSettings: settingsSync.openFavoritePromptSettings,
+    previewImage: imagePreview.previewImageById,
+    renameImage: renameDialogs.requestRenameImage,
     removeAttachment: (id: string) => {
       if (
         id === activeEditSourceImageId.value ||
@@ -817,9 +431,9 @@ export function useStudioViewModel() {
     messages: chatMessages,
   };
   const library = proxyRefs({
-    openBatchOperations: openBatchImageOperations,
-    previewImage: previewImageById,
-    renameImage: requestRenameImage,
+    openBatchOperations: settingsSync.openBatchImageOperations,
+    previewImage: imagePreview.previewImageById,
+    renameImage: renameDialogs.requestRenameImage,
   });
   const settingsModal = proxyRefs({
     autoRetryOnNetworkError: settings.autoRetryOnNetworkError,
@@ -827,12 +441,12 @@ export function useStudioViewModel() {
     chatApiKey: settings.chatApiKey,
     chatApiBaseUrl: settings.chatApiBaseUrl,
     chatModel: settings.chatModel,
-    setPromptExpandEnabled,
-    setAutoRetryOnNetworkError,
-    setChatApiKey,
-    setChatApiBaseUrl,
-    setChatModel,
-    setChatSystemPrompt,
+    setPromptExpandEnabled: settingsSync.setPromptExpandEnabled,
+    setAutoRetryOnNetworkError: settingsSync.setAutoRetryOnNetworkError,
+    setChatApiKey: settingsSync.setChatApiKey,
+    setChatApiBaseUrl: settingsSync.setChatApiBaseUrl,
+    setChatModel: settingsSync.setChatModel,
+    setChatSystemPrompt: settingsSync.setChatSystemPrompt,
     chatSystemPrompt: settings.chatSystemPrompt,
     apiProvider: settings.apiProvider,
     apiMode: settings.apiMode,
@@ -851,44 +465,44 @@ export function useStudioViewModel() {
     promptRewriteGuardEnabled: settings.promptRewriteGuardEnabled,
     promptRewriteGuardHistory: settings.promptRewriteGuardHistory,
     promptRewriteGuardText: settings.promptRewriteGuardText,
-    close: closeSettings,
-    open: openSettingsDefault,
+    close: settingsSync.closeSettings,
+    open: settingsSync.openSettingsDefault,
     conversations: conversations.conversations,
-    deleteConversations: deleteConversationsWithDraft,
+    deleteConversations: drafts.deleteConversationsWithDraft,
     deleteImages: images.deleteImages,
     exportBackup: backup.exportBackup,
     images: images.imageAssets,
     importBackup: backup.importBackup,
-    initialBatchPanel: settingsInitialBatchPanel,
-    initialTab: settingsInitialTab,
-    isOpen: isSettingsOpen,
-    messages,
+    initialBatchPanel: settingsSync.settingsInitialBatchPanel,
+    initialTab: settingsSync.settingsInitialTab,
+    isOpen: settingsSync.isSettingsOpen,
+    messages: conversations.messages,
     model: settings.model,
-    previewImage: previewImageById,
-    deletePromptRewriteGuardHistoryItem,
-    restoreDefaultPromptRewriteGuardText,
-    restorePromptRewriteGuardHistoryItem,
-    savePromptRewriteGuardText,
-    savePromptWordbank,
-    setPromptMode,
-    setRagEnabled,
-    setRagTopK,
-    setPromptRewriteGuardEnabled,
+    previewImage: imagePreview.previewImageById,
+    deletePromptRewriteGuardHistoryItem: settingsSync.deletePromptRewriteGuardHistoryItem,
+    restoreDefaultPromptRewriteGuardText: settingsSync.restoreDefaultPromptRewriteGuardText,
+    restorePromptRewriteGuardHistoryItem: settingsSync.restorePromptRewriteGuardHistoryItem,
+    savePromptRewriteGuardText: settingsSync.savePromptRewriteGuardText,
+    savePromptWordbank: settingsSync.savePromptWordbank,
+    setPromptMode: settingsSync.setPromptMode,
+    setRagEnabled: settingsSync.setRagEnabled,
+    setRagTopK: settingsSync.setRagTopK,
+    setPromptRewriteGuardEnabled: settingsSync.setPromptRewriteGuardEnabled,
     streamImages: settings.streamImages,
     streamPartialImages: settings.streamPartialImages,
-    addFavoritePrompt,
-    updateFavoritePrompt,
-    deleteFavoritePrompt,
-    restoreDefaultPromptWordbank,
+    addFavoritePrompt: settingsSync.addFavoritePrompt,
+    updateFavoritePrompt: settingsSync.updateFavoritePrompt,
+    deleteFavoritePrompt: settingsSync.deleteFavoritePrompt,
+    restoreDefaultPromptWordbank: settingsSync.restoreDefaultPromptWordbank,
   });
   const preview = proxyRefs({
-    close: closePreview,
+    close: imagePreview.closePreview,
     editImage: (id: string) => {
-      closePreview();
+      imagePreview.closePreview();
       composerState.selectingEditImageId = id;
     },
-    image: previewImage,
-    maskUrl: previewMaskUrl,
+    image: imagePreview.previewImage,
+    maskUrl: imagePreview.previewMaskUrl,
   });
   const noticeToast = proxyRefs({
     close: feedback.dismissNotice,
@@ -900,21 +514,21 @@ export function useStudioViewModel() {
     dialog: feedback.confirmDialog,
   });
   const renameModal = proxyRefs({
-    cancel: cancelRenameConversation,
-    confirm: confirmRenameConversation,
+    cancel: renameDialogs.cancelRenameConversation,
+    confirm: renameDialogs.confirmRenameConversation,
     confirmLabel: "保存名称",
     description: "重命名后，会话标题不会再被新消息自动覆盖。",
-    initialValue: computed(() => renameDialog.value.initialTitle),
-    isOpen: computed(() => renameDialog.value.isOpen),
+    initialValue: computed(() => renameDialogs.renameDialog.value.initialTitle),
+    isOpen: computed(() => renameDialogs.renameDialog.value.isOpen),
     title: "重命名会话",
   });
   const renameImageModal = proxyRefs({
-    cancel: cancelRenameImage,
-    confirm: confirmRenameImage,
+    cancel: renameDialogs.cancelRenameImage,
+    confirm: renameDialogs.confirmRenameImage,
     confirmLabel: "保存名称",
     description: "修改后会同步用于图片库展示和下载文件名。",
-    initialValue: computed(() => renameImageDialog.value.initialName),
-    isOpen: computed(() => renameImageDialog.value.isOpen),
+    initialValue: computed(() => renameDialogs.renameImageDialog.value.initialName),
+    isOpen: computed(() => renameDialogs.renameImageDialog.value.isOpen),
     title: "重命名图片",
   });
 
@@ -937,20 +551,4 @@ function reportStorageError(error: unknown) {
   // 注意：此函数在 useStudioViewModel 外部定义，无法直接访问 feedback store。
   // 调用方（useStudioViewModel 内部）应通过 feedback.notifyError 向用户展示通知。
   console.error("[storage] 本地存储访问失败", error);
-}
-
-/** 兼容旧浏览器的文本复制（execCommand 已废弃，仅作为 Clipboard API 不可用时的回退）。 */
-function copyTextWithTextarea(text: string) {
-  const textarea = document.createElement("textarea");
-  textarea.value = text;
-  textarea.setAttribute("readonly", "true");
-  textarea.style.position = "fixed";
-  textarea.style.left = "-9999px";
-  document.body.appendChild(textarea);
-  textarea.select();
-  try {
-    document.execCommand("copy");
-  } finally {
-    document.body.removeChild(textarea);
-  }
 }
