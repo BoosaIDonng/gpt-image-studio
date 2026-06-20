@@ -77,7 +77,7 @@ describe("ConfirmDialog", () => {
   it("applies default tone styles", () => {
     const wrapper = mountDialog({ title: "确认", description: "描述", confirmLabel: "确定", tone: "default" as const });
     const buttons = document.body.querySelectorAll("button");
-    const confirmButton = Array.from(buttons).find((b) => b.textContent?.includes("删除"));
+    const confirmButton = Array.from(buttons).find((b) => b.textContent?.includes("确定"));
     expect(confirmButton!.className).toContain("bg-black");
     wrapper.unmount();
   });
