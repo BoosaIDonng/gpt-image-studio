@@ -41,6 +41,15 @@ export async function startServer(opts: {
     credentials: true,
   });
 
+  // Host 头校验：只允许 127.0.0.1 / localhost，防止 DNS rebinding 攻击
+  // 把外网域名解析到 127.0.0.1 后，浏览器会携带外网 Host 头访问本地服务
+  app.addHook("onRequest", async (req, reply) => {
+    const host = req.headers.host;
+    if (host && !isLocalHost(host)) {
+      return reply.status(403).send({ error: "拒绝访问：Host 不是本地地址" });
+    }
+  });
+
   await authMiddleware(app);
   await app.register(pairRoutes, {
     sessionTtlMs: opts.security.sessionTtlMs,
@@ -78,4 +87,10 @@ export async function startServer(opts: {
       console.log("需要配对时请运行：gpt-image-studio pair");
     }
   }
+}
+
+/** 判断 Host 头是否指向本地地址（127.0.0.1 / localhost / ::1）。 */
+function isLocalHost(host: string): boolean {
+  const hostname = host.replace(/:\d+$/, "").toLowerCase();
+  return hostname === "127.0.0.1" || hostname === "localhost" || hostname === "::1" || hostname === "[::1]";
 }
