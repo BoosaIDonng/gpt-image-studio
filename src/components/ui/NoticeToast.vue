@@ -23,6 +23,7 @@ const emit = defineEmits<{
         : 'border-gray-200 text-gray-800'
     "
     role="status"
+    aria-live="polite"
   >
     <div class="flex items-center gap-3">
       <div

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { FocusTrap } from "focus-trap-vue";
+
 type ConfirmDialogState = {
   title: string;
   description: string;
@@ -24,12 +26,13 @@ const emit = defineEmits<{
       role="presentation"
       @mousedown.self="emit('cancel')"
     >
-      <section
-        aria-labelledby="confirmDialogTitle"
-        aria-modal="true"
-        class="w-full max-w-md rounded-lg bg-white p-5 shadow-xl"
-        role="dialog"
-      >
+      <FocusTrap :active="!!dialog" :initial-focus="() => false">
+        <section
+          aria-labelledby="confirmDialogTitle"
+          aria-modal="true"
+          class="w-full max-w-md rounded-lg bg-white p-5 shadow-xl"
+          role="dialog"
+        >
         <div class="mb-5">
           <h2
             id="confirmDialogTitle"
@@ -63,7 +66,8 @@ const emit = defineEmits<{
             {{ dialog.confirmLabel }}
           </button>
         </div>
-      </section>
+        </section>
+      </FocusTrap>
     </div>
   </Teleport>
 </template>

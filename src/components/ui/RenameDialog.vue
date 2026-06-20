@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
+import { FocusTrap } from "focus-trap-vue";
 
 const props = defineProps<{
   isOpen: boolean;
@@ -15,6 +16,7 @@ const emit = defineEmits<{
 }>();
 
 const inputValue = ref("");
+const inputRef = ref<HTMLInputElement | null>(null);
 const normalizedValue = computed(() => inputValue.value.trim());
 const canConfirm = computed(() => Boolean(normalizedValue.value));
 
@@ -23,6 +25,7 @@ watch(
   (isOpen) => {
     if (!isOpen) return;
     inputValue.value = props.initialValue;
+    nextTick(() => inputRef.value?.focus());
   },
 );
 
@@ -40,12 +43,13 @@ function confirm() {
       role="presentation"
       @mousedown.self="emit('cancel')"
     >
-      <section
-        aria-labelledby="renameDialogTitle"
-        aria-modal="true"
-        class="w-full max-w-md rounded-lg bg-white p-5 shadow-xl"
-        role="dialog"
-      >
+      <FocusTrap :active="isOpen">
+        <section
+          aria-labelledby="renameDialogTitle"
+          aria-modal="true"
+          class="w-full max-w-md rounded-lg bg-white p-5 shadow-xl"
+          role="dialog"
+        >
         <div class="mb-4">
           <h2
             id="renameDialogTitle"
@@ -59,6 +63,7 @@ function confirm() {
         </div>
 
         <input
+          ref="inputRef"
           v-model="inputValue"
           class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-gray-500"
           autocomplete="off"
@@ -83,7 +88,8 @@ function confirm() {
             {{ confirmLabel }}
           </button>
         </div>
-      </section>
+        </section>
+      </FocusTrap>
     </div>
   </Teleport>
 </template>

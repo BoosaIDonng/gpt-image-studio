@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
+import { FocusTrap } from "focus-trap-vue";
 import type {
   ApiMode,
   ApiProvider,
@@ -168,12 +169,13 @@ function forwardSavePromptWordbank(
       role="presentation"
       @mousedown.self="emit('close')"
     >
-      <section
-        aria-labelledby="settingsTitle"
-        aria-modal="true"
-        class="flex h-[min(88vh,44rem)] w-full max-w-4xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
-        role="dialog"
-      >
+      <FocusTrap :active="isOpen" :initial-focus="() => false">
+        <section
+          aria-labelledby="settingsTitle"
+          aria-modal="true"
+          class="flex h-[min(88vh,44rem)] w-full max-w-4xl flex-col overflow-hidden rounded-lg bg-white shadow-xl"
+          role="dialog"
+        >
         <div
           class="flex items-start justify-between border-b border-gray-200 px-5 py-4"
         >
@@ -340,7 +342,8 @@ function forwardSavePromptWordbank(
             关闭
           </button>
         </div>
-      </section>
+        </section>
+      </FocusTrap>
     </div>
   </Teleport>
 

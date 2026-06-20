@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
+import { FocusTrap } from "focus-trap-vue";
 import type { ImageAsset } from "../../types/studio";
 import Tooltip from "../ui/Tooltip.vue";
 
@@ -390,13 +391,13 @@ function clamp(value: number, min: number, max: number) {
 
 <template>
   <Teleport to="body">
-    <div
-      v-if="image?.previewUrl"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6"
-      role="dialog"
-      aria-modal="true"
-      @mousedown.self="closeModal"
-    >
+    <FocusTrap v-if="image?.previewUrl" :active="!!image?.previewUrl" :initial-focus="() => false">
+      <div
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6"
+        role="dialog"
+        aria-modal="true"
+        @mousedown.self="closeModal"
+      >
       <div class="w-full max-w-5xl rounded-xl bg-white p-4">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -616,7 +617,8 @@ function clamp(value: number, min: number, max: number) {
           预览说明：黑色区域=编辑区域，绿色区域=擦除已选区域；支持多选区、撤销重做、缩放平移。
         </div>
       </div>
-    </div>
+      </div>
+    </FocusTrap>
   </Teleport>
 </template>
 
