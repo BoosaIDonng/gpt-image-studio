@@ -129,6 +129,7 @@ function handleEdit() {
           <img
             class="max-h-[calc(100vh-160px)] max-w-full rounded-lg object-contain shadow-2xl transition-transform duration-75"
             draggable="false"
+            decoding="async"
             :alt="image.name"
             :src="image.previewUrl"
           />

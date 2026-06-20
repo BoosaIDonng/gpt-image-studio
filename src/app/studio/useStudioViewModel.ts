@@ -392,7 +392,6 @@ export function useStudioViewModel() {
       if (!isHydrated.value || isApplyingDraft) return;
       scheduleSaveActiveDraft();
     },
-    { deep: true },
   );
 
   watch(composerText, () => {

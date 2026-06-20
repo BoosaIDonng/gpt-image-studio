@@ -1,4 +1,4 @@
-import { computed, ref, watch } from "vue";
+import { computed, ref, shallowRef, watch } from "vue";
 import { defineStore } from "pinia";
 import {
   deleteImageAsset,
@@ -25,8 +25,8 @@ type ImagesStoreContext = {
 };
 
 export const useImagesStore = defineStore("images", () => {
-  const attachedImages = ref<string[]>([]);
-  const imageAssets = ref<ImageAsset[]>([]);
+  const attachedImages = shallowRef<string[]>([]);
+  const imageAssets = shallowRef<ImageAsset[]>([]);
   const storageUsage = ref<StorageUsage | null>(null);
   let context: ImagesStoreContext | null = null;
 
@@ -58,7 +58,7 @@ export const useImagesStore = defineStore("images", () => {
 
   function attachImage(id: string) {
     if (!attachedImages.value.includes(id)) {
-      attachedImages.value.push(id);
+      attachedImages.value = [...attachedImages.value, id];
     }
   }
 

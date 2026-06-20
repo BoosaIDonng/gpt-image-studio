@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   clearStore: vi.fn(),
   getAllFromStore: vi.fn(),
   loadSettings: vi.fn(),
-  putInStore: vi.fn(),
+  bulkPut: vi.fn(),
   saveSettings: vi.fn(),
 }));
 
@@ -20,7 +20,7 @@ vi.mock("./db", async (importOriginal) => {
     ...actual,
     clearStore: mocks.clearStore,
     getAllFromStore: mocks.getAllFromStore,
-    putInStore: mocks.putInStore,
+    bulkPut: mocks.bulkPut,
   };
 });
 
@@ -109,7 +109,7 @@ describe("studio backups", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.clearStore.mockResolvedValue(undefined);
-    mocks.putInStore.mockResolvedValue(undefined);
+    mocks.bulkPut.mockResolvedValue(undefined);
     mocks.saveSettings.mockResolvedValue(undefined);
   });
 
@@ -241,21 +241,23 @@ describe("studio backups", () => {
     await restoreStudioBackup(fileFromBlob(backup));
 
     expect(mocks.clearStore).toHaveBeenCalledTimes(5);
-    expect(mocks.putInStore).toHaveBeenCalledWith(
+    expect(mocks.bulkPut).toHaveBeenCalledWith(
       STORE_NAMES.conversations,
-      conversation,
+      [conversation],
     );
-    expect(mocks.putInStore).toHaveBeenCalledWith(STORE_NAMES.messages, message);
-    expect(mocks.putInStore).toHaveBeenCalledWith(
+    expect(mocks.bulkPut).toHaveBeenCalledWith(STORE_NAMES.messages, [message]);
+    expect(mocks.bulkPut).toHaveBeenCalledWith(
       STORE_NAMES.imageAssets,
-      expect.not.objectContaining({ previewUrl: expect.anything() }),
+      [expect.not.objectContaining({ previewUrl: expect.anything() })],
     );
-    expect(mocks.putInStore).toHaveBeenCalledWith(
+    expect(mocks.bulkPut).toHaveBeenCalledWith(
       STORE_NAMES.imageBlobs,
-      expect.objectContaining({
-        key: "blob 1",
-        blob: expect.any(Blob),
-      }),
+      [
+        expect.objectContaining({
+          key: "blob 1",
+          blob: expect.any(Blob),
+        }),
+      ],
     );
     expect(mocks.saveSettings).toHaveBeenCalledWith({
       ...settings,

@@ -31,7 +31,6 @@ watch(
     if (prompts.some((item) => item.id === editingId.value)) return;
     resetDraft();
   },
-  { deep: true },
 );
 
 function startCreate() {

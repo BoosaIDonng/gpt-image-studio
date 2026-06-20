@@ -1,4 +1,4 @@
-import { computed, ref } from "vue";
+import { computed, ref, shallowRef } from "vue";
 import { defineStore } from "pinia";
 import {
   deleteConversation as deleteConversationRecord,
@@ -24,8 +24,8 @@ type ConversationsStoreContext = {
 };
 
 export const useConversationsStore = defineStore("conversations", () => {
-  const conversations = ref<Conversation[]>([]);
-  const messages = ref<Message[]>([]);
+  const conversations = shallowRef<Conversation[]>([]);
+  const messages = shallowRef<Message[]>([]);
   const activeConversationId = ref("");
   let conversationWriteQueue = Promise.resolve();
   let context: ConversationsStoreContext | null = null;
@@ -167,7 +167,7 @@ export const useConversationsStore = defineStore("conversations", () => {
       updatedAt: inputValue.updatedAt,
     };
 
-    conversations.value.unshift(conversation);
+    conversations.value = [conversation, ...conversations.value];
     activeConversationId.value = id;
     await persistConversation(conversation);
     return conversation;

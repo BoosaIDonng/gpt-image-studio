@@ -1,6 +1,6 @@
 import type { Conversation, ImageAsset, Message } from "../types/studio";
 import { isoTimestamp } from "../shared/dateTime";
-import { getAllFromStore, putInStore, STORE_NAMES } from "./db";
+import { bulkPut, getAllFromStore, STORE_NAMES } from "./db";
 
 type LegacyConversation = Conversation & {
   createdAtMs?: number;
@@ -42,15 +42,9 @@ export async function migrateLegacyTimeFields() {
   }
 
   await Promise.all([
-    ...migratedConversations.map((record) =>
-      putInStore(STORE_NAMES.conversations, record),
-    ),
-    ...migratedMessages.map((record) =>
-      putInStore(STORE_NAMES.messages, record),
-    ),
-    ...migratedImages.map((record) =>
-      putInStore(STORE_NAMES.imageAssets, record),
-    ),
+    bulkPut(STORE_NAMES.conversations, migratedConversations),
+    bulkPut(STORE_NAMES.messages, migratedMessages),
+    bulkPut(STORE_NAMES.imageAssets, migratedImages),
   ]);
 }
 

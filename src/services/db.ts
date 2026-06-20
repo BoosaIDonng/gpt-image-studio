@@ -146,6 +146,36 @@ export async function deleteFromStore(storeName: StoreName, key: IDBValidKey) {
   await transactionDone(transaction);
 }
 
+/**
+ * 批量写入：把多条记录放到同一个事务里一次性 put。
+ * 相比循环调用 putInStore（每次都开一个事务+一次事务完成事件），
+ * 批量写入把 N 次 round-trip 合并成 1 次，备份恢复/迁移场景下提升明显。
+ */
+export async function bulkPut<T>(storeName: StoreName, values: readonly T[]) {
+  if (!values.length) return;
+  const db = await getStudioDb();
+  const transaction = db.transaction(storeName, "readwrite");
+  const store = transaction.objectStore(storeName);
+  for (const value of values) {
+    store.put(value);
+  }
+  await transactionDone(transaction);
+}
+
+/**
+ * 批量删除：同上，把多个 key 合并到单个事务。
+ */
+export async function bulkDelete(storeName: StoreName, keys: readonly IDBValidKey[]) {
+  if (!keys.length) return;
+  const db = await getStudioDb();
+  const transaction = db.transaction(storeName, "readwrite");
+  const store = transaction.objectStore(storeName);
+  for (const key of keys) {
+    store.delete(key);
+  }
+  await transactionDone(transaction);
+}
+
 export async function clearStore(storeName: StoreName) {
   const db = await getStudioDb();
   const transaction = db.transaction(storeName, "readwrite");

@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import type { ComputedRef, Ref } from "vue";
-import { computed, ref, watch } from "vue";
+import { computed, ref, shallowRef, watch } from "vue";
 import type { GenerationJob } from "../features/generation/generationJobTypes";
 import type { ImageClient } from "../features/generation/imageClients/imageClient";
 import { normalizeImageCount } from "../services/generationParams";
@@ -85,7 +85,7 @@ type GenerationStoreContext = {
 };
 
 export const useGenerationStore = defineStore("generation", () => {
-  const jobs = ref<GenerationJob[]>([]);
+  const jobs = shallowRef<GenerationJob[]>([]);
   const partialPreviewUrls = ref<Record<string, string>>({});
   let context: GenerationStoreContext | null = null;
   const messageSaveQueues = new Map<string, Promise<unknown>>();
@@ -272,7 +272,7 @@ export const useGenerationStore = defineStore("generation", () => {
     };
 
     clearPartialPreview(assistantMessage.id);
-    input.value.messages.value.push(userMessage, assistantMessage);
+    input.value.messages.value = [...input.value.messages.value, userMessage, assistantMessage];
     const updatedConversation = input.value.updateConversationSummary(
       conversationId,
       text,
@@ -779,7 +779,7 @@ export const useGenerationStore = defineStore("generation", () => {
       startedAtMs: Date.now(),
       ...jobInput,
     };
-    jobs.value.push(job);
+    jobs.value = [...jobs.value, job];
     return job;
   }
 

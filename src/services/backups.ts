@@ -9,7 +9,7 @@ import {
 import { normalizeFavoritePrompts } from "./favoritePrompts";
 import { normalizePromptWordbanks } from "./promptWordbanks";
 import type { AppSettings, Conversation, ImageAsset, Message } from "../types/studio";
-import { clearStore, getAllFromStore, putInStore, STORE_NAMES } from "./db";
+import { clearStore, getAllFromStore, bulkPut, STORE_NAMES } from "./db";
 import { saveSettings, loadSettings } from "./settings";
 import { createZipArchive } from "./zipArchive";
 
@@ -147,26 +147,36 @@ export async function restoreStudioBackup(file: File) {
   ]);
 
   await Promise.all([
-    ...data.conversations.map((conversation) =>
-      putInStore(STORE_NAMES.conversations, conversation),
+    bulkPut(
+      STORE_NAMES.conversations,
+      data.conversations,
     ),
-    ...data.messages.map((message) =>
-      putInStore(STORE_NAMES.messages, normalizeMessage(message)),
+    bulkPut(
+      STORE_NAMES.messages,
+      data.messages.map(normalizeMessage),
     ),
-    ...data.imageAssets.map((asset) =>
-      putInStore(STORE_NAMES.imageAssets, stripPreviewUrl(asset)),
+    bulkPut(
+      STORE_NAMES.imageAssets,
+      data.imageAssets.map(stripPreviewUrl),
     ),
-    ...data.imageAssets.map(async (asset) => {
-      if (!asset.blobKey) return;
-
-      const blob = files.get(blobEntryName(asset.blobKey));
-      if (!blob) return;
-
-      await putInStore<ImageBlobRecord>(STORE_NAMES.imageBlobs, {
-        key: asset.blobKey,
-        blob: await restoreImageBlob(blob, asset),
-      });
-    }),
+    (async () => {
+      // blob 需要先 await arrayBuffer，在写入前并行预处理，再用一次批量事务落盘。
+      const blobRecords = await Promise.all(
+        data.imageAssets.map(async (asset) => {
+          if (!asset.blobKey) return null;
+          const blob = files.get(blobEntryName(asset.blobKey));
+          if (!blob) return null;
+          return {
+            key: asset.blobKey,
+            blob: await restoreImageBlob(blob, asset),
+          } satisfies ImageBlobRecord;
+        }),
+      );
+      await bulkPut(
+        STORE_NAMES.imageBlobs,
+        blobRecords.filter((record): record is ImageBlobRecord => record !== null),
+      );
+    })(),
     restoredSettings
       ? saveSettings(restoredSettings)
       : Promise.resolve(),

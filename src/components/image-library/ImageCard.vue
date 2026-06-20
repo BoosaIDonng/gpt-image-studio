@@ -65,6 +65,8 @@ const titleStyle = computed(() => {
       <img
         v-if="image.previewUrl"
         class="h-full w-full rounded-lg object-cover"
+        loading="lazy"
+        decoding="async"
         :alt="image.name"
         :src="image.previewUrl"
       />
