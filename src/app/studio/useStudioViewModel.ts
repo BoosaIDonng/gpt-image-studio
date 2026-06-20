@@ -936,6 +936,7 @@ function reportStorageError(error: unknown) {
   console.error("Failed to access local studio storage.", error);
 }
 
+/** 兼容旧浏览器的文本复制（execCommand 已废弃，仅作为 Clipboard API 不可用时的回退）。 */
 function copyTextWithTextarea(text: string) {
   const textarea = document.createElement("textarea");
   textarea.value = text;
@@ -944,6 +945,9 @@ function copyTextWithTextarea(text: string) {
   textarea.style.left = "-9999px";
   document.body.appendChild(textarea);
   textarea.select();
-  document.execCommand("copy");
-  document.body.removeChild(textarea);
+  try {
+    document.execCommand("copy");
+  } finally {
+    document.body.removeChild(textarea);
+  }
 }

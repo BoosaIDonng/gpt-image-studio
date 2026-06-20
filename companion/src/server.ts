@@ -8,6 +8,7 @@ import { imagesRoutes } from "./routes/images.js";
 import { authMiddleware } from "./middleware/auth.js";
 import type { CompanionSecurityConfig } from "./securityConfig.js";
 import { isOriginAllowed } from "./securityConfig.js";
+import { VERSION } from "./version.js";
 
 export type CompanionRunMode = "serve" | "managed";
 
@@ -61,7 +62,7 @@ export async function startServer(opts: {
   app.get("/health", async (): Promise<CompanionHealthResponse> => {
     return {
       app: "gpt-image-studio-companion",
-      version: "0.3.0",
+      version: VERSION,
       paired: isPaired(),
       runMode,
     };

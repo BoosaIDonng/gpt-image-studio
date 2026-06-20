@@ -8,6 +8,7 @@ import {
 } from "./imagesApi";
 import { normalizeFavoritePrompts } from "./favoritePrompts";
 import { normalizePromptWordbanks } from "./promptWordbanks";
+import { normalizeRagTopK } from "../shared/normalizers";
 import type { AppSettings, Conversation, ImageAsset, Message } from "../types/studio";
 import { clearStore, getAllFromStore, bulkPut, STORE_NAMES } from "./db";
 import { saveSettings, loadSettings } from "./settings";
@@ -217,11 +218,7 @@ function normalizeMessage(message: StoredMessage): Message {
   };
 }
 
-function normalizeRagTopK(value: unknown) {
-  const numeric = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(numeric)) return 4;
-  return Math.min(12, Math.max(1, Math.trunc(numeric)));
-}
+// normalizeRagTopK → src/shared/normalizers.ts
 
 function blobEntryName(blobKey: string) {
   return `blobs/${encodeURIComponent(blobKey)}`;

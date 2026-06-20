@@ -9,6 +9,7 @@ import {
 import { normalizeFavoritePrompts } from "./favoritePrompts";
 import { normalizePromptWordbanks } from "./promptWordbanks";
 import { GEMINI_IMAGE_MODEL, defaultModelForProvider } from "../shared/models";
+import { normalizeRagTopK } from "../shared/normalizers";
 import type {
   ApiMode,
   ApiBaseUrlMode,
@@ -165,8 +166,4 @@ function normalizePromptMode(mode: PromptMode | undefined): PromptMode {
   return "default";
 }
 
-function normalizeRagTopK(value: unknown) {
-  const numeric = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(numeric)) return 4;
-  return Math.min(12, Math.max(1, Math.trunc(numeric)));
-}
+// normalizeRagTopK → src/shared/normalizers.ts

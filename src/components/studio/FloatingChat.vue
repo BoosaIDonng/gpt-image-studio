@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { buildFloatingChatProjectContext } from "../../services/floatingChatContext";
 import { useFloatingChatStore } from "../../stores/floatingChatStore";
 import { useComposerStore } from "../../stores/composerStore";
@@ -13,6 +13,119 @@ const conversations = useConversationsStore();
 const images = useImagesStore();
 const settings = useSettingsStore();
 const listRef = ref<HTMLDivElement | null>(null);
+
+// ── 拖拽状态 ──
+const STORAGE_KEY = "floating-chat-position";
+const BUTTON_SIZE = 48; // h-12 w-12 = 48px
+const PANEL_W = 380;
+const PANEL_H = 520;
+const EDGE_MARGIN = 24; // 距视口边缘最小距离 (6 * 4 = 24px)
+const CLICK_THRESHOLD = 5;
+
+const posRight = ref(EDGE_MARGIN);
+const posBottom = ref(EDGE_MARGIN);
+const isDragging = ref(false);
+let startX = 0;
+let startY = 0;
+let startRight = 0;
+let startBottom = 0;
+let movedDistance = 0;
+
+/** 面板展开方向：气泡在右侧时面板向左展开，在左侧时向右展开 */
+const panelStyle = computed(() => {
+  const style: Record<string, string> = {
+    position: "fixed",
+    zIndex: "40",
+    width: `${PANEL_W}px`,
+    height: `${PANEL_H}px`,
+  };
+  // 水平：如果气泡靠右（right > 视口宽度一半），面板在气泡左侧；否则在右侧
+  const viewportW = window.innerWidth;
+  const bubbleLeft = viewportW - posRight.value - BUTTON_SIZE;
+  if (bubbleLeft > viewportW / 2) {
+    // 气泡偏右 → 面板在气泡左边
+    style.right = `${posRight.value}px`;
+  } else {
+    // 气泡偏左 → 面板在气泡右边
+    style.left = `${viewportW - posRight.value}px`;
+  }
+  // 垂直：面板底部对齐气泡底部
+  style.bottom = `${posBottom.value}px`;
+  return style;
+});
+
+function restorePosition() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const { right, bottom } = JSON.parse(saved);
+      if (typeof right === "number" && typeof bottom === "number") {
+        posRight.value = clampRight(right);
+        posBottom.value = clampBottom(bottom);
+      }
+    }
+  } catch { /* ignore */ }
+}
+
+function savePosition() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      right: posRight.value,
+      bottom: posBottom.value,
+    }));
+  } catch { /* ignore */ }
+}
+
+function clampRight(value: number) {
+  return Math.max(0, Math.min(window.innerWidth - BUTTON_SIZE, value));
+}
+
+function clampBottom(value: number) {
+  return Math.max(0, Math.min(window.innerHeight - BUTTON_SIZE, value));
+}
+
+function onPointerDown(e: PointerEvent) {
+  if (e.button !== 0) return; // 仅左键
+  isDragging.value = true;
+  movedDistance = 0;
+  startX = e.clientX;
+  startY = e.clientY;
+  startRight = posRight.value;
+  startBottom = posBottom.value;
+  (e.target as HTMLElement)?.setPointerCapture?.(e.pointerId);
+  document.addEventListener("pointermove", onPointerMove);
+  document.addEventListener("pointerup", onPointerUp);
+}
+
+function onPointerMove(e: PointerEvent) {
+  if (!isDragging.value) return;
+  const dx = e.clientX - startX;
+  const dy = e.clientY - startY;
+  movedDistance = Math.max(movedDistance, Math.abs(dx), Math.abs(dy));
+  posRight.value = clampRight(startRight - dx);
+  posBottom.value = clampBottom(startBottom - dy);
+}
+
+function onPointerUp() {
+  isDragging.value = false;
+  document.removeEventListener("pointermove", onPointerMove);
+  document.removeEventListener("pointerup", onPointerUp);
+  savePosition();
+}
+
+function onBubbleClick() {
+  // 仅在没有拖拽时打开面板
+  if (movedDistance < CLICK_THRESHOLD) {
+    chat.open();
+  }
+}
+
+onMounted(restorePosition);
+
+onUnmounted(() => {
+  document.removeEventListener("pointermove", onPointerMove);
+  document.removeEventListener("pointerup", onPointerUp);
+});
 
 watch(
   () => chat.messages.map((m) => m.content).join("|"),
@@ -72,23 +185,27 @@ function buildProjectContext() {
 </script>
 
 <template>
-  <!-- 气泡按钮 -->
+  <!-- 气泡按钮（可拖动） -->
   <button
     v-if="!chat.isOpen"
-    class="fixed bottom-6 right-6 z-40 flex h-12 w-12 cursor-pointer items-center justify-center rounded-full bg-gray-900 text-white shadow-lg transition-transform hover:scale-105"
+    class="z-40 flex h-12 w-12 touch-none select-none items-center justify-center rounded-full bg-gray-900 text-white shadow-lg"
+    :class="isDragging ? 'cursor-grabbing' : 'cursor-grab hover:scale-105'"
+    :style="{ position: 'fixed', right: posRight + 'px', bottom: posBottom + 'px', transition: isDragging ? 'none' : 'transform 0.15s' }"
     type="button"
-    title="AI 助手"
-    @click="chat.open"
+    title="AI 助手（可拖动）"
+    @pointerdown="onPointerDown"
+    @click="onBubbleClick"
   >
     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
     </svg>
   </button>
 
-  <!-- 展开面板 -->
+  <!-- 展开面板（跟随气泡位置） -->
   <div
     v-if="chat.isOpen"
-    class="fixed bottom-6 right-6 z-40 flex h-[520px] w-[380px] flex-col rounded-2xl border border-gray-200 bg-white shadow-2xl"
+    class="flex flex-col rounded-2xl border border-gray-200 bg-white shadow-2xl"
+    :style="panelStyle"
   >
     <!-- 头部 -->
     <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
@@ -128,7 +245,7 @@ function buildProjectContext() {
       </div>
       <div
         v-for="(msg, i) in chat.messages"
-        :key="i"
+        :key="`${msg.role}-${i}-${msg.content?.slice(0, 16) ?? ''}`"
         :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'"
       >
         <div

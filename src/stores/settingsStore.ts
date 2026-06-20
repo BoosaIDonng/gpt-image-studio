@@ -27,6 +27,7 @@ import {
 import { saveSettings } from "../services/settings";
 import { GROK_SUPPORTED_RATIOS, GROK_SUPPORTED_RESOLUTIONS } from "../services/grokImagesApi";
 import { isoTimestamp } from "../shared/dateTime";
+import { normalizeRagTopK } from "../shared/normalizers";
 import { createId } from "../shared/id";
 import {
   MAX_CUSTOM_DIMENSION,
@@ -728,11 +729,7 @@ function normalizeBackground(background: GenerationParams["background"]) {
   return background;
 }
 
-function normalizeRagTopK(value: unknown) {
-  const numeric = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(numeric)) return 4;
-  return Math.min(12, Math.max(1, Math.trunc(numeric)));
-}
+// normalizeRagTopK → src/shared/normalizers.ts
 
 function displayApiBaseUrl(apiBaseUrl: string, mode: AppSettings["apiBaseUrlMode"]) {
   if (mode === "full") return apiBaseUrl;
