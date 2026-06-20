@@ -1,5 +1,6 @@
 import type { ApiProvider, GenerationParams, SizeRatio } from "../../../types/studio";
 import { buildFinalRequestPrompt } from "../../../services/promptRequest";
+import { isGptImageModel } from "../../../shared/models";
 import type { ImageClient, ImageClientResult } from "./imageClient";
 
 type CompanionClientConfig = {
@@ -36,7 +37,6 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
         ragContext: input.promptRequestSettings.ragContext,
       });
 
-      const params = buildParams(input.params);
       if (config.getApiProvider() === "grok") {
         const response = await fetch(url, {
           method: "POST",
@@ -76,7 +76,7 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
       const response = await fetch(url, {
         method: "POST",
         headers: { ...headers(), "Content-Type": "application/json" },
-        body: JSON.stringify({ model, prompt, ...params }),
+        body: JSON.stringify({ model, prompt, ...buildParams(model, input.params) }),
       });
 
       return {
@@ -204,7 +204,7 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
       if (input.mask) {
         body.append("mask", input.mask.blob, input.mask.name);
       }
-      const params = buildParams(input.params);
+      const params = buildParams(model, input.params);
       Object.entries(params).forEach(([key, value]) => {
         body.append(key, value);
       });
@@ -245,7 +245,10 @@ function buildGrokEditImagePayload(imageDataUrls: string[]) {
     : { images: references };
 }
 
-function buildParams(params: { size: string; width: number; height: number; background: string; outputFormat: string }) {
+function buildParams(
+  model: string,
+  params: { size: string; width: number; height: number; background: string; outputFormat: string },
+) {
   const size = params.size === "auto"
     ? "auto"
     : params.size.includes(":") || params.size === "custom"
@@ -256,7 +259,8 @@ function buildParams(params: { size: string; width: number; height: number; back
     size,
     background: params.background,
     output_format: params.outputFormat,
-    response_format: "b64_json",
+    // gpt-image 系列不支持 response_format，会报 HTTP 400；dall-e 系列需要它。
+    ...(isGptImageModel(model) ? {} : { response_format: "b64_json" }),
   };
 }
 

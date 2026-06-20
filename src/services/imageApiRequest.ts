@@ -1,4 +1,5 @@
 import type { ApiMode, GenerationParams } from "../types/studio";
+import { isGptImageModel } from "../shared/models";
 
 export function normalizeApiBaseUrl(
   url: string,
@@ -43,7 +44,8 @@ export function imageApiParams(
     size: apiSize(params),
     background: params.background,
     output_format: params.outputFormat,
-    response_format: "b64_json",
+    // gpt-image 系列不支持 response_format，会报 HTTP 400；dall-e 系列需要它。
+    ...(isGptImageModel(model) ? {} : { response_format: "b64_json" }),
   };
 }
 

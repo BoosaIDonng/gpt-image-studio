@@ -47,8 +47,29 @@ describe("images API requests", () => {
 
     const requestBody = JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string);
     expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.example.test/v1/images/generations");
-    expect(requestBody.response_format).toBe("b64_json");
+    // gpt-image 系列不支持 response_format 参数，传了会报 HTTP 400。
+    expect(requestBody.response_format).toBeUndefined();
     expect(requestBody.quality).toBeUndefined();
+  });
+
+  it("sends response_format for dall-e models", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        data: [{ b64_json: "generated-image" }],
+      }),
+    );
+
+    await generateImage({
+      apiBaseUrl: "https://api.example.test/v1/images",
+      apiBaseUrlMode: "full",
+      apiKey: "sk-test",
+      model: "dall-e-3",
+      prompt: "画一张图",
+      params: generationParams,
+    });
+
+    const requestBody = JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string);
+    expect(requestBody.response_format).toBe("b64_json");
   });
 
   it("appends the Images API path when API base URL is configured as an origin", async () => {
@@ -237,7 +258,8 @@ describe("images API requests", () => {
 
     const requestBody = fetchMock.mock.calls[0]?.[1]?.body;
     expect(requestBody).toBeInstanceOf(FormData);
-    expect((requestBody as FormData).get("response_format")).toBe("b64_json");
+    // gpt-image 系列不支持 response_format 参数，传了会报 HTTP 400。
+    expect((requestBody as FormData).has("response_format")).toBe(false);
     expect((requestBody as FormData).has("quality")).toBe(false);
   });
 
