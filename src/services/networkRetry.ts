@@ -1,3 +1,5 @@
+import { SERVER_DISCONNECTED_MESSAGE } from "../shared/apiErrors";
+
 const MAX_RETRIES = 10;
 const BASE_DELAY_MS = 2000;
 
@@ -27,7 +29,7 @@ export async function withNetworkRetry<T>(
 
 function isNetworkError(error: unknown): boolean {
   return error instanceof TypeError ||
-    (error instanceof Error && error.message.includes("服务器主动断开了连接"));
+    (error instanceof Error && error.message.includes(SERVER_DISCONNECTED_MESSAGE));
 }
 
 function sleep(ms: number) {

@@ -1,4 +1,6 @@
-import type { ApiBaseUrlMode, GenerationParams, SizeRatio } from "../types/studio";
+import type { ApiBaseUrlMode, GenerationParams } from "../types/studio";
+import { blobToBase64 } from "../shared/blobUtils";
+import { isSizeRatio } from "./generationParams";
 
 type GeminiImageInput = {
   apiBaseUrl: string;
@@ -190,18 +192,4 @@ function geminiErrorMessage(status: number, payload: GeminiGenerateContentRespon
   return detail
     ? `Gemini 请求失败：HTTP ${status}：${detail}`
     : `Gemini 请求失败：HTTP ${status}`;
-}
-
-function isSizeRatio(value: GenerationParams["size"]): value is SizeRatio {
-  return value.includes(":");
-}
-
-async function blobToBase64(blob: Blob) {
-  const buffer = await blob.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let index = 0; index < bytes.length; index += 1) {
-    binary += String.fromCharCode(bytes[index] ?? 0);
-  }
-  return btoa(binary);
 }

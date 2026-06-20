@@ -1,4 +1,6 @@
 import type { ApiBaseUrlMode, GenerationParams } from "../types/studio";
+import { blobToDataUrl } from "../shared/blobUtils";
+import { normalizeImageCount } from "./generationParams";
 
 type GrokImageInput = {
   apiBaseUrl: string;
@@ -53,7 +55,7 @@ export async function generateGrokImage(input: GrokImageInput): Promise<GrokImag
 
 export async function generateGrokImages(input: GrokImageBatchInput): Promise<GrokImageApiResult[]> {
   validateGrokParams(input.params);
-  const count = normalizeGrokImageCount(input.count);
+  const count = normalizeImageCount(input.count);
   const results: GrokImageApiResult[] = [];
 
   for (let remaining = count; remaining > 0; remaining -= 10) {
@@ -121,17 +123,6 @@ export async function editGrokImage(input: GrokEditInput): Promise<GrokImageApiR
   };
 }
 
-function buildGrokEditImagePayload(imageDataUrls: string[]) {
-  const references = imageDataUrls.map((url) => ({
-    type: "image_url",
-    url,
-  }));
-
-  return references.length === 1
-    ? { image: references[0] }
-    : { images: references };
-}
-
 export const GROK_SUPPORTED_RATIOS = ["1:1", "16:9", "9:16", "4:3", "3:4"] as const;
 export const GROK_SUPPORTED_RESOLUTIONS = ["1k", "2k"] as const;
 
@@ -159,10 +150,15 @@ function buildGrokSizeFields(params: GenerationParams) {
   return fields;
 }
 
-function normalizeGrokImageCount(count: unknown) {
-  const numericCount = typeof count === "number" ? count : Number(count);
-  if (!Number.isFinite(numericCount)) return 1;
-  return Math.max(1, Math.round(numericCount));
+export function buildGrokEditImagePayload(imageDataUrls: string[]) {
+  const references = imageDataUrls.map((url) => ({
+    type: "image_url",
+    url,
+  }));
+
+  return references.length === 1
+    ? { image: references[0] }
+    : { images: references };
 }
 
 function buildGrokEndpoint(apiBaseUrl: string, mode: ApiBaseUrlMode, path: "generations" | "edits") {
@@ -240,14 +236,4 @@ function isGrokBillingError(status: number, detail?: string) {
     normalized.includes("add credits") ||
     normalized.includes("upgrade")
   );
-}
-
-async function blobToDataUrl(blob: Blob) {
-  const buffer = await blob.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let index = 0; index < bytes.length; index += 1) {
-    binary += String.fromCharCode(bytes[index] ?? 0);
-  }
-  return `data:${blob.type || "application/octet-stream"};base64,${btoa(binary)}`;
 }

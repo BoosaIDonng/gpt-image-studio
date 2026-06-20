@@ -1,6 +1,9 @@
-import type { ApiProvider, GenerationParams, SizeRatio } from "../../../types/studio";
+import type { ApiProvider, GenerationParams } from "../../../types/studio";
 import { buildFinalRequestPrompt } from "../../../services/promptRequest";
 import { isGptImageModel } from "../../../shared/models";
+import { blobToBase64, blobToDataUrl } from "../../../shared/blobUtils";
+import { isSizeRatio, normalizeImageCount } from "../../../services/generationParams";
+import { buildGrokEditImagePayload } from "../../../services/grokImagesApi";
 import type { ImageClient, ImageClientResult } from "./imageClient";
 
 type CompanionClientConfig = {
@@ -102,7 +105,7 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
           input.promptRequestSettings.promptRewriteGuardText,
         ragContext: input.promptRequestSettings.ragContext,
       });
-      const count = normalizeBatchCount(input.count);
+      const count = normalizeImageCount(input.count);
       const results: ImageClientResult[] = [];
 
       for (let remaining = count; remaining > 0; remaining -= 10) {
@@ -230,21 +233,6 @@ function buildGeminiOptions(params: GenerationParams) {
   };
 }
 
-function isSizeRatio(value: GenerationParams["size"]): value is SizeRatio {
-  return value.includes(":");
-}
-
-function buildGrokEditImagePayload(imageDataUrls: string[]) {
-  const references = imageDataUrls.map((url) => ({
-    type: "image_url",
-    url,
-  }));
-
-  return references.length === 1
-    ? { image: references[0] }
-    : { images: references };
-}
-
 function buildParams(
   model: string,
   params: { size: string; width: number; height: number; background: string; outputFormat: string },
@@ -298,28 +286,3 @@ async function extractB64JsonList(response: Response): Promise<ImageClientResult
   return results;
 }
 
-function normalizeBatchCount(count: unknown) {
-  const numericCount = typeof count === "number" ? count : Number(count);
-  if (!Number.isFinite(numericCount)) return 1;
-  return Math.max(1, Math.round(numericCount));
-}
-
-async function blobToDataUrl(blob: Blob) {
-  const buffer = await blob.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let index = 0; index < bytes.length; index += 1) {
-    binary += String.fromCharCode(bytes[index] ?? 0);
-  }
-  return `data:${blob.type || "application/octet-stream"};base64,${btoa(binary)}`;
-}
-
-async function blobToBase64(blob: Blob) {
-  const buffer = await blob.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let index = 0; index < bytes.length; index += 1) {
-    binary += String.fromCharCode(bytes[index] ?? 0);
-  }
-  return btoa(binary);
-}

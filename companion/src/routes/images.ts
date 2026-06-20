@@ -6,6 +6,10 @@ type ImagesRoutesOptions = {
   security: CompanionSecurityConfig;
 };
 
+/** 上游主动断开连接（无响应）时的提示文案。前端 networkRetry 靠该文案子串决定是否重试，改动需与前端保持一致。 */
+const SERVER_DISCONNECTED_MESSAGE =
+  "服务器主动断开了连接，未返回任何响应。通常是提示词中存在不合规内容，触发了平台的内容审核策略，请调整提示词后重试。";
+
 export async function imagesRoutes(app: FastifyInstance, opts: ImagesRoutesOptions) {
   app.post("/images/generations", async (req, reply) => {
     const creds = loadCredentials();
@@ -52,7 +56,7 @@ export async function imagesRoutes(app: FastifyInstance, opts: ImagesRoutesOptio
       });
     } catch {
       return reply.status(502).send({
-        error: "服务器主动断开了连接，未返回任何响应。通常是提示词中存在不合规内容，触发了平台的内容审核策略，请调整提示词后重试。",
+        error: SERVER_DISCONNECTED_MESSAGE,
       });
     }
 
@@ -119,7 +123,7 @@ export async function imagesRoutes(app: FastifyInstance, opts: ImagesRoutesOptio
         });
       } catch {
         return reply.status(502).send({
-          error: "服务器主动断开了连接，未返回任何响应。通常是提示词中存在不合规内容，触发了平台的内容审核策略，请调整提示词后重试。",
+          error: SERVER_DISCONNECTED_MESSAGE,
         });
       }
 
@@ -151,7 +155,7 @@ export async function imagesRoutes(app: FastifyInstance, opts: ImagesRoutesOptio
       });
     } catch {
       return reply.status(502).send({
-        error: "服务器主动断开了连接，未返回任何响应。通常是提示词中存在不合规内容，触发了平台的内容审核策略，请调整提示词后重试。",
+        error: SERVER_DISCONNECTED_MESSAGE,
       });
     }
 

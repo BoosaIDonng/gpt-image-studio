@@ -1,5 +1,7 @@
 import type { ApiMode, GenerationParams, PromptMode, PromptWordbanks } from "../types/studio";
 import { buildFinalRequestPrompt } from "./promptRequest";
+import { blobToDataUrl } from "../shared/blobUtils";
+import { SERVER_DISCONNECTED_MESSAGE } from "../shared/apiErrors";
 import {
   apiSize,
   buildApiEndpoint,
@@ -159,9 +161,7 @@ async function generateImageViaImagesApi(input: GenerateImageInput & {
       }),
     });
   } catch {
-    throw new Error(
-      "服务器主动断开了连接，未返回任何响应。通常是提示词中存在不合规内容，触发了平台的内容审核策略，请调整提示词后重试。",
-    );
+    throw new Error(SERVER_DISCONNECTED_MESSAGE);
   }
 
   if (!response.ok) {
@@ -221,9 +221,7 @@ async function editImageViaImagesApi(input: EditImageInput & {
       images: imageDebugInfo(input.images),
       error: error instanceof Error ? error.message : String(error),
     }));
-    throw new Error(
-      "服务器主动断开了连接，未返回任何响应。通常是提示词中存在不合规内容，触发了平台的内容审核策略，请调整提示词后重试。",
-    );
+    throw new Error(SERVER_DISCONNECTED_MESSAGE);
   }
 
   if (!response.ok) {
@@ -256,9 +254,7 @@ async function generateImageViaResponses(input: GenerateImageInput & { prompt: s
       }),
     });
   } catch {
-    throw new Error(
-      "服务器主动断开了连接，未返回任何响应。通常是提示词中存在不合规内容，触发了平台的内容审核策略，请调整提示词后重试。",
-    );
+    throw new Error(SERVER_DISCONNECTED_MESSAGE);
   }
 
   if (!response.ok) {
@@ -304,9 +300,7 @@ async function editImageViaResponses(input: EditImageInput & { prompt: string })
       }),
     });
   } catch {
-    throw new Error(
-      "服务器主动断开了连接，未返回任何响应。通常是提示词中存在不合规内容，触发了平台的内容审核策略，请调整提示词后重试。",
-    );
+    throw new Error(SERVER_DISCONNECTED_MESSAGE);
   }
 
   if (!response.ok) {
@@ -693,14 +687,4 @@ function getStringValue(source: Record<string, unknown>, key: string) {
 function getNumberValue(source: Record<string, unknown>, key: string) {
   const value = source[key];
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
-
-async function blobToDataUrl(blob: Blob) {
-  const buffer = await blob.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let index = 0; index < bytes.length; index += 1) {
-    binary += String.fromCharCode(bytes[index] ?? 0);
-  }
-  return `data:${blob.type || "application/octet-stream"};base64,${btoa(binary)}`;
 }
