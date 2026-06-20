@@ -8,6 +8,7 @@ import FloatingChat from "./components/studio/FloatingChat.vue";
 import NoticeToast from "./components/ui/NoticeToast.vue";
 import RenameDialog from "./components/ui/RenameDialog.vue";
 import { useStudioViewModel } from "./app/studio";
+import { useDarkMode } from "./composables/useDarkMode";
 
 // 模态框懒加载：这些组件只在用户主动操作时才需要，
 // 用 defineAsyncComponent 拆成独立 chunk，减少首屏加载体积。
@@ -16,10 +17,11 @@ const ImagePreviewModal = defineAsyncComponent(() => import("./components/studio
 const ExpandPreviewModal = defineAsyncComponent(() => import("./components/ui/ExpandPreviewModal.vue"));
 
 const studio = useStudioViewModel();
+const { theme, toggleTheme } = useDarkMode();
 </script>
 
 <template>
-  <main class="flex h-screen bg-white text-gray-900 antialiased">
+  <main class="flex h-screen bg-white text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100">
     <ConversationSidebar
       @create-conversation="studio.sidebar.createConversation"
       @delete-conversation="studio.sidebar.deleteConversation"

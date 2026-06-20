@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* 暗色模式：使用 class 策略，根元素添加 .dark 类即可切换 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* 暗色模式下的滚动条配色 */
+.dark * {
+  scrollbar-color: rgba(100, 100, 100, 0.4) transparent;
+}
+.dark *:hover {
+  scrollbar-color: rgba(140, 140, 140, 0.5) transparent;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
