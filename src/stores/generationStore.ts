@@ -499,9 +499,10 @@ export const useGenerationStore = defineStore("generation", () => {
         errorMessage: message,
       });
       if (assistantMessage) {
-        await enqueueMessageSave(assistantMessage).catch(
-          input.value.onStorageError,
-        );
+        await enqueueMessageSave(assistantMessage).catch((saveError: unknown) => {
+          console.error("[generation] 保存失败消息到 IndexedDB 失败", saveError);
+          input.value.onStorageError(saveError);
+        });
       }
       await input.value.refreshStorageUsage();
     }

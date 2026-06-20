@@ -1,5 +1,6 @@
 import type { ApiBaseUrlMode, GenerationParams } from "../types/studio";
 import { blobToBase64 } from "../shared/blobUtils";
+import { NetworkError, isRetryableStatus, SERVER_DISCONNECTED_MESSAGE } from "../shared/apiErrors";
 import { isSizeRatio } from "./generationParams";
 
 type GeminiImageInput = {
@@ -89,21 +90,25 @@ export async function editGeminiImage(input: GeminiEditInput): Promise<GeminiIma
 }
 
 async function requestGeminiImage(input: GeminiImageInput, parts: Array<Record<string, unknown>>) {
-  return fetch(buildGeminiEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, input.model), {
-    method: "POST",
-    headers: {
-      "x-goog-api-key": input.apiKey,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts,
-        },
-      ],
-      generationConfig: buildGeminiGenerationConfig(input.params),
-    }),
-  });
+  try {
+    return await fetch(buildGeminiEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, input.model), {
+      method: "POST",
+      headers: {
+        "x-goog-api-key": input.apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts,
+          },
+        ],
+        generationConfig: buildGeminiGenerationConfig(input.params),
+      }),
+    });
+  } catch (error) {
+    throw new NetworkError(SERVER_DISCONNECTED_MESSAGE, { cause: error });
+  }
 }
 
 function buildGeminiGenerationConfig(params: GenerationParams) {
@@ -150,7 +155,11 @@ async function parseGeminiImageResponses(response: Response): Promise<GeminiImag
   const payload = (text ? JSON.parse(text) : {}) as GeminiGenerateContentResponse;
 
   if (!response.ok) {
-    throw new Error(geminiErrorMessage(response.status, payload));
+    const message = geminiErrorMessage(response.status, payload);
+    if (isRetryableStatus(response.status)) {
+      throw new NetworkError(message, { status: response.status });
+    }
+    throw new Error(message);
   }
 
   const results = (payload.candidates ?? [])

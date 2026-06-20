@@ -6,7 +6,7 @@ type ImagesRoutesOptions = {
   security: CompanionSecurityConfig;
 };
 
-/** 上游主动断开连接（无响应）时的提示文案。前端 networkRetry 靠该文案子串决定是否重试，改动需与前端保持一致。 */
+/** 上游主动断开连接（无响应）或返回非 JSON 时的提示文案。前端 networkRetry 靠该文案子串决定是否重试，改动需与前端保持一致。 */
 const SERVER_DISCONNECTED_MESSAGE =
   "服务器主动断开了连接，未返回任何响应。通常是提示词中存在不合规内容，触发了平台的内容审核策略，请调整提示词后重试。";
 
@@ -30,15 +30,15 @@ export async function imagesRoutes(app: FastifyInstance, opts: ImagesRoutesOptio
     const provider = creds.provider ?? "openai";
     if (provider === "gemini") {
       const geminiRequest = buildGeminiGenerateContentRequest(body);
-      const response = await fetchGeminiGenerateContent(
+      const { status, body: payload } = await proxyGeminiGenerateContent(
         creds.apiBaseUrl,
         creds.apiKey,
         geminiRequest.model,
         geminiRequest.body,
       );
-      const payload = await response.json();
-      return reply.status(response.status).send(
-        response.ok ? normalizeGeminiGenerateContentResponse(payload) : payload,
+      const result = asGeminiProxyResult({ status, body: payload });
+      return reply.status(result.status).send(
+        result.ok ? normalizeGeminiGenerateContentResponse(result.payload) : result.payload,
       );
     }
 
@@ -88,15 +88,15 @@ export async function imagesRoutes(app: FastifyInstance, opts: ImagesRoutesOptio
       }
 
       const geminiRequest = buildGeminiGenerateContentRequest(body);
-      const response = await fetchGeminiGenerateContent(
+      const { status, body: payload } = await proxyGeminiGenerateContent(
         creds.apiBaseUrl,
         creds.apiKey,
         geminiRequest.model,
         geminiRequest.body,
       );
-      const payload = await response.json();
-      return reply.status(response.status).send(
-        response.ok ? normalizeGeminiGenerateContentResponse(payload) : payload,
+      const result = asGeminiProxyResult({ status, body: payload });
+      return reply.status(result.status).send(
+        result.ok ? normalizeGeminiGenerateContentResponse(result.payload) : result.payload,
       );
     }
 
@@ -186,6 +186,43 @@ async function fetchGeminiGenerateContent(
     },
     body: JSON.stringify(body),
   });
+}
+
+/**
+ * 调用 Gemini generateContent 并把响应解析为 JSON。
+ * - 网络断开（fetch 抛错）：返回 502 + SERVER_DISCONNECTED_MESSAGE，与 OpenAI/Grok 路径一致，前端据此重试。
+ * - 上游返回非 JSON：同样回退到 SERVER_DISCONNECTED_MESSAGE，避免把原始文本当成 JSON 抛 500。
+ */
+type GeminiProxyResult =
+  | { ok: true; status: number; payload: Record<string, unknown> }
+  | { ok: false; status: number; payload: Record<string, unknown> };
+
+async function proxyGeminiGenerateContent(
+  apiBaseUrl: string,
+  apiKey: string,
+  model: string,
+  body: Record<string, unknown>,
+): Promise<{ status: number; body: Record<string, unknown> }> {
+  let response: Response;
+  try {
+    response = await fetchGeminiGenerateContent(apiBaseUrl, apiKey, model, body);
+  } catch {
+    return { status: 502, body: { error: SERVER_DISCONNECTED_MESSAGE } };
+  }
+
+  const text = await response.text().catch(() => "");
+  if (!text) {
+    return { status: response.ok ? 502 : response.status, body: { error: SERVER_DISCONNECTED_MESSAGE } };
+  }
+  try {
+    return { status: response.status, body: JSON.parse(text) as Record<string, unknown> };
+  } catch {
+    return { status: response.ok ? 502 : response.status, body: { error: SERVER_DISCONNECTED_MESSAGE } };
+  }
+}
+
+function asGeminiProxyResult(result: { status: number; body: Record<string, unknown> }): GeminiProxyResult {
+  return { ok: result.status >= 200 && result.status < 300, status: result.status, payload: result.body };
 }
 
 function normalizeGeminiBaseUrl(apiBaseUrl: string): string {

@@ -1,5 +1,6 @@
 import type { ApiBaseUrlMode, GenerationParams } from "../types/studio";
 import { blobToDataUrl } from "../shared/blobUtils";
+import { NetworkError, isRetryableStatus, SERVER_DISCONNECTED_MESSAGE } from "../shared/apiErrors";
 import { normalizeImageCount } from "./generationParams";
 
 type GrokImageInput = {
@@ -67,20 +68,25 @@ export async function generateGrokImages(input: GrokImageBatchInput): Promise<Gr
 
 async function requestGrokImages(input: GrokImageInput, count: number): Promise<GrokImageApiResult[]> {
   const sizeFields = buildGrokSizeFields(input.params);
-  const response = await fetch(buildGrokEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "generations"), {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${input.apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: input.model,
-      prompt: input.prompt,
-      ...(count > 1 ? { n: count } : {}),
-      ...sizeFields,
-      response_format: "b64_json",
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(buildGrokEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "generations"), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${input.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: input.model,
+        prompt: input.prompt,
+        ...(count > 1 ? { n: count } : {}),
+        ...sizeFields,
+        response_format: "b64_json",
+      }),
+    });
+  } catch (error) {
+    throw new NetworkError(SERVER_DISCONNECTED_MESSAGE, { cause: error });
+  }
 
   const results = await parseGrokImageResponses(response);
   return results.map((result) => ({
@@ -101,20 +107,25 @@ export async function editGrokImage(input: GrokEditInput): Promise<GrokImageApiR
   const imagePayload = buildGrokEditImagePayload(imageDataUrls);
   const sizeFields = buildGrokSizeFields(input.params);
 
-  const response = await fetch(buildGrokEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "edits"), {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${input.apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: input.model,
-      prompt: input.prompt,
-      ...imagePayload,
-      ...sizeFields,
-      response_format: "b64_json",
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(buildGrokEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "edits"), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${input.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: input.model,
+        prompt: input.prompt,
+        ...imagePayload,
+        ...sizeFields,
+        response_format: "b64_json",
+      }),
+    });
+  } catch (error) {
+    throw new NetworkError(SERVER_DISCONNECTED_MESSAGE, { cause: error });
+  }
 
   const result = await parseSingleGrokImageResponse(response);
   return {
@@ -193,7 +204,11 @@ async function parseGrokImageResponses(response: Response): Promise<GrokImageApi
   const payload = (text ? JSON.parse(text) : {}) as GrokImageApiResponse;
 
   if (!response.ok) {
-    throw new Error(grokErrorMessage(response.status, payload));
+    const message = grokErrorMessage(response.status, payload);
+    if (isRetryableStatus(response.status)) {
+      throw new NetworkError(message, { status: response.status });
+    }
+    throw new Error(message);
   }
 
   const results = (payload.data ?? [])

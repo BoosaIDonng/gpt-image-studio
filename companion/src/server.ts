@@ -58,6 +58,13 @@ export async function startServer(opts: {
     };
   });
 
+  // 全局兜底：任何路由内未被 try/catch 的异常都会走到这里。
+  // 统一返回 JSON 结构 { error }，避免泄露堆栈/内部细节，前端也能按既有约定解析。
+  app.setErrorHandler((error, _req, reply) => {
+    app.log.error(error);
+    reply.status(500).send({ error: "Companion 内部错误，请稍后重试。" });
+  });
+
   await app.listen({ host: "127.0.0.1", port: opts.port });
   console.log(`Companion 服务已启动: http://127.0.0.1:${opts.port}`);
   console.log(`安全渠道: ${opts.security.channel}`);

@@ -1,7 +1,7 @@
 import type { ApiMode, GenerationParams, PromptMode, PromptWordbanks } from "../types/studio";
 import { buildFinalRequestPrompt } from "./promptRequest";
 import { blobToDataUrl } from "../shared/blobUtils";
-import { SERVER_DISCONNECTED_MESSAGE } from "../shared/apiErrors";
+import { NetworkError, isRetryableStatus, SERVER_DISCONNECTED_MESSAGE } from "../shared/apiErrors";
 import {
   apiSize,
   buildApiEndpoint,
@@ -165,7 +165,7 @@ async function generateImageViaImagesApi(input: GenerateImageInput & {
   }
 
   if (!response.ok) {
-    throw new Error(await getApiErrorMessage(response));
+    await throwHttpError(response);
   }
 
   if (input.streamImages && isEventStreamResponse(response)) {
@@ -225,7 +225,7 @@ async function editImageViaImagesApi(input: EditImageInput & {
   }
 
   if (!response.ok) {
-    throw new Error(await getApiErrorMessage(response));
+    await throwHttpError(response);
   }
 
   if (input.streamImages && isEventStreamResponse(response)) {
@@ -258,7 +258,7 @@ async function generateImageViaResponses(input: GenerateImageInput & { prompt: s
   }
 
   if (!response.ok) {
-    throw new Error(await getApiErrorMessage(response));
+    await throwHttpError(response);
   }
 
   if (input.streamImages && isEventStreamResponse(response)) {
@@ -304,7 +304,7 @@ async function editImageViaResponses(input: EditImageInput & { prompt: string })
   }
 
   if (!response.ok) {
-    throw new Error(await getApiErrorMessage(response));
+    await throwHttpError(response);
   }
 
   if (input.streamImages && isEventStreamResponse(response)) {
@@ -398,6 +398,9 @@ async function parseImageResponse(response: Response) {
     const statusMessage = `请求失败：HTTP ${response.status}`;
     const detail = payload.error?.message;
     const message = detail ? `${statusMessage}：${detail}` : statusMessage;
+    if (isRetryableStatus(response.status)) {
+      throw new NetworkError(message, { status: response.status });
+    }
     throw new Error(message);
   }
 
@@ -476,6 +479,19 @@ async function getApiErrorMessage(response: Response) {
   } catch {
     return `请求失败：HTTP ${response.status}`;
   }
+}
+
+/**
+ * 对非 2xx 响应抛出合适的错误：
+ * - 429/5xx 等可重试状态码 → NetworkError（带 status），networkRetry 会自动重试；
+ * - 其它 4xx → 普通 Error，不重试。
+ */
+async function throwHttpError(response: Response): Promise<never> {
+  const message = await getApiErrorMessage(response);
+  if (isRetryableStatus(response.status)) {
+    throw new NetworkError(message, { status: response.status });
+  }
+  throw new Error(message);
 }
 
 function parseServerSentEventBlock(block: string) {
