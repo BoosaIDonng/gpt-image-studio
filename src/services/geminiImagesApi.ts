@@ -29,9 +29,11 @@ type GeminiGenerateContentResponse = {
       parts?: GeminiPart[];
     };
   }>;
-  error?: {
-    message?: string;
-  } | string;
+  error?:
+    | {
+        message?: string;
+      }
+    | string;
   message?: string;
 };
 
@@ -78,10 +80,7 @@ export async function editGeminiImage(input: GeminiEditInput): Promise<GeminiIma
       },
     })),
   );
-  const response = await requestGeminiImage(input, [
-    { text: input.prompt },
-    ...imageParts,
-  ]);
+  const response = await requestGeminiImage(input, [{ text: input.prompt }, ...imageParts]);
   const result = await parseSingleGeminiImageResponse(response);
   return {
     ...result,
@@ -195,10 +194,7 @@ function readInlineMimeType(
 }
 
 function geminiErrorMessage(status: number, payload: GeminiGenerateContentResponse) {
-  const detail = typeof payload.error === "string"
-    ? payload.error
-    : payload.error?.message || payload.message;
-  return detail
-    ? `Gemini 请求失败：HTTP ${status}：${detail}`
-    : `Gemini 请求失败：HTTP ${status}`;
+  const detail =
+    typeof payload.error === "string" ? payload.error : payload.error?.message || payload.message;
+  return detail ? `Gemini 请求失败：HTTP ${status}：${detail}` : `Gemini 请求失败：HTTP ${status}`;
 }

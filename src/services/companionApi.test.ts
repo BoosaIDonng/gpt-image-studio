@@ -21,15 +21,18 @@ describe("companion API", () => {
 
   it("returns auth status when the token is accepted", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({
-        provider: "openai",
-        mode: "api_key",
-        ready: true,
-        accountLabel: "sk-test***",
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
+      new Response(
+        JSON.stringify({
+          provider: "openai",
+          mode: "api_key",
+          ready: true,
+          accountLabel: "sk-test***",
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
     );
 
     await expect(

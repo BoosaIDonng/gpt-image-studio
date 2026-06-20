@@ -9,9 +9,15 @@ export const useFloatingChatStore = defineStore("floatingChat", () => {
   const input = ref("");
   const error = ref("");
 
-  function open() { isOpen.value = true; }
-  function close() { isOpen.value = false; }
-  function toggle() { isOpen.value = !isOpen.value; }
+  function open() {
+    isOpen.value = true;
+  }
+  function close() {
+    isOpen.value = false;
+  }
+  function toggle() {
+    isOpen.value = !isOpen.value;
+  }
 
   function clear() {
     messages.value = [];

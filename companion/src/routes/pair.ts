@@ -25,7 +25,10 @@ const confirmAttempts: Array<{ ip: string; timestamp: number }> = [];
 function isConfirmRateLimited(ip: string): boolean {
   const now = Date.now();
   // 清理过期记录
-  while (confirmAttempts.length && confirmAttempts[0].timestamp + CONFIRM_RATE_LIMIT_WINDOW_MS < now) {
+  while (
+    confirmAttempts.length &&
+    confirmAttempts[0].timestamp + CONFIRM_RATE_LIMIT_WINDOW_MS < now
+  ) {
     confirmAttempts.shift();
   }
   const recentAttempts = confirmAttempts.filter((entry) => entry.ip === ip);

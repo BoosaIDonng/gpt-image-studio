@@ -2,10 +2,7 @@ import { isoTimestamp } from "../shared/dateTime";
 import { createId } from "../shared/id";
 import type { FavoritePrompt } from "../types/studio";
 
-export function createFavoritePrompt(input?: {
-  title?: string;
-  text?: string;
-}): FavoritePrompt {
+export function createFavoritePrompt(input?: { title?: string; text?: string }): FavoritePrompt {
   const now = isoTimestamp();
   const text = normalizePromptText(input?.text);
 
@@ -26,10 +23,7 @@ export function normalizeFavoritePrompts(value: unknown): FavoritePrompt[] {
     .filter((item): item is FavoritePrompt => Boolean(item));
 }
 
-export function normalizeFavoritePromptUpdate(input: {
-  title?: string;
-  text?: string;
-}) {
+export function normalizeFavoritePromptUpdate(input: { title?: string; text?: string }) {
   const text = normalizePromptText(input.text);
 
   return {

@@ -21,13 +21,17 @@ afterEach(() => {
 
 describe("local companion image client", () => {
   it("sends Gemini generation through Companion with the final request prompt", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        data: [{ b64_json: "gemini-image", mime_type: "image/png" }],
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }));
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          data: [{ b64_json: "gemini-image", mime_type: "image/png" }],
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
     const client = createLocalCompanionImagesClient({
       getCompanionUrl: () => "http://127.0.0.1:19750",
       getSessionToken: () => "session-token",
@@ -65,13 +69,17 @@ describe("local companion image client", () => {
   });
 
   it("adds RAG context before sending the final prompt through Companion", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        data: [{ b64_json: "grok-image" }],
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }));
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          data: [{ b64_json: "grok-image" }],
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
     const client = createLocalCompanionImagesClient({
       getCompanionUrl: () => "http://127.0.0.1:19750",
       getSessionToken: () => "session-token",

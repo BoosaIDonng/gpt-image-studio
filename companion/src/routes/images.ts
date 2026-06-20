@@ -37,9 +37,9 @@ export async function imagesRoutes(app: FastifyInstance, opts: ImagesRoutesOptio
         geminiRequest.body,
       );
       const result = asGeminiProxyResult({ status, body: payload });
-      return reply.status(result.status).send(
-        result.ok ? normalizeGeminiGenerateContentResponse(result.payload) : result.payload,
-      );
+      return reply
+        .status(result.status)
+        .send(result.ok ? normalizeGeminiGenerateContentResponse(result.payload) : result.payload);
     }
 
     const apiUrl = `${normalizeImagesBaseUrl(creds.apiBaseUrl, provider)}/generations`;
@@ -49,7 +49,7 @@ export async function imagesRoutes(app: FastifyInstance, opts: ImagesRoutesOptio
       response = await fetch(apiUrl, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${creds.apiKey}`,
+          Authorization: `Bearer ${creds.apiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
@@ -79,7 +79,9 @@ export async function imagesRoutes(app: FastifyInstance, opts: ImagesRoutesOptio
 
     if ((creds.provider ?? "openai") === "gemini") {
       if (!isJsonRequest(req.headers["content-type"])) {
-        return reply.status(415).send({ error: "Gemini 编辑请求 Content-Type 必须是 application/json" });
+        return reply
+          .status(415)
+          .send({ error: "Gemini 编辑请求 Content-Type 必须是 application/json" });
       }
       const body = req.body as Record<string, unknown>;
       const validationError = validateGeminiEditBody(body);
@@ -95,14 +97,16 @@ export async function imagesRoutes(app: FastifyInstance, opts: ImagesRoutesOptio
         geminiRequest.body,
       );
       const result = asGeminiProxyResult({ status, body: payload });
-      return reply.status(result.status).send(
-        result.ok ? normalizeGeminiGenerateContentResponse(result.payload) : result.payload,
-      );
+      return reply
+        .status(result.status)
+        .send(result.ok ? normalizeGeminiGenerateContentResponse(result.payload) : result.payload);
     }
 
     if ((creds.provider ?? "openai") === "grok") {
       if (!isJsonRequest(req.headers["content-type"])) {
-        return reply.status(415).send({ error: "Grok 编辑请求 Content-Type 必须是 application/json" });
+        return reply
+          .status(415)
+          .send({ error: "Grok 编辑请求 Content-Type 必须是 application/json" });
       }
       const body = req.body as Record<string, unknown>;
       const validationError = validateGrokEditBody(body);
@@ -116,7 +120,7 @@ export async function imagesRoutes(app: FastifyInstance, opts: ImagesRoutesOptio
         response = await fetch(apiUrl, {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${creds.apiKey}`,
+            Authorization: `Bearer ${creds.apiKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify(body),
@@ -148,7 +152,7 @@ export async function imagesRoutes(app: FastifyInstance, opts: ImagesRoutesOptio
       response = await fetch(apiUrl, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${creds.apiKey}`,
+          Authorization: `Bearer ${creds.apiKey}`,
           "Content-Type": contentType,
         },
         body: new Uint8Array(rawBody),
@@ -178,14 +182,17 @@ async function fetchGeminiGenerateContent(
   model: string,
   body: Record<string, unknown>,
 ) {
-  return fetch(`${normalizeGeminiBaseUrl(apiBaseUrl)}/models/${encodeURIComponent(model)}:generateContent`, {
-    method: "POST",
-    headers: {
-      "x-goog-api-key": apiKey,
-      "Content-Type": "application/json",
+  return fetch(
+    `${normalizeGeminiBaseUrl(apiBaseUrl)}/models/${encodeURIComponent(model)}:generateContent`,
+    {
+      method: "POST",
+      headers: {
+        "x-goog-api-key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-  });
+  );
 }
 
 /**
@@ -212,17 +219,30 @@ async function proxyGeminiGenerateContent(
 
   const text = await response.text().catch(() => "");
   if (!text) {
-    return { status: response.ok ? 502 : response.status, body: { error: SERVER_DISCONNECTED_MESSAGE } };
+    return {
+      status: response.ok ? 502 : response.status,
+      body: { error: SERVER_DISCONNECTED_MESSAGE },
+    };
   }
   try {
     return { status: response.status, body: JSON.parse(text) as Record<string, unknown> };
   } catch {
-    return { status: response.ok ? 502 : response.status, body: { error: SERVER_DISCONNECTED_MESSAGE } };
+    return {
+      status: response.ok ? 502 : response.status,
+      body: { error: SERVER_DISCONNECTED_MESSAGE },
+    };
   }
 }
 
-function asGeminiProxyResult(result: { status: number; body: Record<string, unknown> }): GeminiProxyResult {
-  return { ok: result.status >= 200 && result.status < 300, status: result.status, payload: result.body };
+function asGeminiProxyResult(result: {
+  status: number;
+  body: Record<string, unknown>;
+}): GeminiProxyResult {
+  return {
+    ok: result.status >= 200 && result.status < 300,
+    status: result.status,
+    payload: result.body,
+  };
 }
 
 function normalizeGeminiBaseUrl(apiBaseUrl: string): string {
@@ -279,9 +299,11 @@ function readGeminiImageParts(body: Record<string, unknown>) {
 export function normalizeGeminiGenerateContentResponse(payload: Record<string, unknown>) {
   const candidates = Array.isArray(payload.candidates) ? payload.candidates : [];
   const data = candidates
-    .flatMap((candidate) => isRecord(candidate) && isRecord(candidate.content) && Array.isArray(candidate.content.parts)
-      ? candidate.content.parts
-      : [])
+    .flatMap((candidate) =>
+      isRecord(candidate) && isRecord(candidate.content) && Array.isArray(candidate.content.parts)
+        ? candidate.content.parts
+        : [],
+    )
     .map<{ b64_json: string; mime_type?: string } | null>((part) => {
       if (!isRecord(part)) return null;
       const inlineData = isRecord(part.inlineData)
@@ -290,11 +312,12 @@ export function normalizeGeminiGenerateContentResponse(payload: Record<string, u
           ? part.inline_data
           : null;
       if (!inlineData || typeof inlineData.data !== "string" || !inlineData.data) return null;
-      const mimeType = typeof inlineData.mimeType === "string"
-        ? inlineData.mimeType
-        : typeof inlineData.mime_type === "string"
-          ? inlineData.mime_type
-          : undefined;
+      const mimeType =
+        typeof inlineData.mimeType === "string"
+          ? inlineData.mimeType
+          : typeof inlineData.mime_type === "string"
+            ? inlineData.mime_type
+            : undefined;
       return {
         b64_json: inlineData.data,
         mime_type: mimeType,
@@ -329,7 +352,10 @@ function validateGenerationBody(body: Record<string, unknown>): string | null {
   return null;
 }
 
-export function validateEditMultipart(body: Buffer, security: CompanionSecurityConfig): string | null {
+export function validateEditMultipart(
+  body: Buffer,
+  security: CompanionSecurityConfig,
+): string | null {
   const text = body.toString("latin1");
   const imagePartNames = [...text.matchAll(/name="image(?:\[\])?"/g)];
   if (imagePartNames.length === 0) {
@@ -349,7 +375,10 @@ export function validateEditMultipart(body: Buffer, security: CompanionSecurityC
     if (/name="mask"/.test(header) && mime !== "image/png") {
       return "mask 必须是 image/png";
     }
-    if (/name="image(?:\[\])?"/.test(header) && !security.allowedEditImageMimeTypes.includes(mime)) {
+    if (
+      /name="image(?:\[\])?"/.test(header) &&
+      !security.allowedEditImageMimeTypes.includes(mime)
+    ) {
       return `不支持的图片类型：${mime}`;
     }
   }
@@ -414,9 +443,9 @@ export function validateGeminiEditBody(body: Record<string, unknown>): string | 
 function isGrokImageReference(value: unknown): value is { type: "image_url"; url: string } {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const item = value as Record<string, unknown>;
-  return item.type === "image_url"
-    && typeof item.url === "string"
-    && item.url.startsWith("data:image/");
+  return (
+    item.type === "image_url" && typeof item.url === "string" && item.url.startsWith("data:image/")
+  );
 }
 
 function isGeminiImagePart(value: unknown): value is Record<string, unknown> {
@@ -427,14 +456,17 @@ function isGeminiImagePart(value: unknown): value is Record<string, unknown> {
       ? value.inlineData
       : null;
   if (!inlineData) return false;
-  const mimeType = typeof inlineData.mime_type === "string"
-    ? inlineData.mime_type
-    : typeof inlineData.mimeType === "string"
-      ? inlineData.mimeType
-      : "";
-  return mimeType.startsWith("image/")
-    && typeof inlineData.data === "string"
-    && inlineData.data.length > 0;
+  const mimeType =
+    typeof inlineData.mime_type === "string"
+      ? inlineData.mime_type
+      : typeof inlineData.mimeType === "string"
+        ? inlineData.mimeType
+        : "";
+  return (
+    mimeType.startsWith("image/") &&
+    typeof inlineData.data === "string" &&
+    inlineData.data.length > 0
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

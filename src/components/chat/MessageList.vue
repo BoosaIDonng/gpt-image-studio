@@ -40,14 +40,16 @@ async function scrollToBottom() {
 
 function sourcePromptFor(message: Message) {
   if (message.role !== "assistant") return "";
-  return [...props.messages]
-    .reverse()
-    .find(
-      (item) =>
-        item.conversationId === message.conversationId &&
-        item.role === "user" &&
-        timestampFromCreatedAt(item) <= timestampFromCreatedAt(message),
-    )?.content ?? "";
+  return (
+    [...props.messages]
+      .reverse()
+      .find(
+        (item) =>
+          item.conversationId === message.conversationId &&
+          item.role === "user" &&
+          timestampFromCreatedAt(item) <= timestampFromCreatedAt(message),
+      )?.content ?? ""
+  );
 }
 
 onMounted(scrollToBottom);
@@ -80,12 +82,8 @@ watch(
         @load-message-config="emit('loadMessageConfig', $event)"
         @preview-image="emit('previewImage', $event)"
         @rename-image="emit('renameImage', $event)"
-        @refresh-image="
-          (message, imageId) => emit('refreshImage', message, imageId)
-        "
-        @retry-message="
-          (message, prompt) => emit('retryMessage', message, prompt)
-        "
+        @refresh-image="(message, imageId) => emit('refreshImage', message, imageId)"
+        @retry-message="(message, prompt) => emit('retryMessage', message, prompt)"
       />
     </div>
   </div>

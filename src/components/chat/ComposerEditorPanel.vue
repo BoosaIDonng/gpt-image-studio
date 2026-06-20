@@ -9,9 +9,7 @@ defineProps<{
 
 const settings = useSettingsStore();
 const isRatioMode = computed(() =>
-  settings.sizeRatioOptions.some(
-    (option) => option.value === settings.activeSizePreset,
-  ),
+  settings.sizeRatioOptions.some((option) => option.value === settings.activeSizePreset),
 );
 
 function selectRatioMode() {
@@ -102,10 +100,7 @@ function selectRatioMode() {
         </button>
       </div>
 
-      <div
-        v-if="settings.activeSizePreset === 'custom'"
-        class="flex items-center gap-2"
-      >
+      <div v-if="settings.activeSizePreset === 'custom'" class="flex items-center gap-2">
         <input
           :value="settings.imageWidth"
           class="w-20 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 outline-none focus:border-gray-400"
@@ -114,11 +109,7 @@ function selectRatioMode() {
           max="3840"
           step="16"
           placeholder="宽"
-          @input="
-            settings.imageWidth = Number(
-              ($event.target as HTMLInputElement).value,
-            )
-          "
+          @input="settings.imageWidth = Number(($event.target as HTMLInputElement).value)"
         />
         <span class="text-xs text-gray-400">×</span>
         <input
@@ -129,17 +120,10 @@ function selectRatioMode() {
           max="3840"
           step="16"
           placeholder="高"
-          @input="
-            settings.imageHeight = Number(
-              ($event.target as HTMLInputElement).value,
-            )
-          "
+          @input="settings.imageHeight = Number(($event.target as HTMLInputElement).value)"
         />
       </div>
-      <p
-        v-if="settings.customSizeError"
-        class="basis-full pt-1 text-xs text-red-500"
-      >
+      <p v-if="settings.customSizeError" class="basis-full pt-1 text-xs text-red-500">
         {{ settings.customSizeError }}
       </p>
     </div>
@@ -172,10 +156,7 @@ function selectRatioMode() {
         </button>
       </div>
 
-      <div
-        v-if="settings.imageCountMode === 'preset'"
-        class="grid grid-cols-4 gap-1.5"
-      >
+      <div v-if="settings.imageCountMode === 'preset'" class="grid grid-cols-4 gap-1.5">
         <button
           v-for="count in settings.imageCountPresets"
           :key="count"
@@ -192,10 +173,7 @@ function selectRatioMode() {
         </button>
       </div>
 
-      <div
-        v-if="settings.imageCountMode === 'custom'"
-        class="flex items-center gap-2"
-      >
+      <div v-if="settings.imageCountMode === 'custom'" class="flex items-center gap-2">
         <input
           :value="settings.imageCount"
           class="w-24 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 outline-none focus:border-gray-400"
@@ -203,12 +181,7 @@ function selectRatioMode() {
           :min="settings.minImageCount"
           step="1"
           placeholder="数量"
-          @input="
-            settings.applyImageCount(
-              ($event.target as HTMLInputElement).value,
-              'custom',
-            )
-          "
+          @input="settings.applyImageCount(($event.target as HTMLInputElement).value, 'custom')"
         />
         <span class="text-xs text-gray-400">张</span>
       </div>
@@ -218,10 +191,7 @@ function selectRatioMode() {
       </p>
     </div>
 
-    <div
-      v-if="activeEditor === 'background'"
-      class="flex flex-wrap items-center gap-1.5"
-    >
+    <div v-if="activeEditor === 'background'" class="flex flex-wrap items-center gap-1.5">
       <button
         v-for="opt in settings.backgroundOptions"
         :key="opt.value"
@@ -241,10 +211,7 @@ function selectRatioMode() {
       </button>
     </div>
 
-    <div
-      v-if="activeEditor === 'format'"
-      class="flex flex-wrap items-center gap-1.5"
-    >
+    <div v-if="activeEditor === 'format'" class="flex flex-wrap items-center gap-1.5">
       <button
         v-for="opt in settings.formatOptions"
         :key="opt.value"

@@ -33,9 +33,11 @@ type GrokImageApiResponse = {
     revised_prompt?: string;
     mime_type?: string;
   }>;
-  error?: {
-    message?: string;
-  } | string;
+  error?:
+    | {
+        message?: string;
+      }
+    | string;
   message?: string;
 };
 
@@ -54,36 +56,44 @@ export async function generateGrokImage(input: GrokImageInput): Promise<GrokImag
   return result;
 }
 
-export async function generateGrokImages(input: GrokImageBatchInput): Promise<GrokImageApiResult[]> {
+export async function generateGrokImages(
+  input: GrokImageBatchInput,
+): Promise<GrokImageApiResult[]> {
   validateGrokParams(input.params);
   const count = normalizeImageCount(input.count);
   const results: GrokImageApiResult[] = [];
 
   for (let remaining = count; remaining > 0; remaining -= 10) {
-    results.push(...await requestGrokImages(input, Math.min(10, remaining)));
+    results.push(...(await requestGrokImages(input, Math.min(10, remaining))));
   }
 
   return results;
 }
 
-async function requestGrokImages(input: GrokImageInput, count: number): Promise<GrokImageApiResult[]> {
+async function requestGrokImages(
+  input: GrokImageInput,
+  count: number,
+): Promise<GrokImageApiResult[]> {
   const sizeFields = buildGrokSizeFields(input.params);
   let response: Response;
   try {
-    response = await fetch(buildGrokEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "generations"), {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${input.apiKey}`,
-        "Content-Type": "application/json",
+    response = await fetch(
+      buildGrokEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "generations"),
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${input.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: input.model,
+          prompt: input.prompt,
+          ...(count > 1 ? { n: count } : {}),
+          ...sizeFields,
+          response_format: "b64_json",
+        }),
       },
-      body: JSON.stringify({
-        model: input.model,
-        prompt: input.prompt,
-        ...(count > 1 ? { n: count } : {}),
-        ...sizeFields,
-        response_format: "b64_json",
-      }),
-    });
+    );
   } catch (error) {
     throw new NetworkError(SERVER_DISCONNECTED_MESSAGE, { cause: error });
   }
@@ -101,9 +111,7 @@ export async function editGrokImage(input: GrokEditInput): Promise<GrokImageApiR
     throw new Error("Grok 图片接口当前不支持本应用的局部遮罩编辑。");
   }
 
-  const imageDataUrls = await Promise.all(
-    input.images.map((image) => blobToDataUrl(image.blob)),
-  );
+  const imageDataUrls = await Promise.all(input.images.map((image) => blobToDataUrl(image.blob)));
   const imagePayload = buildGrokEditImagePayload(imageDataUrls);
   const sizeFields = buildGrokSizeFields(input.params);
 
@@ -144,10 +152,19 @@ function validateGrokParams(params: GenerationParams) {
   if (params.size === "custom") {
     throw new Error("Grok 图片接口不支持自定义宽高，请使用比例选项。");
   }
-  if (params.size !== "auto" && !GROK_SUPPORTED_RATIOS.includes(params.size as typeof GROK_SUPPORTED_RATIOS[number])) {
-    throw new Error(`Grok 图片接口不支持 ${params.size} 比例，仅支持 ${GROK_SUPPORTED_RATIOS.join("、")}。`);
+  if (
+    params.size !== "auto" &&
+    !GROK_SUPPORTED_RATIOS.includes(params.size as (typeof GROK_SUPPORTED_RATIOS)[number])
+  ) {
+    throw new Error(
+      `Grok 图片接口不支持 ${params.size} 比例，仅支持 ${GROK_SUPPORTED_RATIOS.join("、")}。`,
+    );
   }
-  if (!GROK_SUPPORTED_RESOLUTIONS.includes(params.resolution as typeof GROK_SUPPORTED_RESOLUTIONS[number])) {
+  if (
+    !GROK_SUPPORTED_RESOLUTIONS.includes(
+      params.resolution as (typeof GROK_SUPPORTED_RESOLUTIONS)[number],
+    )
+  ) {
     throw new Error(`Grok 图片接口不支持 ${params.resolution} 分辨率，仅支持 1K 和 2K。`);
   }
 }
@@ -167,12 +184,14 @@ export function buildGrokEditImagePayload(imageDataUrls: string[]) {
     url,
   }));
 
-  return references.length === 1
-    ? { image: references[0] }
-    : { images: references };
+  return references.length === 1 ? { image: references[0] } : { images: references };
 }
 
-function buildGrokEndpoint(apiBaseUrl: string, mode: ApiBaseUrlMode, path: "generations" | "edits") {
+function buildGrokEndpoint(
+  apiBaseUrl: string,
+  mode: ApiBaseUrlMode,
+  path: "generations" | "edits",
+) {
   return `${normalizeGrokImagesBaseUrl(apiBaseUrl, mode)}/${path}`;
 }
 
@@ -226,20 +245,19 @@ async function parseGrokImageResponses(response: Response): Promise<GrokImageApi
 }
 
 function grokErrorMessage(status: number, payload: GrokImageApiResponse) {
-  const detail = typeof payload.error === "string"
-    ? payload.error
-    : payload.error?.message || payload.message;
+  const detail =
+    typeof payload.error === "string" ? payload.error : payload.error?.message || payload.message;
   if (isGrokBillingError(status, detail)) {
     return [
       "Grok 请求失败：HTTP 403：xAI/Grok 账号没有可用额度，或当前 API key 所属账号没有可用订阅权限。",
       "请在 xAI 控制台充值或确认订阅后重试，也可以临时切换到 OpenAI/Gemini。",
       detail ? `原始错误：${detail}` : "",
-    ].filter(Boolean).join("\n");
+    ]
+      .filter(Boolean)
+      .join("\n");
   }
 
-  return detail
-    ? `Grok 请求失败：HTTP ${status}：${detail}`
-    : `Grok 请求失败：HTTP ${status}`;
+  return detail ? `Grok 请求失败：HTTP ${status}：${detail}` : `Grok 请求失败：HTTP ${status}`;
 }
 
 function isGrokBillingError(status: number, detail?: string) {

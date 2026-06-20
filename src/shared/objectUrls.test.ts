@@ -30,11 +30,7 @@ describe("object URL helpers", () => {
   it("revokes URL collections", () => {
     const revokeSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
 
-    revokeObjectUrls([
-      "blob:http://localhost/one",
-      undefined,
-      "blob:http://localhost/two",
-    ]);
+    revokeObjectUrls(["blob:http://localhost/one", undefined, "blob:http://localhost/two"]);
 
     expect(revokeSpy).toHaveBeenCalledTimes(2);
     expect(revokeSpy).toHaveBeenNthCalledWith(1, "blob:http://localhost/one");

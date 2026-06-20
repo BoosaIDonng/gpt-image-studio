@@ -2,7 +2,12 @@ import { mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { cleanupOldLogs, getLogFilePath, readLastLines, readLogChunkSince } from "./processManager.js";
+import {
+  cleanupOldLogs,
+  getLogFilePath,
+  readLastLines,
+  readLogChunkSince,
+} from "./processManager.js";
 
 describe("process manager helpers", () => {
   it("uses dated companion log file names", () => {

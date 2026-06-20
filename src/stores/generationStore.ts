@@ -19,10 +19,7 @@ import { isoTimestamp, timestampFromCreatedAt } from "../shared/dateTime";
 import { formatError, isApiConfigurationError } from "../shared/errors";
 import { createId } from "../shared/id";
 import { createObjectUrl, revokeObjectUrl } from "../shared/objectUrls";
-import {
-  analyzeModerationRejection,
-  formatModerationAdvice,
-} from "../services/moderationAdvice";
+import { analyzeModerationRejection, formatModerationAdvice } from "../services/moderationAdvice";
 import {
   continuedGenerationLabel,
   filenameFromAsset,
@@ -56,9 +53,7 @@ type GenerationStoreContext = {
   activeEditMaskImageId: Ref<string>;
   activeEditSourceImageId: Ref<string>;
   composerText: Ref<string>;
-  createConversationRecord: (
-    input: CreateConversationRecordInput,
-  ) => Promise<Conversation>;
+  createConversationRecord: (input: CreateConversationRecordInput) => Promise<Conversation>;
   currentGenerationParams: () => GenerationParams;
   currentPromptRequestSettings: (prompt?: string) => PromptRequestSettings;
   customSizeError: ComputedRef<string>;
@@ -106,8 +101,7 @@ export const useGenerationStore = defineStore("generation", () => {
   const activeConversationPendingJobs = computed(() =>
     jobs.value.filter(
       (job) =>
-        job.status === "pending" &&
-        job.conversationId === input.value.activeConversationId.value,
+        job.status === "pending" && job.conversationId === input.value.activeConversationId.value,
     ),
   );
   const pendingJobCountByConversation = computed(() => {
@@ -119,8 +113,7 @@ export const useGenerationStore = defineStore("generation", () => {
     return counts;
   });
   const imageModeLabel = computed(() =>
-    input.value.activeEditMaskImageId.value &&
-    input.value.activeEditSourceImageId.value
+    input.value.activeEditMaskImageId.value && input.value.activeEditSourceImageId.value
       ? "局部编辑"
       : input.value.attachedImages.value.length
         ? "引用图片编辑"
@@ -129,10 +122,7 @@ export const useGenerationStore = defineStore("generation", () => {
   const canSend = computed(
     () =>
       !input.value.customSizeError.value &&
-      Boolean(
-        input.value.composerText.value.trim() ||
-        input.value.attachedImages.value.length,
-      ),
+      Boolean(input.value.composerText.value.trim() || input.value.attachedImages.value.length),
   );
   let hasBeforeUnloadListener = false;
 
@@ -163,10 +153,7 @@ export const useGenerationStore = defineStore("generation", () => {
     doSubmit(prompt);
   }
 
-  async function promptAfterExpansionPreview(
-    rawText: string,
-    ctx: GenerationStoreContext,
-  ) {
+  async function promptAfterExpansionPreview(rawText: string, ctx: GenerationStoreContext) {
     if (!canExpandPrompt(ctx)) return rawText;
 
     const expanded = await expandPromptOrOriginal(rawText, ctx);
@@ -184,10 +171,7 @@ export const useGenerationStore = defineStore("generation", () => {
     );
   }
 
-  async function expandPromptOrOriginal(
-    rawText: string,
-    ctx: GenerationStoreContext,
-  ) {
+  async function expandPromptOrOriginal(rawText: string, ctx: GenerationStoreContext) {
     isExpanding.value = true;
     try {
       return await expandPrompt(rawText, {
@@ -204,10 +188,7 @@ export const useGenerationStore = defineStore("generation", () => {
     }
   }
 
-  function waitForExpandPreviewChoice(
-    rawText: string,
-    expanded: string,
-  ) {
+  function waitForExpandPreviewChoice(rawText: string, expanded: string) {
     return new Promise<string | null>((resolve) => {
       expandPreview.value = {
         originalPrompt: rawText,
@@ -233,13 +214,9 @@ export const useGenerationStore = defineStore("generation", () => {
         updatedAt: createdAt,
       }));
     const conversationId = conversation.id;
-    const editMaskImageId =
-      input.value.activeEditMaskImageId.value || undefined;
-    const references = input.value.attachedImages.value.filter(
-      (id) => id !== editMaskImageId,
-    );
-    const editSourceImageId =
-      input.value.activeEditSourceImageId.value || undefined;
+    const editMaskImageId = input.value.activeEditMaskImageId.value || undefined;
+    const references = input.value.attachedImages.value.filter((id) => id !== editMaskImageId);
+    const editSourceImageId = input.value.activeEditSourceImageId.value || undefined;
     const generationParams = input.value.currentGenerationParams();
     const imageCount = normalizeImageCount(generationParams.imageCount);
     const promptRequestSettings = input.value.currentPromptRequestSettings(text);
@@ -298,8 +275,7 @@ export const useGenerationStore = defineStore("generation", () => {
         generationParams:
           assistantMessage.generationParams ?? input.value.currentGenerationParams(),
         promptRequestSettings:
-          assistantMessage.promptRequestSettings ??
-          input.value.currentPromptRequestSettings(text),
+          assistantMessage.promptRequestSettings ?? input.value.currentPromptRequestSettings(text),
         prompt: text,
         referencedImageIds: references,
         editSourceImageId,
@@ -312,20 +288,14 @@ export const useGenerationStore = defineStore("generation", () => {
   }
 
   async function retryMessage(message: Message, promptOverride?: string) {
-    const generationParams =
-      message.generationParams ?? input.value.currentGenerationParams();
+    const generationParams = message.generationParams ?? input.value.currentGenerationParams();
     const imageCount = normalizeImageCount(generationParams.imageCount);
     message.status = "pending";
     message.generationStartedAt = isoTimestamp();
-    message.content = pendingGenerationLabel(
-      message.referencedImageIds.length > 0,
-      imageCount,
-    );
+    message.content = pendingGenerationLabel(message.referencedImageIds.length > 0, imageCount);
     message.errorMessage = undefined;
     clearPartialPreview(message.id);
-    await saveMessage(toPlainMessage(message)).catch(
-      input.value.onStorageError,
-    );
+    await saveMessage(toPlainMessage(message)).catch(input.value.onStorageError);
 
     const userMessage = findSourceUserMessage(message);
 
@@ -333,8 +303,8 @@ export const useGenerationStore = defineStore("generation", () => {
       const prompt = promptOverride?.trim() || userMessage.content;
       const promptRequestSettings = promptOverride?.trim()
         ? input.value.currentPromptRequestSettings(prompt)
-        : message.promptRequestSettings ??
-          input.value.currentPromptRequestSettings(userMessage.content);
+        : (message.promptRequestSettings ??
+          input.value.currentPromptRequestSettings(userMessage.content));
 
       await Promise.all(
         createJobs(
@@ -369,9 +339,7 @@ export const useGenerationStore = defineStore("generation", () => {
     input.value.imageAssets.value = input.value.imageAssets.value.filter(
       (item) => item.id !== imageId,
     );
-    message.resultImageIds = message.resultImageIds.filter(
-      (item) => item !== imageId,
-    );
+    message.resultImageIds = message.resultImageIds.filter((item) => item !== imageId);
     await Promise.all([
       image ? deleteImageAsset(image.id) : Promise.resolve(),
       image?.blobKey ? deleteImageBlob(image.blobKey) : Promise.resolve(),
@@ -389,8 +357,7 @@ export const useGenerationStore = defineStore("generation", () => {
     const userMessage = findSourceUserMessage(message);
     if (!userMessage) return;
 
-    const generationParams =
-      message.generationParams ?? input.value.currentGenerationParams();
+    const generationParams = message.generationParams ?? input.value.currentGenerationParams();
     const imageCount = options.replaceImageId
       ? 1
       : normalizeImageCount(options.imageCount ?? generationParams.imageCount);
@@ -488,9 +455,7 @@ export const useGenerationStore = defineStore("generation", () => {
       const moderationAdvice = formatModerationAdvice(
         analyzeModerationRejection(rawMessage, job.prompt),
       );
-      const message = moderationAdvice
-        ? `${rawMessage}\n\n${moderationAdvice}`
-        : rawMessage;
+      const message = moderationAdvice ? `${rawMessage}\n\n${moderationAdvice}` : rawMessage;
       if (isApiConfigurationError(error)) {
         input.value.onApiConfigurationError?.(error);
       }
@@ -565,9 +530,7 @@ export const useGenerationStore = defineStore("generation", () => {
       conversationId: input.value.conversationExists(job.conversationId)
         ? job.conversationId
         : undefined,
-      messageId: hasMessage(job.assistantMessageId)
-        ? job.assistantMessageId
-        : undefined,
+      messageId: hasMessage(job.assistantMessageId) ? job.assistantMessageId : undefined,
       prompt: job.prompt,
       requestPrompt: imageResult.requestPrompt,
       revisedPrompt: imageResult.revisedPrompt,
@@ -620,12 +583,8 @@ export const useGenerationStore = defineStore("generation", () => {
       );
     }
 
-    const sourceImage = editSourceImageId
-      ? input.value.imageById(editSourceImageId)
-      : undefined;
-    const maskImage = editMaskImageId
-      ? input.value.imageById(editMaskImageId)
-      : undefined;
+    const sourceImage = editSourceImageId ? input.value.imageById(editSourceImageId) : undefined;
+    const maskImage = editMaskImageId ? input.value.imageById(editMaskImageId) : undefined;
     let maskBlob: Blob | undefined;
     if (maskImage) {
       maskBlob = await resolveImageBlob(maskImage);
@@ -661,8 +620,7 @@ export const useGenerationStore = defineStore("generation", () => {
       if (
         sourceSize &&
         maskSize &&
-        (sourceSize.width !== maskSize.width ||
-          sourceSize.height !== maskSize.height)
+        (sourceSize.width !== maskSize.width || sourceSize.height !== maskSize.height)
       ) {
         throw new Error("编辑遮罩尺寸与源图不一致，请重新选择编辑区域。");
       }
@@ -676,8 +634,7 @@ export const useGenerationStore = defineStore("generation", () => {
           sourceImageId: editSourceImageId,
           maskImageId: editMaskImageId,
           referenceCount: references.length,
-          sentImageCount: (editImages.length ? editImages : imageSources)
-            .length,
+          sentImageCount: (editImages.length ? editImages : imageSources).length,
         }),
       );
     }
@@ -797,20 +754,20 @@ export const useGenerationStore = defineStore("generation", () => {
       ];
     }
 
-    return Array.from({ length: imageCount }, () =>
-      createJob(jobInput),
-    );
+    return Array.from({ length: imageCount }, () => createJob(jobInput));
   }
 
   function canBatchGenerate(
     jobInput: Omit<GenerationJob, "id" | "status" | "startedAtMs">,
     count: number,
   ) {
-    return count > 1 &&
+    return (
+      count > 1 &&
       jobInput.referencedImageIds.length === 0 &&
       !jobInput.editSourceImageId &&
       !jobInput.editMaskImageId &&
-      Boolean(input.value.imageClient.canGenerateBatch?.());
+      Boolean(input.value.imageClient.canGenerateBatch?.())
+    );
   }
 
   function runImageRequests(createdJobs: GenerationJob[]) {
@@ -843,10 +800,7 @@ export const useGenerationStore = defineStore("generation", () => {
     if (!assistantMessage) return undefined;
 
     if (update.imageId && !assistantMessage.resultImageIds.includes(update.imageId)) {
-      assistantMessage.resultImageIds = [
-        ...assistantMessage.resultImageIds,
-        update.imageId,
-      ];
+      assistantMessage.resultImageIds = [...assistantMessage.resultImageIds, update.imageId];
     }
 
     const siblingJobs = jobs.value.filter(
@@ -865,18 +819,14 @@ export const useGenerationStore = defineStore("generation", () => {
         pendingCount,
       );
       assistantMessage.errorMessage =
-        failedCount > 0
-          ? `${failedCount} 张生成失败，其余仍在继续。`
-          : undefined;
+        failedCount > 0 ? `${failedCount} 张生成失败，其余仍在继续。` : undefined;
     } else if (hasGeneratedImages) {
       assistantMessage.status = "success";
       assistantMessage.content = job.referencedImageIds.length
         ? resultCountLabel("已基于引用图生成", assistantMessage.resultImageIds.length)
         : resultCountLabel("已生成", assistantMessage.resultImageIds.length);
       assistantMessage.errorMessage =
-        failedCount > 0
-          ? `${failedCount} 张生成失败，已保留成功结果。`
-          : undefined;
+        failedCount > 0 ? `${failedCount} 张生成失败，已保留成功结果。` : undefined;
     } else {
       assistantMessage.status = "error";
       assistantMessage.content = "生成中断，请重试。";
@@ -893,18 +843,19 @@ export const useGenerationStore = defineStore("generation", () => {
 
   function enqueueMessageSave(message: Message) {
     const previousSave =
-      messageSaveQueues.get(message.id)?.catch(() => undefined) ??
-      Promise.resolve();
+      messageSaveQueues.get(message.id)?.catch(() => undefined) ?? Promise.resolve();
     const saveTask = previousSave.then(() => {
       const latestMessage = findMessage(message.id) ?? message;
       return saveMessage(toPlainMessage(latestMessage));
     });
     messageSaveQueues.set(message.id, saveTask);
-    void saveTask.finally(() => {
-      if (messageSaveQueues.get(message.id) === saveTask) {
-        messageSaveQueues.delete(message.id);
-      }
-    }).catch(() => undefined);
+    void saveTask
+      .finally(() => {
+        if (messageSaveQueues.get(message.id) === saveTask) {
+          messageSaveQueues.delete(message.id);
+        }
+      })
+      .catch(() => undefined);
 
     return saveTask;
   }

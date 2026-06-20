@@ -101,10 +101,12 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
             response_format: "b64_json",
           }),
         });
-        results.push(...(await extractB64JsonList(response)).map((result) => ({
-          ...result,
-          requestPrompt: prompt,
-        })));
+        results.push(
+          ...(await extractB64JsonList(response)).map((result) => ({
+            ...result,
+            requestPrompt: prompt,
+          })),
+        );
       }
 
       return results;
@@ -210,11 +212,12 @@ function buildParams(
   model: string,
   params: { size: string; width: number; height: number; background: string; outputFormat: string },
 ) {
-  const size = params.size === "auto"
-    ? "auto"
-    : params.size.includes(":") || params.size === "custom"
-      ? `${params.width}x${params.height}`
-      : params.size;
+  const size =
+    params.size === "auto"
+      ? "auto"
+      : params.size.includes(":") || params.size === "custom"
+        ? `${params.width}x${params.height}`
+        : params.size;
 
   return {
     size,
@@ -258,4 +261,3 @@ async function extractB64JsonList(response: Response): Promise<ImageClientResult
   }
   return results;
 }
-

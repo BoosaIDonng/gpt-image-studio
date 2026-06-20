@@ -168,10 +168,7 @@ export function useStudioSettingsSync(ctx: {
     return didAdd;
   }
 
-  function updateFavoritePrompt(
-    id: string,
-    input: { title?: string; text?: string },
-  ) {
+  function updateFavoritePrompt(id: string, input: { title?: string; text?: string }) {
     const didUpdate = ctx.updateFavoritePrompt(id, input);
     if (didUpdate) persistSettingsChange();
     return didUpdate;

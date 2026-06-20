@@ -4,13 +4,7 @@ import { matchPromptWordbankTerms } from "./promptWordbankMatcher";
 
 const wordbanks: PromptWordbanks = {
   pose: {
-    safe: [
-      "sitting on chair",
-      "standing",
-      "lying",
-      "soft window light",
-      "dynamic pose",
-    ],
+    safe: ["sitting on chair", "standing", "lying", "soft window light", "dynamic pose"],
     creative: ["looking over shoulder", "cinematic rain street", "bare shoulders"],
     nsfw: ["spread legs", "NSFW"],
   },
@@ -42,9 +36,7 @@ describe("matchPromptWordbankTerms", () => {
     expect(result.terms).toContain("standing");
     expect(result.terms).not.toContain("sitting on chair");
     expect(result.terms).not.toContain("lying");
-    expect(result.blockedTerms).toEqual(
-      expect.arrayContaining(["sitting on chair", "lying"]),
-    );
+    expect(result.blockedTerms).toEqual(expect.arrayContaining(["sitting on chair", "lying"]));
   });
 
   it("uses deterministic fallback when prompt has no matching trigger", () => {
@@ -86,8 +78,6 @@ describe("matchPromptWordbankTerms", () => {
     expect(result.terms).toContain("standing");
     expect(result.terms).not.toContain("completely nude");
     expect(result.terms).not.toContain("NSFW");
-    expect(result.blockedTerms).toEqual(
-      expect.arrayContaining(["completely nude", "NSFW"]),
-    );
+    expect(result.blockedTerms).toEqual(expect.arrayContaining(["completely nude", "NSFW"]));
   });
 });

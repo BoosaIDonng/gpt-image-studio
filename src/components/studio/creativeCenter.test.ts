@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildCreativeCenterStatus,
-  creativeTemplates,
-  promptFromTemplate,
-} from "./creativeCenter";
+import { buildCreativeCenterStatus, creativeTemplates, promptFromTemplate } from "./creativeCenter";
 import { buildTutorialSteps } from "../settings/tutorial";
 
 describe("creative center", () => {

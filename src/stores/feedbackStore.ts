@@ -70,10 +70,13 @@ export const useFeedbackStore = defineStore("feedback", () => {
       type,
       message,
     };
-    noticeTimer = setTimeout(() => {
-      notice.value = null;
-      noticeTimer = null;
-    }, type === "error" ? 7000 : 3500);
+    noticeTimer = setTimeout(
+      () => {
+        notice.value = null;
+        noticeTimer = null;
+      },
+      type === "error" ? 7000 : 3500,
+    );
   }
 
   return {

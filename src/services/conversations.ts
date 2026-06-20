@@ -3,13 +3,9 @@ import { timestampFromUpdatedAt } from "../shared/dateTime";
 import { deleteFromStore, getAllFromStore, putInStore, STORE_NAMES } from "./db";
 
 export async function listConversations() {
-  const conversations = await getAllFromStore<Conversation>(
-    STORE_NAMES.conversations,
-  );
+  const conversations = await getAllFromStore<Conversation>(STORE_NAMES.conversations);
 
-  return conversations.sort(
-    (a, b) => timestampFromUpdatedAt(b) - timestampFromUpdatedAt(a),
-  );
+  return conversations.sort((a, b) => timestampFromUpdatedAt(b) - timestampFromUpdatedAt(a));
 }
 
 export function saveConversation(conversation: Conversation) {

@@ -1,11 +1,5 @@
-import {
-  normalizeGenerationParams,
-  type StoredGenerationParams,
-} from "./generationParams";
-import {
-  PROMPT_REWRITE_GUARD_PREFIX,
-  normalizePromptRewriteGuardText,
-} from "./imagesApi";
+import { normalizeGenerationParams, type StoredGenerationParams } from "./generationParams";
+import { PROMPT_REWRITE_GUARD_PREFIX, normalizePromptRewriteGuardText } from "./imagesApi";
 import { normalizeFavoritePrompts } from "./favoritePrompts";
 import { normalizePromptWordbanks } from "./promptWordbanks";
 import { GEMINI_IMAGE_MODEL, defaultModelForProvider } from "../shared/models";
@@ -29,10 +23,7 @@ type SettingsRecord = {
 };
 
 export async function loadSettings() {
-  const record = await getFromStore<SettingsRecord>(
-    STORE_NAMES.settings,
-    SETTINGS_KEY,
-  );
+  const record = await getFromStore<SettingsRecord>(STORE_NAMES.settings, SETTINGS_KEY);
 
   if (!record?.value) return undefined;
 
@@ -95,9 +86,7 @@ type StoredAppSettings = Omit<
 
 function normalizeSettings(settings: StoredAppSettings): AppSettings {
   const apiProvider = normalizeApiProvider(settings.apiProvider);
-  const promptRewriteGuardText = normalizePromptRewriteGuardText(
-    settings.promptRewriteGuardText,
-  );
+  const promptRewriteGuardText = normalizePromptRewriteGuardText(settings.promptRewriteGuardText);
   return {
     ...settings,
     connectionMode: settings.connectionMode ?? "direct",
@@ -105,22 +94,19 @@ function normalizeSettings(settings: StoredAppSettings): AppSettings {
     apiBaseUrlMode: settings.apiBaseUrlMode === "full" ? "full" : "origin",
     apiMode: settings.apiMode === "responses" ? "responses" : "images",
     streamImages: settings.streamImages ?? false,
-    streamPartialImages: normalizeStreamPartialImages(
-      settings.streamPartialImages,
-    ),
+    streamPartialImages: normalizeStreamPartialImages(settings.streamPartialImages),
     model: normalizeModel(apiProvider, settings.model),
     promptMode: normalizePromptMode(settings.promptMode),
     promptWordbanks: normalizePromptWordbanks(settings.promptWordbanks),
     promptRewriteGuardEnabled: settings.promptRewriteGuardEnabled ?? true,
     promptRewriteGuardText,
-    promptRewriteGuardHistory:
-      settings.promptRewriteGuardHistory ?? [
-        {
-          id: "prompt-guard-default",
-          text: PROMPT_REWRITE_GUARD_PREFIX,
-          createdAt: new Date(0).toISOString(),
-        },
-      ],
+    promptRewriteGuardHistory: settings.promptRewriteGuardHistory ?? [
+      {
+        id: "prompt-guard-default",
+        text: PROMPT_REWRITE_GUARD_PREFIX,
+        createdAt: new Date(0).toISOString(),
+      },
+    ],
     favoritePrompts: normalizeFavoritePrompts(settings.favoritePrompts),
     promptExpandEnabled: settings.promptExpandEnabled ?? false,
     chatApiKey: settings.chatApiKey ?? "",
@@ -154,12 +140,7 @@ function normalizeStreamPartialImages(value: unknown): 0 | 1 | 2 | 3 {
 }
 
 function normalizePromptMode(mode: PromptMode | undefined): PromptMode {
-  if (
-    mode === "default" ||
-    mode === "safe" ||
-    mode === "creative" ||
-    mode === "adult"
-  ) {
+  if (mode === "default" || mode === "safe" || mode === "creative" || mode === "adult") {
     return mode;
   }
 

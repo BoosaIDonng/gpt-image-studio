@@ -29,7 +29,7 @@ const URL_SETTING_KEYS = [
   "outputFormat",
 ] as const;
 
-type UrlSettingKey = typeof URL_SETTING_KEYS[number];
+type UrlSettingKey = (typeof URL_SETTING_KEYS)[number];
 type SettingsPatch = Partial<Omit<AppSettings, "defaults">> & {
   defaults?: Partial<GenerationParams>;
 };
@@ -59,7 +59,7 @@ export function hasUrlGenerationParams(searchParams: URLSearchParams) {
   const payload = parseSettingsPayload(searchParams.get("settings"));
   return Boolean(
     settingsPatchHasKeys(getGenerationPatchFromPayload(payload)) ||
-      settingsPatchHasKeys(getGenerationPatchFromSearchParams(searchParams)),
+    settingsPatchHasKeys(getGenerationPatchFromSearchParams(searchParams)),
   );
 }
 
@@ -148,9 +148,8 @@ function getApiSettingsPatchFromPayload(payload: SettingsPayload | null): Settin
   if (apiProvider) patch.apiProvider = apiProvider;
   if (apiBaseUrl !== undefined) {
     patch.apiBaseUrlMode = apiBaseUrlMode ?? "origin";
-    patch.apiBaseUrl = patch.apiBaseUrlMode === "origin"
-      ? stripImagesApiPath(apiBaseUrl)
-      : apiBaseUrl.trim();
+    patch.apiBaseUrl =
+      patch.apiBaseUrlMode === "origin" ? stripImagesApiPath(apiBaseUrl) : apiBaseUrl.trim();
   } else if (apiBaseUrlMode) {
     patch.apiBaseUrlMode = apiBaseUrlMode;
   }
@@ -175,8 +174,7 @@ function getGenerationPatchFromPayload(payload: SettingsPayload | null): Setting
 function getPromptRewriteGuardPatchFromPayload(payload: SettingsPayload | null): SettingsPatch {
   const patch: SettingsPatch = {};
   const enabled = normalizeBoolean(
-    readUnknown(payload, "promptRewriteGuardEnabled") ??
-      readUnknown(payload, "promptRewriteGuard"),
+    readUnknown(payload, "promptRewriteGuardEnabled") ?? readUnknown(payload, "promptRewriteGuard"),
   );
   const text = readString(payload, "promptRewriteGuardText");
 
@@ -204,18 +202,15 @@ function getApiSettingsPatchFromSearchParams(searchParams: URLSearchParams): Set
   const apiBaseUrlMode = normalizeApiBaseUrlMode(searchParams.get("apiBaseUrlMode"));
   const apiMode = normalizeApiMode(searchParams.get("apiMode"));
   const streamImages = normalizeBoolean(searchParams.get("streamImages"));
-  const streamPartialImages = normalizeStreamPartialImages(
-    searchParams.get("streamPartialImages"),
-  );
+  const streamPartialImages = normalizeStreamPartialImages(searchParams.get("streamPartialImages"));
   const apiKey = searchParams.get("apiKey");
   const model = searchParams.get("model");
 
   if (apiProvider) patch.apiProvider = apiProvider;
   if (apiBaseUrl !== null) {
     patch.apiBaseUrlMode = apiBaseUrlMode ?? "origin";
-    patch.apiBaseUrl = patch.apiBaseUrlMode === "origin"
-      ? stripImagesApiPath(apiBaseUrl)
-      : apiBaseUrl.trim();
+    patch.apiBaseUrl =
+      patch.apiBaseUrlMode === "origin" ? stripImagesApiPath(apiBaseUrl) : apiBaseUrl.trim();
   } else if (apiBaseUrlMode) {
     patch.apiBaseUrlMode = apiBaseUrlMode;
   }
@@ -236,8 +231,7 @@ function getGenerationPatchFromSearchParams(searchParams: URLSearchParams): Sett
 function getPromptRewriteGuardPatchFromSearchParams(searchParams: URLSearchParams): SettingsPatch {
   const patch: SettingsPatch = {};
   const enabled = normalizeBoolean(
-    searchParams.get("promptRewriteGuardEnabled") ??
-      searchParams.get("promptRewriteGuard"),
+    searchParams.get("promptRewriteGuardEnabled") ?? searchParams.get("promptRewriteGuard"),
   );
   const text = searchParams.get("promptRewriteGuardText");
 
@@ -272,16 +266,19 @@ function mergeSettingsPatches(
   currentSettings: AppSettings,
   ...patches: SettingsPatch[]
 ): SettingsPatch {
-  return patches.reduce<SettingsPatch>((merged, patch) => ({
-    ...merged,
-    ...patch,
-    defaults: patch.defaults
-      ? {
-          ...(merged.defaults ?? currentSettings.defaults),
-          ...patch.defaults,
-        }
-      : merged.defaults,
-  }), {});
+  return patches.reduce<SettingsPatch>(
+    (merged, patch) => ({
+      ...merged,
+      ...patch,
+      defaults: patch.defaults
+        ? {
+            ...(merged.defaults ?? currentSettings.defaults),
+            ...patch.defaults,
+          }
+        : merged.defaults,
+    }),
+    {},
+  );
 }
 
 function settingsPatchHasKeys(patch: SettingsPatch) {
@@ -328,9 +325,7 @@ function normalizeApiMode(value: unknown): AppSettings["apiMode"] | undefined {
 }
 
 function normalizeApiProvider(value: unknown): AppSettings["apiProvider"] | undefined {
-  return value === "openai" || value === "grok" || value === "gemini"
-    ? value
-    : undefined;
+  return value === "openai" || value === "grok" || value === "gemini" ? value : undefined;
 }
 
 function normalizeBoolean(value: unknown) {
@@ -345,25 +340,27 @@ function normalizeBoolean(value: unknown) {
 
 function normalizeSize(value: unknown): GenerationParams["size"] | undefined {
   return typeof value === "string" && SIZE_VALUES.includes(value as GenerationParams["size"])
-    ? value as GenerationParams["size"]
+    ? (value as GenerationParams["size"])
     : undefined;
 }
 
 function normalizeResolution(value: unknown): SizeResolution | undefined {
   return typeof value === "string" && RESOLUTION_VALUES.includes(value as SizeResolution)
-    ? value as SizeResolution
+    ? (value as SizeResolution)
     : undefined;
 }
 
 function normalizeBackground(value: unknown): GenerationParams["background"] | undefined {
-  return typeof value === "string" && BACKGROUND_VALUES.includes(value as GenerationParams["background"])
-    ? value as GenerationParams["background"]
+  return typeof value === "string" &&
+    BACKGROUND_VALUES.includes(value as GenerationParams["background"])
+    ? (value as GenerationParams["background"])
     : undefined;
 }
 
 function normalizeOutputFormat(value: unknown): GenerationParams["outputFormat"] | undefined {
-  return typeof value === "string" && OUTPUT_FORMAT_VALUES.includes(value as GenerationParams["outputFormat"])
-    ? value as GenerationParams["outputFormat"]
+  return typeof value === "string" &&
+    OUTPUT_FORMAT_VALUES.includes(value as GenerationParams["outputFormat"])
+    ? (value as GenerationParams["outputFormat"])
     : undefined;
 }
 

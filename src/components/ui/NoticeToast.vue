@@ -47,12 +47,7 @@ const emit = defineEmits<{
             clip-rule="evenodd"
           />
         </svg>
-        <svg
-          v-else
-          class="h-3.5 w-3.5"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
+        <svg v-else class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
           <path
             fill-rule="evenodd"
             d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.25 7.31a1 1 0 0 1-1.42 0L3.29 9.224a1 1 0 1 1 1.42-1.408l4.04 4.074 6.54-6.594a1 1 0 0 1 1.414-.006z"
@@ -69,12 +64,7 @@ const emit = defineEmits<{
         type="button"
         @click="emit('close')"
       >
-        <svg
-          class="h-4 w-4"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          aria-hidden="true"
-        >
+        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
           <path
             d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22z"
           />

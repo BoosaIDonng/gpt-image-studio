@@ -180,9 +180,10 @@ export function matchPromptWordbankTerms(
   });
 
   const targetCount = targetTermCount(input.mode);
-  const allMatchedTerms = availableTerms.filter((term) =>
-    selectedRules.some((rule) => ruleMatchesTerm(rule, term)) ||
-    promptKey.includes(normalizeForMatch(term)),
+  const allMatchedTerms = availableTerms.filter(
+    (term) =>
+      selectedRules.some((rule) => ruleMatchesTerm(rule, term)) ||
+      promptKey.includes(normalizeForMatch(term)),
   );
   const matchedTerms = allMatchedTerms.slice(0, targetCount);
   const fallbackTerms = pickDeterministic(
@@ -204,10 +205,7 @@ export function matchPromptWordbankTerms(
   };
 }
 
-function candidatesForMode(
-  mode: PromptWordbankMatchMode,
-  wordbanks: PromptWordbanks,
-) {
+function candidatesForMode(mode: PromptWordbankMatchMode, wordbanks: PromptWordbanks) {
   if (mode === "safe") return uniqueTerms(wordbanks.pose.safe);
   if (mode === "creative") {
     return uniqueTerms([...wordbanks.pose.safe, ...wordbanks.pose.creative]);
@@ -226,11 +224,7 @@ function targetTermCount(mode: PromptWordbankMatchMode) {
   return 5;
 }
 
-function blockingReason(
-  term: string,
-  selectedConflictGroups: Set<string>,
-  safeIntent: boolean,
-) {
+function blockingReason(term: string, selectedConflictGroups: Set<string>, safeIntent: boolean) {
   const normalizedTerm = normalizeForMatch(term);
   if (safeIntent && UNSAFE_TERM_PATTERNS.some((pattern) => normalizedTerm.includes(pattern))) {
     return "safe-intent";
@@ -250,15 +244,11 @@ function blockingReason(
 
 function ruleMatchesTerm(rule: TriggerRule, term: string) {
   const normalizedTerm = normalizeForMatch(term);
-  return rule.terms.some((ruleTerm) =>
-    normalizedTerm.includes(normalizeForMatch(ruleTerm)),
-  );
+  return rule.terms.some((ruleTerm) => normalizedTerm.includes(normalizeForMatch(ruleTerm)));
 }
 
 function hasSafeIntent(promptKey: string) {
-  return SAFE_INTENT_PATTERNS.some((pattern) =>
-    promptKey.includes(normalizeForMatch(pattern)),
-  );
+  return SAFE_INTENT_PATTERNS.some((pattern) => promptKey.includes(normalizeForMatch(pattern)));
 }
 
 function uniqueTerms(terms: readonly string[]) {
@@ -290,11 +280,7 @@ function pickDeterministic(items: readonly string[], count: number, seed: string
 }
 
 function normalizeForMatch(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return value.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
 function hashString(value: string) {

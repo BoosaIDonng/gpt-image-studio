@@ -5,10 +5,12 @@ import type { PromptWordbanks } from "../types/studio";
 
 describe("buildImagePrompt", () => {
   it("returns the original prompt unchanged in default mode", () => {
-    expect(buildImagePrompt({
-      prompt: "画一张雨夜街头照片",
-      mode: "default",
-    })).toBe("画一张雨夜街头照片");
+    expect(
+      buildImagePrompt({
+        prompt: "画一张雨夜街头照片",
+        mode: "default",
+      }),
+    ).toBe("画一张雨夜街头照片");
   });
 
   it("wraps safe mode prompts with safe guidance and inspiration", () => {

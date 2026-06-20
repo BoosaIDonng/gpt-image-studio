@@ -21,9 +21,7 @@ import {
   hasUrlGenerationParams,
 } from "../../services/urlSettings";
 import { useComposerStore } from "../../stores/composerStore";
-import type {
-  PromptRequestSettings,
-} from "../../types/studio";
+import type { PromptRequestSettings } from "../../types/studio";
 import { useStudioDrafts } from "./useStudioDrafts";
 import { useStudioImagePreview } from "./useStudioImagePreview";
 import { useStudioRenameDialog } from "./useStudioRenameDialog";
@@ -48,6 +46,7 @@ export function useStudioViewModel() {
 
   // ── 子 composable：预览 ──
   // images 在后面创建，先用占位；子 composable 仅在函数调用时访问依赖，不存在时序问题
+  // eslint-disable-next-line prefer-const -- 前向引用：声明后延迟赋值
   let images: ReturnType<typeof useStudioImages>;
 
   const imagePreview = useStudioImagePreview({
@@ -58,6 +57,7 @@ export function useStudioViewModel() {
   });
 
   // ── 子 composable：重命名 ──
+  // eslint-disable-next-line prefer-const -- 前向引用：声明后延迟赋值
   let conversations: ReturnType<typeof useStudioConversations>;
 
   const renameDialogs = useStudioRenameDialog({
@@ -108,7 +108,9 @@ export function useStudioViewModel() {
     deleteConversations: (ids) => conversations.deleteConversations(ids),
     attachedImages: computed({
       get: () => images?.attachedImages.value ?? [],
-      set: (v) => { if (images) images.attachedImages.value = v; },
+      set: (v) => {
+        if (images) images.attachedImages.value = v;
+      },
     }),
     imageById: (id) => images.imageById(id),
     messages: computed(() => conversations?.messages.value ?? []),
@@ -162,9 +164,10 @@ export function useStudioViewModel() {
       ) {
         return false;
       }
-      const client = settings.connectionMode.value === "localCompanion"
-        ? localCompanionImagesClient
-        : directImagesClient;
+      const client =
+        settings.connectionMode.value === "localCompanion"
+          ? localCompanionImagesClient
+          : directImagesClient;
       return client.canGenerateBatch?.() ?? false;
     },
     generate(input) {
@@ -174,9 +177,10 @@ export function useStudioViewModel() {
       ) {
         throw new Error("本地 Companion 当前仅支持 Images API。");
       }
-      const fn = () => settings.connectionMode.value === "localCompanion"
-        ? localCompanionImagesClient.generate(input)
-        : directImagesClient.generate(input);
+      const fn = () =>
+        settings.connectionMode.value === "localCompanion"
+          ? localCompanionImagesClient.generate(input)
+          : directImagesClient.generate(input);
       return withNetworkRetry(
         fn,
         () => settings.autoRetryOnNetworkError.value,
@@ -190,14 +194,14 @@ export function useStudioViewModel() {
       ) {
         throw new Error("本地 Companion 当前仅支持 Images API。");
       }
-      const client = settings.connectionMode.value === "localCompanion"
-        ? localCompanionImagesClient
-        : directImagesClient;
-      const fn = () => client.generateBatch
-        ? client.generateBatch(input)
-        : Promise.all(
-            Array.from({ length: input.count }, () => client.generate(input)),
-          );
+      const client =
+        settings.connectionMode.value === "localCompanion"
+          ? localCompanionImagesClient
+          : directImagesClient;
+      const fn = () =>
+        client.generateBatch
+          ? client.generateBatch(input)
+          : Promise.all(Array.from({ length: input.count }, () => client.generate(input)));
       return withNetworkRetry(
         fn,
         () => settings.autoRetryOnNetworkError.value,
@@ -211,9 +215,10 @@ export function useStudioViewModel() {
       ) {
         throw new Error("本地 Companion 当前仅支持 Images API。");
       }
-      const fn = () => settings.connectionMode.value === "localCompanion"
-        ? localCompanionImagesClient.edit(input)
-        : directImagesClient.edit(input);
+      const fn = () =>
+        settings.connectionMode.value === "localCompanion"
+          ? localCompanionImagesClient.edit(input)
+          : directImagesClient.edit(input);
       return withNetworkRetry(
         fn,
         () => settings.autoRetryOnNetworkError.value,
@@ -237,17 +242,19 @@ export function useStudioViewModel() {
     const query = prompt?.trim();
     if (!settings.ragEnabled.value || !query) return undefined;
 
-    return retrieveRagContext({
-      query,
-      documents: collectRagDocuments({
-        wordbanks: settings.promptWordbanks.value,
-        imageAssets: images.imageAssets.value,
-        favoritePrompts: settings.favoritePrompts.value,
-        messages: conversations.messages.value,
-      }),
-      excludedIds: ragExcludedMatchIds.value,
-      topK: settings.ragTopK.value,
-    }).context || undefined;
+    return (
+      retrieveRagContext({
+        query,
+        documents: collectRagDocuments({
+          wordbanks: settings.promptWordbanks.value,
+          imageAssets: images.imageAssets.value,
+          favoritePrompts: settings.favoritePrompts.value,
+          messages: conversations.messages.value,
+        }),
+        excludedIds: ragExcludedMatchIds.value,
+        topK: settings.ragTopK.value,
+      }).context || undefined
+    );
   }
 
   // ── Generation ──
@@ -383,10 +390,7 @@ export function useStudioViewModel() {
     previewImage: imagePreview.previewImageById,
     renameImage: renameDialogs.requestRenameImage,
     removeAttachment: (id: string) => {
-      if (
-        id === activeEditSourceImageId.value ||
-        id === activeEditMaskImageId.value
-      ) {
+      if (id === activeEditSourceImageId.value || id === activeEditMaskImageId.value) {
         const sourceId = activeEditSourceImageId.value;
         const maskId = activeEditMaskImageId.value;
         if (sourceId) {

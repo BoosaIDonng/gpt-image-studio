@@ -74,12 +74,12 @@ npx tsx companion/src/main.ts serve
 
 常用参数：
 
-| 参数 | 说明 |
-|------|------|
-| `--port <port>` | 指定监听端口，默认 `19750` |
-| `--channel stable|dev` | 指定安全渠道；stable 只允许正式站点，dev 额外允许本地开发 origin |
-| `--allow-origin <origin...>` | 追加允许的完整 origin，不支持通配符 |
-| `--session-ttl-days <days>` | 指定配对 session 有效天数，默认 30 天 |
+| 参数                         | 说明                                  |
+| ---------------------------- | ------------------------------------- | ---------------------------------------------------------------- |
+| `--port <port>`              | 指定监听端口，默认 `19750`            |
+| `--channel stable            | dev`                                  | 指定安全渠道；stable 只允许正式站点，dev 额外允许本地开发 origin |
+| `--allow-origin <origin...>` | 追加允许的完整 origin，不支持通配符   |
+| `--session-ttl-days <days>`  | 指定配对 session 有效天数，默认 30 天 |
 
 ### `start` — 后台启动服务
 
@@ -144,6 +144,7 @@ npx tsx companion/src/main.ts status
 ```
 
 显示：
+
 - 凭据配置情况（Base URL + 脱敏后的 API Key）
 - 配对状态
 - 服务是否运行
@@ -184,10 +185,10 @@ npx tsx companion/src/main.ts unpair
 
 所有本地状态保存在 `~/.gpt-image-studio/`：
 
-| 文件 | 内容 |
-|------|------|
+| 文件               | 内容                   |
+| ------------------ | ---------------------- |
 | `credentials.json` | API Base URL + API Key |
-| `session.json` | 配对 session token |
+| `session.json`     | 配对 session token     |
 
 ## 升级
 

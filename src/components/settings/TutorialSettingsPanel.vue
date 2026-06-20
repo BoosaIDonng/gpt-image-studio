@@ -23,9 +23,7 @@ const tutorialSteps = computed(() =>
 <template>
   <section aria-labelledby="tutorialSettingsTitle" class="space-y-5">
     <div>
-      <h3 id="tutorialSettingsTitle" class="text-base font-semibold text-gray-900">
-        教程
-      </h3>
+      <h3 id="tutorialSettingsTitle" class="text-base font-semibold text-gray-900">教程</h3>
       <p class="mt-1 text-sm leading-relaxed text-gray-500">
         按顺序完成基础流程，后续可以在创作中心直接选择模板起稿。
       </p>

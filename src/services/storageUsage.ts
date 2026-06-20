@@ -15,21 +15,15 @@ export type StorageUsage = {
 };
 
 export async function estimateStorageUsage(): Promise<StorageUsage> {
-  const [
-    conversations,
-    messages,
-    imageAssets,
-    settings,
-    conversationDrafts,
-    browserEstimate,
-  ] = await Promise.all([
-    getAllFromStore<Conversation>(STORE_NAMES.conversations),
-    getAllFromStore<Message>(STORE_NAMES.messages),
-    getAllFromStore<ImageAsset>(STORE_NAMES.imageAssets),
-    getAllFromStore<unknown>(STORE_NAMES.settings),
-    getAllFromStore<unknown>(STORE_NAMES.conversationDrafts),
-    estimateBrowserStorage(),
-  ]);
+  const [conversations, messages, imageAssets, settings, conversationDrafts, browserEstimate] =
+    await Promise.all([
+      getAllFromStore<Conversation>(STORE_NAMES.conversations),
+      getAllFromStore<Message>(STORE_NAMES.messages),
+      getAllFromStore<ImageAsset>(STORE_NAMES.imageAssets),
+      getAllFromStore<unknown>(STORE_NAMES.settings),
+      getAllFromStore<unknown>(STORE_NAMES.conversationDrafts),
+      estimateBrowserStorage(),
+    ]);
 
   // 性能关键点：以前这里会 getAllFromStore(imageBlobs) 把所有图片 Blob 全部
   // 读进内存只为了累加 .blob.size——图片库一大就会在每次生图/删除/导入后

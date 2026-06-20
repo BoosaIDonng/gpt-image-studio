@@ -121,9 +121,7 @@ describe("URL settings", () => {
   });
 
   it("normalizes URL API origins with extra trailing slashes", () => {
-    const params = new URLSearchParams(
-      "apiUrl=https://proxy.example.com///&apiKey=sk-url",
-    );
+    const params = new URLSearchParams("apiUrl=https://proxy.example.com///&apiKey=sk-url");
 
     const next = buildSettingsFromUrlParams(currentSettings, params);
 
@@ -148,17 +146,20 @@ describe("URL settings", () => {
 
   it("builds settings from a JSON settings param", () => {
     const params = new URLSearchParams();
-    params.set("settings", JSON.stringify({
-      apiUrl: "https://settings.example.com",
-      apiKey: "sk-settings",
-      model: "gpt-image-2",
-      size: "16:9",
-      resolution: "2k",
-      background: "opaque",
-      outputFormat: "webp",
-      promptRewriteGuard: false,
-      promptRewriteGuardText: "不要改写：",
-    }));
+    params.set(
+      "settings",
+      JSON.stringify({
+        apiUrl: "https://settings.example.com",
+        apiKey: "sk-settings",
+        model: "gpt-image-2",
+        size: "16:9",
+        resolution: "2k",
+        background: "opaque",
+        outputFormat: "webp",
+        promptRewriteGuard: false,
+        promptRewriteGuardText: "不要改写：",
+      }),
+    );
 
     const next = buildSettingsFromUrlParams(currentSettings, params);
 
@@ -181,16 +182,19 @@ describe("URL settings", () => {
 
   it("lets independent params override values from the JSON settings param", () => {
     const params = new URLSearchParams();
-    params.set("settings", JSON.stringify({
-      apiUrl: "https://settings.example.com",
-      apiKey: "sk-settings",
-      model: "gpt-image-1",
-      defaults: {
-        size: "1:1",
-        resolution: "1k",
-        background: "opaque",
-      },
-    }));
+    params.set(
+      "settings",
+      JSON.stringify({
+        apiUrl: "https://settings.example.com",
+        apiKey: "sk-settings",
+        model: "gpt-image-1",
+        defaults: {
+          size: "1:1",
+          resolution: "1k",
+          background: "opaque",
+        },
+      }),
+    );
     params.set("apiUrl", "https://query.example.com/v1/images");
     params.set("apiKey", "sk-query");
     params.set("model", "gpt-image-2");
@@ -260,14 +264,18 @@ describe("URL settings", () => {
     );
 
     expect(applied).toBe(true);
-    expect(applySettings).toHaveBeenCalledWith(expect.objectContaining({
-      apiKey: "sk-url",
-      model: "gpt-image-1",
-    }));
-    expect(saveSettings).toHaveBeenCalledWith(expect.objectContaining({
-      apiKey: "sk-url",
-      model: "gpt-image-1",
-    }));
+    expect(applySettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        apiKey: "sk-url",
+        model: "gpt-image-1",
+      }),
+    );
+    expect(saveSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        apiKey: "sk-url",
+        model: "gpt-image-1",
+      }),
+    );
     expect(replaceState).toHaveBeenCalledWith(null, "", "/studio?view=embed#chat");
   });
 });

@@ -18,12 +18,18 @@ const ctx = useSettingsModalContext();
 
 // 解构为顶层变量，模板中可直接使用（Vue 自动解包 ref）
 const {
-  connectionMode, apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode,
-  apiKey, model, streamImages, streamPartialImages,
-  companionUrl, companionSessionToken, companionPaired,
-  updateConnectionMode, updateApiProvider, updateApiBaseUrl,
-  updateApiBaseUrlMode, updateApiMode, updateApiKey, updateModel,
-  updateStreamImages, updateStreamPartialImages, updateCompanionSessionToken,
+  connectionMode,
+  apiProvider,
+  apiBaseUrl,
+  apiBaseUrlMode,
+  apiMode,
+  apiKey,
+  model,
+  streamImages,
+  streamPartialImages,
+  companionUrl,
+  companionSessionToken,
+  companionPaired,
 } = ctx;
 
 const companionOnline = ref(false);
@@ -35,13 +41,21 @@ const pairingCodeInput = ref("");
 
 const isManagedCompanion = computed(() => companionHealth.value?.runMode !== "serve");
 const providerOptions: Array<{ value: ApiProvider; label: string; description: string }> = [
-  { value: "openai", label: "OpenAI 兼容", description: "支持当前 Images / Responses API 和中转站。" },
+  {
+    value: "openai",
+    label: "OpenAI 兼容",
+    description: "支持当前 Images / Responses API 和中转站。",
+  },
   { value: "grok", label: "Grok xAI", description: "调用 xAI Grok 图片接口。" },
   { value: "gemini", label: "Gemini", description: "调用 Google Gemini 原生图片接口。" },
 ];
 const apiModeOptions: Array<{ value: ApiMode; label: string; description: string }> = [
   { value: "images", label: "Images API", description: "直接调用 /v1/images，兼容传统图片接口。" },
-  { value: "responses", label: "Responses API", description: "通过 /v1/responses 调用 image_generation 工具。" },
+  {
+    value: "responses",
+    label: "Responses API",
+    description: "通过 /v1/responses 调用 image_generation 工具。",
+  },
 ];
 const partialImageOptions = [0, 1, 2, 3] as const;
 const apiBaseUrlHint = computed(() =>
@@ -50,15 +64,14 @@ const apiBaseUrlHint = computed(() =>
       ? "https://generativelanguage.googleapis.com/v1"
       : "https://generativelanguage.googleapis.com"
     : apiProvider.value === "grok"
-    ? apiBaseUrlMode.value === "full"
-      ? "https://api.x.ai/v1"
-      : "https://api.x.ai"
-    :
-  apiBaseUrlMode.value === "full"
-    ? apiMode.value === "responses"
-      ? "https://api.example.com/v1"
-      : "https://api.example.com/v1/images"
-    : "https://api.example.com",
+      ? apiBaseUrlMode.value === "full"
+        ? "https://api.x.ai/v1"
+        : "https://api.x.ai"
+      : apiBaseUrlMode.value === "full"
+        ? apiMode.value === "responses"
+          ? "https://api.example.com/v1"
+          : "https://api.example.com/v1/images"
+        : "https://api.example.com",
 );
 const apiSuffixLabel = computed(() =>
   apiProvider.value === "gemini"
@@ -123,9 +136,7 @@ async function handleStartPairing() {
     await startPairing(companionUrl.value);
     pairingInProgress.value = true;
   } catch (error) {
-    pairingError.value = error instanceof Error
-      ? error.message
-      : "无法连接 Companion 服务";
+    pairingError.value = error instanceof Error ? error.message : "无法连接 Companion 服务";
   }
 }
 
@@ -135,7 +146,10 @@ async function handleConfirmPairing() {
     const result = await confirmPairing(companionUrl.value, pairingCodeInput.value);
     ctx.updateCompanionSessionToken(result.sessionToken);
     pairingInProgress.value = false;
-    companionAuthStatus.value = await getCompanionAuthStatus(companionUrl.value, result.sessionToken);
+    companionAuthStatus.value = await getCompanionAuthStatus(
+      companionUrl.value,
+      result.sessionToken,
+    );
   } catch {
     pairingError.value = "配对码无效或已过期";
   }
@@ -200,12 +214,8 @@ watch(
 
 <template>
   <section aria-labelledby="apiSettingsTitle">
-    <h3 id="apiSettingsTitle" class="text-base font-semibold text-gray-900">
-      接口
-    </h3>
-    <p class="mt-1 text-sm text-gray-500">
-      当前设置会保存到浏览器本地 IndexedDB。
-    </p>
+    <h3 id="apiSettingsTitle" class="text-base font-semibold text-gray-900">接口</h3>
+    <p class="mt-1 text-sm text-gray-500">当前设置会保存到浏览器本地 IndexedDB。</p>
 
     <div class="mt-5 space-y-4">
       <div>
@@ -303,12 +313,7 @@ watch(
         />
 
         <div>
-          <label
-            class="mb-1 block text-sm font-medium text-gray-700"
-            for="apiModel"
-          >
-            模型
-          </label>
+          <label class="mb-1 block text-sm font-medium text-gray-700" for="apiModel"> 模型 </label>
           <input
             id="apiModel"
             :value="model"
@@ -320,16 +325,14 @@ watch(
             type="text"
           />
           <p class="mt-1.5 text-xs text-gray-500">
-            当前使用 <span class="font-mono">{{ modelHint }}</span>。切换供应商时会自动切换默认模型。
+            当前使用 <span class="font-mono">{{ modelHint }}</span
+            >。切换供应商时会自动切换默认模型。
           </p>
         </div>
 
         <div>
           <div class="mb-1 flex items-center justify-between gap-3">
-            <label
-              class="block text-sm font-medium text-gray-700"
-              for="apiBaseUrl"
-            >
+            <label class="block text-sm font-medium text-gray-700" for="apiBaseUrl">
               API 地址
             </label>
             <label class="flex cursor-pointer items-center gap-1.5 text-xs text-gray-500">
@@ -353,11 +356,7 @@ watch(
               class="min-w-0 flex-1 rounded-l-lg bg-transparent px-3 py-2 text-sm text-gray-900 outline-none"
               :placeholder="apiBaseUrlHint"
               type="url"
-              @input="
-                ctx.updateApiBaseUrl(
-                  ($event.target as HTMLInputElement).value,
-                )
-              "
+              @input="ctx.updateApiBaseUrl(($event.target as HTMLInputElement).value)"
               @blur="
                 ctx.updateApiBaseUrl(
                   normalizeApiBaseUrlInput(($event.target as HTMLInputElement).value),
@@ -375,9 +374,7 @@ watch(
             <template v-if="apiBaseUrlMode === 'origin'">
               输入站点根地址即可，应用会自动补上 {{ apiSuffixLabel }}。
             </template>
-            <template v-else>
-              已按完整 API Base URL 处理，不会自动补路径。
-            </template>
+            <template v-else> 已按完整 API Base URL 处理，不会自动补路径。 </template>
           </p>
         </div>
 
@@ -388,11 +385,7 @@ watch(
               type="checkbox"
               :checked="streamImages && apiProvider === 'openai'"
               :disabled="apiProvider !== 'openai'"
-              @change="
-                ctx.updateStreamImages(
-                  ($event.target as HTMLInputElement).checked,
-                )
-              "
+              @change="ctx.updateStreamImages(($event.target as HTMLInputElement).checked)"
             />
             <span class="min-w-0">
               <span class="block text-sm font-medium text-gray-700">流式预览</span>
@@ -408,10 +401,7 @@ watch(
           </label>
 
           <div class="mt-4">
-            <label
-              class="mb-1 block text-sm font-medium text-gray-700"
-              for="streamPartialImages"
-            >
+            <label class="mb-1 block text-sm font-medium text-gray-700" for="streamPartialImages">
               中间图数量
             </label>
             <select
@@ -447,7 +437,8 @@ watch(
           </div>
 
           <div class="rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
-            本地 Companion 当前仅支持 Images API。若要使用 Responses API 或流式预览，请先切回浏览器直连模式。
+            本地 Companion 当前仅支持 Images API。若要使用 Responses API
+            或流式预览，请先切回浏览器直连模式。
           </div>
 
           <!-- Status -->
@@ -489,14 +480,17 @@ watch(
           <template v-else-if="!pairingInProgress">
             <p class="text-sm text-gray-500">
               <template v-if="isManagedCompanion">
-                需要与本地 Companion 配对后才能使用。请先在终端运行 <span class="font-mono text-gray-700">gpt-image-studio pair</span>，再点击开始配对。
+                需要与本地 Companion 配对后才能使用。请先在终端运行
+                <span class="font-mono text-gray-700">gpt-image-studio pair</span>，再点击开始配对。
               </template>
               <template v-else>
-                需要与本地 Companion 配对后才能使用。点击开始配对后，请在当前 Companion 终端查看配对码。
+                需要与本地 Companion 配对后才能使用。点击开始配对后，请在当前 Companion
+                终端查看配对码。
               </template>
             </p>
             <p v-if="!companionOnline" class="text-xs text-gray-500">
-              请先在终端启动 <span class="font-mono text-gray-700">gpt-image-studio start</span>，然后点击刷新。
+              请先在终端启动
+              <span class="font-mono text-gray-700">gpt-image-studio start</span>，然后点击刷新。
             </p>
             <button
               class="rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white hover:bg-gray-700 disabled:opacity-50 cursor-pointer"
@@ -510,9 +504,7 @@ watch(
 
           <!-- Pairing in progress -->
           <template v-if="pairingInProgress">
-            <p class="text-sm text-gray-600">
-              请在 Companion 终端查看配对码，然后在下方输入。
-            </p>
+            <p class="text-sm text-gray-600">请在 Companion 终端查看配对码，然后在下方输入。</p>
             <div class="flex gap-2">
               <input
                 v-model="pairingCodeInput"
@@ -547,7 +539,10 @@ watch(
             </template>
           </p>
 
-          <div v-if="companionPaired && companionOnline" class="rounded-lg bg-gray-50 p-3 text-xs text-gray-600">
+          <div
+            v-if="companionPaired && companionOnline"
+            class="rounded-lg bg-gray-50 p-3 text-xs text-gray-600"
+          >
             <template v-if="companionAuthStatus">
               <span :class="companionAuthStatus.ready ? 'text-green-700' : 'text-amber-700'">
                 {{ companionAuthStatus.ready ? "凭据已配置" : "凭据未配置" }}
@@ -556,9 +551,7 @@ watch(
                 ：{{ companionAuthStatus.accountLabel }}
               </span>
             </template>
-            <template v-else>
-              已配对，但暂时无法读取凭据状态。请确认服务仍在运行。
-            </template>
+            <template v-else> 已配对，但暂时无法读取凭据状态。请确认服务仍在运行。 </template>
           </div>
         </div>
       </template>

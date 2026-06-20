@@ -29,10 +29,7 @@ export function normalizePromptWordbanks(value: unknown): PromptWordbanks {
   return {
     pose: {
       safe: normalizeWordbankTerms(pose.safe, defaultPromptWordbanks.pose.safe),
-      creative: normalizeWordbankTerms(
-        pose.creative,
-        defaultPromptWordbanks.pose.creative,
-      ),
+      creative: normalizeWordbankTerms(pose.creative, defaultPromptWordbanks.pose.creative),
       nsfw: normalizeWordbankTerms(pose.nsfw, defaultPromptWordbanks.pose.nsfw),
     },
     adultInspiration: normalizeWordbankTerms(

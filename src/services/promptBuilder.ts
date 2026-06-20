@@ -16,8 +16,7 @@ const MODE_LABELS: Record<Exclude<PromptMode, "default">, string> = {
 };
 
 const MODE_GUIDANCE: Record<Exclude<PromptMode, "default">, string> = {
-  safe:
-    "保持安全、优雅、干净的视觉表达。不要添加成人、裸露、色情或露骨元素，重点强化构图、光影、质感和画面完成度。",
+  safe: "保持安全、优雅、干净的视觉表达。不要添加成人、裸露、色情或露骨元素，重点强化构图、光影、质感和画面完成度。",
   creative:
     "允许更大胆的时尚表现、性感氛围、暧昧张力和电影感姿态，但不要改写用户主体、场景、动作、构图或风格要求。",
   adult:
@@ -34,9 +33,7 @@ export function buildImagePrompt(input: BuildPromptInput) {
     seed: input.seed ?? input.prompt,
     wordbanks: input.wordbanks,
   }).terms;
-  const inspirationBlock = inspirationTerms.length
-    ? inspirationTerms.join(", ")
-    : "无";
+  const inspirationBlock = inspirationTerms.length ? inspirationTerms.join(", ") : "无";
 
   return [
     "请把用户原始提示词作为最高优先级。必须保留主体、动作、构图、风格、场景和用户明确提出的要求。",
@@ -62,11 +59,7 @@ export function selectInspirationTerms(
       ? wordbanks.pose.safe
       : mode === "creative"
         ? [...wordbanks.pose.safe, ...wordbanks.pose.creative]
-        : [
-            ...wordbanks.pose.safe,
-            ...wordbanks.pose.creative,
-            ...wordbanks.pose.nsfw,
-          ];
+        : [...wordbanks.pose.safe, ...wordbanks.pose.creative, ...wordbanks.pose.nsfw];
   const selectedPoseTerms = pickDeterministic(poseTerms, mode === "safe" ? 2 : 3, `${seed}:pose`);
 
   if (mode !== "adult") return selectedPoseTerms;

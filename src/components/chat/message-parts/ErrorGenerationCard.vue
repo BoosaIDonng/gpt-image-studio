@@ -26,8 +26,7 @@ const moderationAdvice = computed(() =>
 const hasDiagnostics = computed(
   () =>
     moderationAdvice.value.isModerationRejection &&
-    (moderationAdvice.value.riskMatches.length > 0 ||
-      Boolean(moderationAdvice.value.saferPrompt)),
+    (moderationAdvice.value.riskMatches.length > 0 || Boolean(moderationAdvice.value.saferPrompt)),
 );
 const canAiRewrite = computed(() => Boolean(props.sourcePrompt?.trim()));
 
@@ -71,8 +70,7 @@ async function requestAiRewrite() {
       riskMatches: moderationAdvice.value.riskMatches,
     });
   } catch (error) {
-    aiRewriteError.value =
-      error instanceof Error ? error.message : "AI 改写失败，请稍后重试。";
+    aiRewriteError.value = error instanceof Error ? error.message : "AI 改写失败，请稍后重试。";
   } finally {
     isAiRewriteLoading.value = false;
   }
@@ -94,9 +92,7 @@ function retryAiRewritePrompt() {
     class="overflow-hidden rounded-xl border border-red-100 bg-white"
     aria-label="图片生成失败"
   >
-    <div
-      class="flex h-48 flex-col items-center justify-center gap-3 bg-red-50/60 px-6 text-center"
-    >
+    <div class="flex h-48 flex-col items-center justify-center gap-3 bg-red-50/60 px-6 text-center">
       <div
         class="flex h-11 w-11 items-center justify-center rounded-full border border-red-100 bg-white text-red-500 shadow-sm"
       >
@@ -141,9 +137,7 @@ function retryAiRewritePrompt() {
             :delay="1000"
             :hide-delay="500"
           >
-            <div class="truncate text-xs text-gray-500">
-              生成失败：{{ errorText }}
-            </div>
+            <div class="truncate text-xs text-gray-500">生成失败：{{ errorText }}</div>
           </Tooltip>
         </div>
         <button
@@ -155,10 +149,7 @@ function retryAiRewritePrompt() {
         </button>
       </div>
 
-      <div
-        v-if="hasDiagnostics || canAiRewrite"
-        class="mt-3 space-y-3 border-t border-red-50 pt-3"
-      >
+      <div v-if="hasDiagnostics || canAiRewrite" class="mt-3 space-y-3 border-t border-red-50 pt-3">
         <section v-if="moderationAdvice.riskMatches.length">
           <div class="mb-1.5 flex items-center justify-between gap-2">
             <h3 class="text-xs font-semibold text-gray-800">命中风险词</h3>
@@ -262,10 +253,7 @@ function retryAiRewritePrompt() {
             {{ aiRewritePrompt }}
           </div>
 
-          <div
-            v-if="aiRewritePrompt"
-            class="mt-2 flex flex-wrap justify-end gap-2"
-          >
+          <div v-if="aiRewritePrompt" class="mt-2 flex flex-wrap justify-end gap-2">
             <button
               class="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50"
               type="button"

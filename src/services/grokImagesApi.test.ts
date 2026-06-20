@@ -19,8 +19,8 @@ afterEach(() => {
 
 describe("Grok image API", () => {
   it("requests base64 JSON for Grok image generation", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(jsonResponse({
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      jsonResponse({
         data: [
           {
             b64_json: "grok-image",
@@ -28,7 +28,8 @@ describe("Grok image API", () => {
             mime_type: "image/jpeg",
           },
         ],
-      }));
+      }),
+    );
 
     await expect(
       generateGrokImage({
@@ -58,14 +59,15 @@ describe("Grok image API", () => {
   });
 
   it("requests multiple Grok images with n and returns every data item", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(jsonResponse({
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      jsonResponse({
         data: Array.from({ length: 8 }, (_, index) => ({
           b64_json: `grok-image-${index + 1}`,
           revised_prompt: `grok rewrite ${index + 1}`,
           mime_type: "image/jpeg",
         })),
-      }));
+      }),
+    );
 
     await expect(
       generateGrokImages({
@@ -97,10 +99,11 @@ describe("Grok image API", () => {
   });
 
   it("uses the Images API revised prompt only when Grok returns one", async () => {
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(jsonResponse({
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      jsonResponse({
         data: [{ b64_json: "grok-image", revised_prompt: "image api rewrite" }],
-      }));
+      }),
+    );
 
     await expect(
       generateGrokImage({
@@ -118,12 +121,16 @@ describe("Grok image API", () => {
   });
 
   it("explains Grok credit or subscription 403 errors in Chinese", async () => {
-    vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(jsonResponse({
-        error: {
-          message: "You have run out of credits or need a Grok subscription.",
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      jsonResponse(
+        {
+          error: {
+            message: "You have run out of credits or need a Grok subscription.",
+          },
         },
-      }, 403));
+        403,
+      ),
+    );
 
     await expect(
       generateGrokImage({
@@ -138,10 +145,11 @@ describe("Grok image API", () => {
   });
 
   it("sends Grok image edits as an image_url JSON object", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(jsonResponse({
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      jsonResponse({
         data: [{ b64_json: "grok-edited", mime_type: "image/png" }],
-      }));
+      }),
+    );
 
     await expect(
       editGrokImage({
@@ -178,10 +186,11 @@ describe("Grok image API", () => {
   });
 
   it("sends multiple Grok edit references as image_url JSON objects", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(jsonResponse({
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      jsonResponse({
         data: [{ b64_json: "grok-edited", mime_type: "image/png" }],
-      }));
+      }),
+    );
 
     await editGrokImage({
       apiBaseUrl: "https://api.x.ai",

@@ -47,7 +47,10 @@ export async function expandPrompt(
     body: JSON.stringify({
       model: settings.chatModel,
       messages: [
-        { role: "system", content: settings.chatSystemPrompt?.trim() || DEFAULT_CHAT_SYSTEM_PROMPT },
+        {
+          role: "system",
+          content: settings.chatSystemPrompt?.trim() || DEFAULT_CHAT_SYSTEM_PROMPT,
+        },
         { role: "user", content: userPrompt },
       ],
       max_tokens: 400,

@@ -13,20 +13,27 @@ import { useDarkMode } from "./composables/useDarkMode";
 // 模态框懒加载：这些组件只在用户主动操作时才需要，
 // 用 defineAsyncComponent 拆成独立 chunk，减少首屏加载体积。
 const SettingsModal = defineAsyncComponent(() => import("./components/studio/SettingsModal.vue"));
-const ImagePreviewModal = defineAsyncComponent(() => import("./components/studio/ImagePreviewModal.vue"));
-const ExpandPreviewModal = defineAsyncComponent(() => import("./components/ui/ExpandPreviewModal.vue"));
+const ImagePreviewModal = defineAsyncComponent(
+  () => import("./components/studio/ImagePreviewModal.vue"),
+);
+const ExpandPreviewModal = defineAsyncComponent(
+  () => import("./components/ui/ExpandPreviewModal.vue"),
+);
 
 const studio = useStudioViewModel();
-const { theme, toggleTheme } = useDarkMode();
+// useDarkMode 内部自行设置 HTML class，无需在 script 中使用返回值
+useDarkMode();
 
 // 全局快捷键
 function handleGlobalKeydown(e: KeyboardEvent) {
   // Ctrl+K / Cmd+K → 打开设置
   if ((e.ctrlKey || e.metaKey) && e.key === "k") {
     e.preventDefault();
-    studio.settingsModal.isOpen
-      ? studio.settingsModal.close()
-      : studio.settingsModal.open();
+    if (studio.settingsModal.isOpen) {
+      studio.settingsModal.close();
+    } else {
+      studio.settingsModal.open();
+    }
   }
   // Escape → 关闭当前最上层模态框
   if (e.key === "Escape") {
@@ -45,7 +52,9 @@ onUnmounted(() => document.removeEventListener("keydown", handleGlobalKeydown));
 </script>
 
 <template>
-  <main class="flex h-screen bg-white text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100">
+  <main
+    class="flex h-screen bg-white text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100"
+  >
     <ConversationSidebar
       @create-conversation="studio.sidebar.createConversation"
       @delete-conversation="studio.sidebar.deleteConversation"
@@ -103,13 +112,19 @@ onUnmounted(() => document.removeEventListener("keydown", handleGlobalKeydown));
       @delete-conversations="studio.settingsModal.deleteConversations"
       @delete-images="studio.settingsModal.deleteImages"
       @delete-favorite-prompt="studio.settingsModal.deleteFavoritePrompt"
-      @delete-prompt-rewrite-guard-history-item="studio.settingsModal.deletePromptRewriteGuardHistoryItem"
+      @delete-prompt-rewrite-guard-history-item="
+        studio.settingsModal.deletePromptRewriteGuardHistoryItem
+      "
       @export-backup="studio.settingsModal.exportBackup"
       @import-backup="studio.settingsModal.importBackup"
       @preview-image="studio.settingsModal.previewImage"
-      @restore-default-prompt-rewrite-guard-text="studio.settingsModal.restoreDefaultPromptRewriteGuardText"
+      @restore-default-prompt-rewrite-guard-text="
+        studio.settingsModal.restoreDefaultPromptRewriteGuardText
+      "
       @restore-default-prompt-wordbank="studio.settingsModal.restoreDefaultPromptWordbank"
-      @restore-prompt-rewrite-guard-history-item="studio.settingsModal.restorePromptRewriteGuardHistoryItem"
+      @restore-prompt-rewrite-guard-history-item="
+        studio.settingsModal.restorePromptRewriteGuardHistoryItem
+      "
       @save-prompt-rewrite-guard-text="studio.settingsModal.savePromptRewriteGuardText"
       @save-prompt-wordbank="studio.settingsModal.savePromptWordbank"
       @add-favorite-prompt="studio.settingsModal.addFavoritePrompt"
@@ -131,7 +146,10 @@ onUnmounted(() => document.removeEventListener("keydown", handleGlobalKeydown));
       v-if="studio.expandPreview.value"
       :original-prompt="studio.expandPreview.value!.originalPrompt"
       :expanded-prompt="studio.expandPreview.value!.expandedPrompt"
-      @confirm="(action: string, text?: string) => studio.expandPreview.value?.onConfirm(action as any, text)"
+      @confirm="
+        (action: string, text?: string) =>
+          studio.expandPreview.value?.onConfirm(action as any, text)
+      "
     />
 
     <ImagePreviewModal
@@ -141,10 +159,7 @@ onUnmounted(() => document.removeEventListener("keydown", handleGlobalKeydown));
       @edit-image="studio.preview.editImage"
     />
 
-    <NoticeToast
-      :notice="studio.noticeToast.notice"
-      @close="studio.noticeToast.close"
-    />
+    <NoticeToast :notice="studio.noticeToast.notice" @close="studio.noticeToast.close" />
 
     <RenameDialog
       :confirm-label="studio.renameModal.confirmLabel"

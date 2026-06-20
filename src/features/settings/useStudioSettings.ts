@@ -53,15 +53,12 @@ export function useStudioSettings(input: UseStudioSettingsInput) {
     applySizeResolution: settings.applySizeResolution,
     currentGenerationParams: settings.currentGenerationParams,
     currentSettings: settings.currentSettings,
-    deletePromptRewriteGuardHistoryItem:
-      settings.deletePromptRewriteGuardHistoryItem,
+    deletePromptRewriteGuardHistoryItem: settings.deletePromptRewriteGuardHistoryItem,
     addFavoritePrompt: settings.addFavoritePrompt,
     updateFavoritePrompt: settings.updateFavoritePrompt,
     deleteFavoritePrompt: settings.deleteFavoritePrompt,
-    restoreDefaultPromptRewriteGuardText:
-      settings.restoreDefaultPromptRewriteGuardText,
-    restorePromptRewriteGuardHistoryItem:
-      settings.restorePromptRewriteGuardHistoryItem,
+    restoreDefaultPromptRewriteGuardText: settings.restoreDefaultPromptRewriteGuardText,
+    restorePromptRewriteGuardHistoryItem: settings.restorePromptRewriteGuardHistoryItem,
     restoreDefaultPromptWordbank: settings.restoreDefaultPromptWordbank,
     savePromptRewriteGuardText: settings.savePromptRewriteGuardText,
     savePromptWordbank: settings.savePromptWordbank,

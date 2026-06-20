@@ -4,29 +4,28 @@ import type { FavoritePrompt } from "../../types/studio";
 import { useSettingsModalContext } from "./settingsModalContext";
 
 const ctx = useSettingsModalContext();
-const { favoritePrompts: prompts, addFavoritePrompt: addPrompt,
-  updateFavoritePrompt: updatePrompt, deleteFavoritePrompt: deletePrompt } = ctx;
+const {
+  favoritePrompts: prompts,
+  addFavoritePrompt: addPrompt,
+  updateFavoritePrompt: updatePrompt,
+  deleteFavoritePrompt: deletePrompt,
+} = ctx;
 
 const editingId = ref<string | null>(null);
 const draftTitle = ref("");
 const draftText = ref("");
 
 const sortedPrompts = computed(() =>
-  [...prompts.value].sort(
-    (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
-  ),
+  [...prompts.value].sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt)),
 );
 const isEditingExisting = computed(() => Boolean(editingId.value));
 const canSave = computed(() => draftText.value.trim().length > 0);
 
-watch(
-  prompts,
-  (items) => {
-    if (!editingId.value) return;
-    if (items.some((item: FavoritePrompt) => item.id === editingId.value)) return;
-    resetDraft();
-  },
-);
+watch(prompts, (items) => {
+  if (!editingId.value) return;
+  if (items.some((item: FavoritePrompt) => item.id === editingId.value)) return;
+  resetDraft();
+});
 
 function startCreate() {
   editingId.value = null;
@@ -75,16 +74,10 @@ function formatUpdatedAt(dateString: string) {
 </script>
 
 <template>
-  <section
-    class="flex min-h-0 flex-1 flex-col"
-    aria-labelledby="favoritePromptsSettingsTitle"
-  >
+  <section class="flex min-h-0 flex-1 flex-col" aria-labelledby="favoritePromptsSettingsTitle">
     <div class="flex shrink-0 items-start justify-between gap-3">
       <div>
-        <h3
-          id="favoritePromptsSettingsTitle"
-          class="text-base font-semibold text-gray-900"
-        >
+        <h3 id="favoritePromptsSettingsTitle" class="text-base font-semibold text-gray-900">
           常用提示词
         </h3>
         <p class="mt-1 text-sm leading-relaxed text-gray-500">

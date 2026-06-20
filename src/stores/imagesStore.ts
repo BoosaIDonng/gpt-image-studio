@@ -72,15 +72,14 @@ export const useImagesStore = defineStore("images", () => {
 
     const input = getContext();
     const relatedMessages = input.messages.value.filter(
-      (message) =>
-        message.referencedImageIds.includes(id) ||
-        message.resultImageIds.includes(id),
+      (message) => message.referencedImageIds.includes(id) || message.resultImageIds.includes(id),
     );
     const isAttached = attachedImages.value.includes(id);
 
-    const confirmMessage = relatedMessages.length || isAttached
-      ? "这张图片正在被聊天记录或当前输入引用，删除后聊天记录中会保留无法显示的占位。确定删除吗？"
-      : "确定从图片库中删除这张图片吗？";
+    const confirmMessage =
+      relatedMessages.length || isAttached
+        ? "这张图片正在被聊天记录或当前输入引用，删除后聊天记录中会保留无法显示的占位。确定删除吗？"
+        : "确定从图片库中删除这张图片吗？";
     const feedback = useFeedbackStore();
     const confirmed = await feedback.requestConfirmation({
       title: "删除图片",
@@ -112,9 +111,7 @@ export const useImagesStore = defineStore("images", () => {
 
     const input = getContext();
     const feedback = useFeedbackStore();
-    const deletedImages = imageAssets.value.filter((image) =>
-      idSet.has(image.id),
-    );
+    const deletedImages = imageAssets.value.filter((image) => idSet.has(image.id));
     attachedImages.value = attachedImages.value.filter((id) => !idSet.has(id));
     imageAssets.value = imageAssets.value.filter((image) => !idSet.has(image.id));
 
@@ -143,10 +140,7 @@ export const useImagesStore = defineStore("images", () => {
     const input = getContext();
     image.name = trimmedName;
     image.updatedAt = isoTimestamp();
-    imageAssets.value = [
-      image,
-      ...imageAssets.value.filter((item) => item.id !== id),
-    ];
+    imageAssets.value = [image, ...imageAssets.value.filter((item) => item.id !== id)];
     await saveImageAsset(toPlainImageAsset(image)).catch(input.onStorageError);
     return true;
   }
@@ -158,10 +152,7 @@ export const useImagesStore = defineStore("images", () => {
     const input = getContext();
     image.tagColor = nextColor;
     image.updatedAt = isoTimestamp();
-    imageAssets.value = [
-      image,
-      ...imageAssets.value.filter((item) => item.id !== id),
-    ];
+    imageAssets.value = [image, ...imageAssets.value.filter((item) => item.id !== id)];
     await saveImageAsset(toPlainImageAsset(image)).catch(input.onStorageError);
     return true;
   }
@@ -173,9 +164,7 @@ export const useImagesStore = defineStore("images", () => {
     const input = getContext();
     const feedback = useFeedbackStore();
     try {
-      const importedAssets = await Promise.all(
-        imageFiles.map((file) => importImageFile(file)),
-      );
+      const importedAssets = await Promise.all(imageFiles.map((file) => importImageFile(file)));
 
       imageAssets.value = [...importedAssets, ...imageAssets.value];
       importedAssets.forEach((asset) => attachImage(asset.id));
@@ -331,9 +320,7 @@ function revokeRemovedPreviewUrls(
   if (!previousImages?.length) return;
 
   const nextPreviewUrls = new Set(
-    nextImages
-      .map((image) => image.previewUrl)
-      .filter((url): url is string => Boolean(url)),
+    nextImages.map((image) => image.previewUrl).filter((url): url is string => Boolean(url)),
   );
   revokeObjectUrls(
     previousImages

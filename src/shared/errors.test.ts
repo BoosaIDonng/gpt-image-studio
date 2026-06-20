@@ -3,12 +3,8 @@ import { isApiConfigurationError } from "./errors";
 
 describe("isApiConfigurationError", () => {
   it("detects missing local API settings", () => {
-    expect(
-      isApiConfigurationError(new Error("请先在设置里填写 OpenAI API key。")),
-    ).toBe(true);
-    expect(
-      isApiConfigurationError(new Error("请先在设置里填写 API Base URL。")),
-    ).toBe(true);
+    expect(isApiConfigurationError(new Error("请先在设置里填写 OpenAI API key。"))).toBe(true);
+    expect(isApiConfigurationError(new Error("请先在设置里填写 API Base URL。"))).toBe(true);
   });
 
   it("detects common authentication failures", () => {
@@ -18,8 +14,6 @@ describe("isApiConfigurationError", () => {
   });
 
   it("ignores unrelated generation errors", () => {
-    expect(
-      isApiConfigurationError(new Error("gpt-image-2 当前不支持透明背景。")),
-    ).toBe(false);
+    expect(isApiConfigurationError(new Error("gpt-image-2 当前不支持透明背景。"))).toBe(false);
   });
 });

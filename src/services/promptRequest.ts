@@ -19,11 +19,7 @@ export function normalizePromptRewriteGuardText(text?: string) {
   return normalized || PROMPT_REWRITE_GUARD_PREFIX;
 }
 
-export function applyPromptRewriteGuard(
-  prompt: string,
-  enabled: boolean,
-  guardText?: string,
-) {
+export function applyPromptRewriteGuard(prompt: string, enabled: boolean, guardText?: string) {
   if (!enabled) return prompt;
   const normalizedGuardText = normalizePromptRewriteGuardText(guardText);
   if (prompt.startsWith(`${normalizedGuardText}\n`)) return prompt;
@@ -32,12 +28,7 @@ export function applyPromptRewriteGuard(
 
 export function buildFinalRequestPrompt(input: BuildFinalRequestPromptInput) {
   const sourcePrompt = input.ragContext?.trim()
-    ? [
-        input.ragContext.trim(),
-        "",
-        "用户原始提示词：",
-        input.prompt,
-      ].join("\n")
+    ? [input.ragContext.trim(), "", "用户原始提示词：", input.prompt].join("\n")
     : input.prompt;
   const modePrompt = buildImagePrompt({
     prompt: sourcePrompt,
@@ -67,10 +58,8 @@ export function buildPromptRequest(input: {
     prompt: input.prompt,
     promptMode: input.promptRequestSettings.promptMode,
     promptWordbanks: input.promptRequestSettings.promptWordbanks,
-    promptRewriteGuardEnabled:
-      input.promptRequestSettings.promptRewriteGuardEnabled,
-    promptRewriteGuardText:
-      input.promptRequestSettings.promptRewriteGuardText,
+    promptRewriteGuardEnabled: input.promptRequestSettings.promptRewriteGuardEnabled,
+    promptRewriteGuardText: input.promptRequestSettings.promptRewriteGuardText,
     ragContext: input.promptRequestSettings.ragContext,
   });
 }

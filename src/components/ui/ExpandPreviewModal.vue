@@ -17,7 +17,9 @@ async function copyText() {
   try {
     await navigator.clipboard.writeText(editableText.value);
     copied.value = true;
-    setTimeout(() => { copied.value = false; }, 1500);
+    setTimeout(() => {
+      copied.value = false;
+    }, 1500);
   } catch {}
 }
 
@@ -36,7 +38,9 @@ function sendEdited() {
         <div class="mt-3 space-y-3">
           <div>
             <p class="mb-1 text-xs font-medium text-gray-500">原始输入</p>
-            <p class="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700 whitespace-pre-wrap">{{ originalPrompt }}</p>
+            <p class="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700 whitespace-pre-wrap">
+              {{ originalPrompt }}
+            </p>
           </div>
           <div>
             <div class="mb-1 flex items-center justify-between">

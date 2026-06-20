@@ -21,13 +21,17 @@ afterEach(() => {
 
 describe("direct image client", () => {
   it("applies prompt mode and rewrite guard before calling Grok", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        data: [{ b64_json: "grok-image" }],
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }));
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          data: [{ b64_json: "grok-image" }],
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
     const client = createDirectImagesClient({
       getApiProvider: () => "grok",
       getApiBaseUrl: () => "https://api.x.ai/v1",
@@ -60,13 +64,17 @@ describe("direct image client", () => {
   });
 
   it("adds RAG context before calling Grok", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        data: [{ b64_json: "grok-image" }],
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }));
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          data: [{ b64_json: "grok-image" }],
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
     const client = createDirectImagesClient({
       getApiProvider: () => "grok",
       getApiBaseUrl: () => "https://api.x.ai/v1",
@@ -97,15 +105,19 @@ describe("direct image client", () => {
   });
 
   it("batches Grok text generation with n", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        data: Array.from({ length: 8 }, (_, index) => ({
-          b64_json: `grok-image-${index + 1}`,
-        })),
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }));
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          data: Array.from({ length: 8 }, (_, index) => ({
+            b64_json: `grok-image-${index + 1}`,
+          })),
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
     const client = createDirectImagesClient({
       getApiProvider: () => "grok",
       getApiBaseUrl: () => "https://api.x.ai/v1",
@@ -118,17 +130,19 @@ describe("direct image client", () => {
     });
 
     expect(client.canGenerateBatch?.()).toBe(true);
-    await expect(client.generateBatch?.({
-      prompt: "画一张图",
-      count: 8,
-      params: generationParams,
-      promptRequestSettings: {
-        promptMode: "default",
-        promptWordbanks: defaultPromptWordbanks,
-        promptRewriteGuardEnabled: false,
-        promptRewriteGuardText: PROMPT_REWRITE_GUARD_PREFIX,
-      },
-    })).resolves.toHaveLength(8);
+    await expect(
+      client.generateBatch?.({
+        prompt: "画一张图",
+        count: 8,
+        params: generationParams,
+        promptRequestSettings: {
+          promptMode: "default",
+          promptWordbanks: defaultPromptWordbanks,
+          promptRewriteGuardEnabled: false,
+          promptRewriteGuardText: PROMPT_REWRITE_GUARD_PREFIX,
+        },
+      }),
+    ).resolves.toHaveLength(8);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const body = JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string);
@@ -137,26 +151,30 @@ describe("direct image client", () => {
   });
 
   it("applies prompt mode and rewrite guard before calling Gemini", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        candidates: [
-          {
-            content: {
-              parts: [
-                {
-                  inlineData: {
-                    data: "gemini-image",
-                    mimeType: "image/png",
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    inlineData: {
+                      data: "gemini-image",
+                      mimeType: "image/png",
+                    },
                   },
-                },
-              ],
+                ],
+              },
             },
-          },
-        ],
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }));
+          ],
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
     const client = createDirectImagesClient({
       getApiProvider: () => "gemini",
       getApiBaseUrl: () => "https://generativelanguage.googleapis.com",
@@ -193,26 +211,30 @@ describe("direct image client", () => {
   });
 
   it("adds RAG context before calling Gemini", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        candidates: [
-          {
-            content: {
-              parts: [
-                {
-                  inlineData: {
-                    data: "gemini-image",
-                    mimeType: "image/png",
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    inlineData: {
+                      data: "gemini-image",
+                      mimeType: "image/png",
+                    },
                   },
-                },
-              ],
+                ],
+              },
             },
-          },
-        ],
-      }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }));
+          ],
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
     const client = createDirectImagesClient({
       getApiProvider: () => "gemini",
       getApiBaseUrl: () => "https://generativelanguage.googleapis.com",

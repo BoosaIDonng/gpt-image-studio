@@ -16,8 +16,9 @@ const conversations = useConversationsStore();
 const images = useImagesStore();
 const settings = useSettingsStore();
 
-const sourcePrompt = computed(() =>
-  composer.composerText.trim() ||
+const sourcePrompt = computed(
+  () =>
+    composer.composerText.trim() ||
     (images.activeAttachments.length ? "基于引用图片继续编辑。" : ""),
 );
 
@@ -64,9 +65,7 @@ const matchBarState = computed(() =>
 
 const summaryText = computed(() => {
   const state = matchBarState.value;
-  const sourcePart = state.sourceImageCount
-    ? ` · 来自 ${state.sourceImageCount} 张成功图`
-    : "";
+  const sourcePart = state.sourceImageCount ? ` · 来自 ${state.sourceImageCount} 张成功图` : "";
   return `RAG 参考 ${state.activeCount} 项${sourcePart}`;
 });
 

@@ -51,9 +51,7 @@ describe("rewritePromptWithAssistant", () => {
       undefined,
       { useBuiltinPersona: false },
     );
-    expect(mocks.streamChatReply.mock.calls[0][0][1].content).toContain(
-      "nsfw, completely nude",
-    );
+    expect(mocks.streamChatReply.mock.calls[0][0][1].content).toContain("nsfw, completely nude");
     expect(mocks.streamChatReply.mock.calls[0][0][1].content).toContain(
       "nsfw -> tasteful editorial style",
     );

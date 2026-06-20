@@ -10,9 +10,7 @@ type ImageBlobRecord = {
 export async function listImageAssets() {
   const imageAssets = await getAllFromStore<ImageAsset>(STORE_NAMES.imageAssets);
 
-  return imageAssets.sort(
-    (a, b) => timestampFromCreatedAt(b) - timestampFromCreatedAt(a),
-  );
+  return imageAssets.sort((a, b) => timestampFromCreatedAt(b) - timestampFromCreatedAt(a));
 }
 
 export function saveImageAsset(imageAsset: ImageAsset) {
@@ -32,10 +30,7 @@ export function deleteImageBlob(key: string) {
 }
 
 export async function loadImageBlob(key: string) {
-  const record = await getFromStore<ImageBlobRecord>(
-    STORE_NAMES.imageBlobs,
-    key,
-  );
+  const record = await getFromStore<ImageBlobRecord>(STORE_NAMES.imageBlobs, key);
 
   return record?.blob;
 }

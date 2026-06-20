@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  analyzeModerationRejection,
-  formatModerationAdvice,
-} from "./moderationAdvice";
+import { analyzeModerationRejection, formatModerationAdvice } from "./moderationAdvice";
 
 describe("analyzeModerationRejection", () => {
   it("detects generated image content moderation rejections", () => {

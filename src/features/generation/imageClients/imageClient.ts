@@ -1,7 +1,4 @@
-import type {
-  GenerationParams,
-  PromptRequestSettings,
-} from "../../../types/studio";
+import type { GenerationParams, PromptRequestSettings } from "../../../types/studio";
 
 export type ImageEditSource = {
   blob: Blob;

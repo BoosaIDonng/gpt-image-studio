@@ -19,8 +19,8 @@ afterEach(() => {
 
 describe("Gemini image API", () => {
   it("requests Gemini native image generation and returns inline image data", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(jsonResponse({
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      jsonResponse({
         candidates: [
           {
             content: {
@@ -36,7 +36,8 @@ describe("Gemini image API", () => {
             },
           },
         ],
-      }));
+      }),
+    );
 
     await expect(
       generateGeminiImage({
@@ -81,8 +82,8 @@ describe("Gemini image API", () => {
   });
 
   it("sends Gemini edits with inline image parts", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch")
-      .mockResolvedValueOnce(jsonResponse({
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      jsonResponse({
         candidates: [
           {
             content: {
@@ -97,7 +98,8 @@ describe("Gemini image API", () => {
             },
           },
         ],
-      }));
+      }),
+    );
 
     await expect(
       editGeminiImage({

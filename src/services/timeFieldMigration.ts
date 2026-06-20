@@ -26,18 +26,10 @@ export async function migrateLegacyTimeFields() {
   const migratedConversations = conversations
     .map(normalizeConversationTimeFields)
     .filter(isPresent);
-  const migratedMessages = messages
-    .map(normalizeMessageTimeFields)
-    .filter(isPresent);
-  const migratedImages = imageAssets
-    .map(normalizeImageTimeFields)
-    .filter(isPresent);
+  const migratedMessages = messages.map(normalizeMessageTimeFields).filter(isPresent);
+  const migratedImages = imageAssets.map(normalizeImageTimeFields).filter(isPresent);
 
-  if (
-    !migratedConversations.length &&
-    !migratedMessages.length &&
-    !migratedImages.length
-  ) {
+  if (!migratedConversations.length && !migratedMessages.length && !migratedImages.length) {
     return;
   }
 
@@ -62,11 +54,7 @@ export function normalizeConversationTimeFields(record: LegacyConversation) {
     return null;
   }
 
-  const {
-    createdAtMs: _createdAtMs,
-    updatedAtMs: _updatedAtMs,
-    ...cleanRecord
-  } = record;
+  const { createdAtMs: _createdAtMs, updatedAtMs: _updatedAtMs, ...cleanRecord } = record;
 
   return {
     ...cleanRecord,
@@ -93,8 +81,8 @@ export function normalizeMessageTimeFields(record: LegacyMessage) {
 export function normalizeImageTimeFields(record: LegacyImageAsset) {
   const createdAt = normalizedDateString(record.createdAt, record.createdAtMs);
   const updatedAt = normalizedDateString(record.updatedAt, record.updatedAtMs);
-  const nextUpdatedAt = updatedAt
-    ?? (isValidDateString(record.updatedAt) ? record.updatedAt : createdAt);
+  const nextUpdatedAt =
+    updatedAt ?? (isValidDateString(record.updatedAt) ? record.updatedAt : createdAt);
 
   if (
     createdAt === record.createdAt &&
@@ -105,11 +93,7 @@ export function normalizeImageTimeFields(record: LegacyImageAsset) {
     return null;
   }
 
-  const {
-    createdAtMs: _createdAtMs,
-    updatedAtMs: _updatedAtMs,
-    ...cleanRecord
-  } = record;
+  const { createdAtMs: _createdAtMs, updatedAtMs: _updatedAtMs, ...cleanRecord } = record;
 
   return {
     ...cleanRecord,

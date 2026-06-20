@@ -1,11 +1,5 @@
-import {
-  normalizeGenerationParams,
-  type StoredGenerationParams,
-} from "./generationParams";
-import {
-  PROMPT_REWRITE_GUARD_PREFIX,
-  normalizePromptRewriteGuardText,
-} from "./imagesApi";
+import { normalizeGenerationParams, type StoredGenerationParams } from "./generationParams";
+import { PROMPT_REWRITE_GUARD_PREFIX, normalizePromptRewriteGuardText } from "./imagesApi";
 import { normalizeFavoritePrompts } from "./favoritePrompts";
 import { normalizePromptWordbanks } from "./promptWordbanks";
 import { normalizeRagTopK } from "../shared/normalizers";
@@ -67,14 +61,13 @@ type StoredBackupSettings = Omit<
 };
 
 export async function createStudioBackup() {
-  const [conversations, messages, imageAssets, imageBlobs, settings] =
-    await Promise.all([
-      getAllFromStore<Conversation>(STORE_NAMES.conversations),
-      getAllFromStore<Message>(STORE_NAMES.messages),
-      getAllFromStore<ImageAsset>(STORE_NAMES.imageAssets),
-      getAllFromStore<ImageBlobRecord>(STORE_NAMES.imageBlobs),
-      loadSettings(),
-    ]);
+  const [conversations, messages, imageAssets, imageBlobs, settings] = await Promise.all([
+    getAllFromStore<Conversation>(STORE_NAMES.conversations),
+    getAllFromStore<Message>(STORE_NAMES.messages),
+    getAllFromStore<ImageAsset>(STORE_NAMES.imageAssets),
+    getAllFromStore<ImageBlobRecord>(STORE_NAMES.imageBlobs),
+    loadSettings(),
+  ]);
 
   const manifest: BackupManifest = {
     app: "gpt-image-studio",
@@ -117,25 +110,22 @@ export async function restoreStudioBackup(file: File) {
         chatApiKey: currentSettings?.chatApiKey ?? "",
         promptMode: data.settings.promptMode ?? "default",
         promptWordbanks: normalizePromptWordbanks(data.settings.promptWordbanks),
-        promptRewriteGuardEnabled:
-          data.settings.promptRewriteGuardEnabled ?? true,
+        promptRewriteGuardEnabled: data.settings.promptRewriteGuardEnabled ?? true,
         promptRewriteGuardText: normalizePromptRewriteGuardText(
           data.settings.promptRewriteGuardText,
         ),
-        promptRewriteGuardHistory:
-          data.settings.promptRewriteGuardHistory ?? [
-            {
-              id: "prompt-guard-default",
-              text: PROMPT_REWRITE_GUARD_PREFIX,
-              createdAt: new Date(0).toISOString(),
-            },
-          ],
+        promptRewriteGuardHistory: data.settings.promptRewriteGuardHistory ?? [
+          {
+            id: "prompt-guard-default",
+            text: PROMPT_REWRITE_GUARD_PREFIX,
+            createdAt: new Date(0).toISOString(),
+          },
+        ],
         favoritePrompts: normalizeFavoritePrompts(data.settings.favoritePrompts),
         ragEnabled: data.settings.ragEnabled ?? false,
         ragTopK: normalizeRagTopK(data.settings.ragTopK),
         defaults: normalizeGenerationParams(data.settings.defaults),
-        autoRetryOnNetworkError:
-          data.settings.autoRetryOnNetworkError ?? false,
+        autoRetryOnNetworkError: data.settings.autoRetryOnNetworkError ?? false,
       }
     : currentSettings;
 
@@ -148,18 +138,9 @@ export async function restoreStudioBackup(file: File) {
   ]);
 
   await Promise.all([
-    bulkPut(
-      STORE_NAMES.conversations,
-      data.conversations,
-    ),
-    bulkPut(
-      STORE_NAMES.messages,
-      data.messages.map(normalizeMessage),
-    ),
-    bulkPut(
-      STORE_NAMES.imageAssets,
-      data.imageAssets.map(stripPreviewUrl),
-    ),
+    bulkPut(STORE_NAMES.conversations, data.conversations),
+    bulkPut(STORE_NAMES.messages, data.messages.map(normalizeMessage)),
+    bulkPut(STORE_NAMES.imageAssets, data.imageAssets.map(stripPreviewUrl)),
     (async () => {
       // blob 需要先 await arrayBuffer，在写入前并行预处理，再用一次批量事务落盘。
       const blobRecords = await Promise.all(
@@ -178,9 +159,7 @@ export async function restoreStudioBackup(file: File) {
         blobRecords.filter((record): record is ImageBlobRecord => record !== null),
       );
     })(),
-    restoredSettings
-      ? saveSettings(restoredSettings)
-      : Promise.resolve(),
+    restoredSettings ? saveSettings(restoredSettings) : Promise.resolve(),
   ]);
 }
 
@@ -198,14 +177,8 @@ function stripPreviewUrl(asset: ImageAsset): ImageAsset {
   return plainAsset;
 }
 
-function stripApiKeys(
-  settings: AppSettings,
-): Omit<AppSettings, "apiKey" | "chatApiKey"> {
-  const {
-    apiKey: _apiKey,
-    chatApiKey: _chatApiKey,
-    ...safeSettings
-  } = settings;
+function stripApiKeys(settings: AppSettings): Omit<AppSettings, "apiKey" | "chatApiKey"> {
+  const { apiKey: _apiKey, chatApiKey: _chatApiKey, ...safeSettings } = settings;
   return safeSettings;
 }
 

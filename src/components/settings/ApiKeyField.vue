@@ -50,10 +50,7 @@ onUnmounted(() => {
 
 <template>
   <div>
-    <label
-      class="mb-1 block text-sm font-medium text-gray-700"
-      for="apiKey"
-    >
+    <label class="mb-1 block text-sm font-medium text-gray-700" for="apiKey">
       {{ label }}
     </label>
     <div class="flex rounded-lg border border-gray-300 bg-white focus-within:border-gray-500">
@@ -116,10 +113,7 @@ onUnmounted(() => {
         {{ apiKeyCopyStatus === "copied" ? "已复制" : "复制" }}
       </button>
     </div>
-    <p
-      v-if="apiKeyCopyStatus === 'failed'"
-      class="mt-1.5 text-xs text-red-500"
-    >
+    <p v-if="apiKeyCopyStatus === 'failed'" class="mt-1.5 text-xs text-red-500">
       复制失败，请手动选择复制。
     </p>
   </div>

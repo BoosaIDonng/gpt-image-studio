@@ -1,11 +1,12 @@
 import type { ApiMode, ApiProvider } from "../../../types/studio";
 import { editGeminiImage, generateGeminiImage } from "../../../services/geminiImagesApi";
-import { editGrokImage, generateGrokImage, generateGrokImages } from "../../../services/grokImagesApi";
-import { buildPromptRequest } from "../../../services/promptRequest";
 import {
-  editImage,
-  generateImage,
-} from "../../../services/imagesApi";
+  editGrokImage,
+  generateGrokImage,
+  generateGrokImages,
+} from "../../../services/grokImagesApi";
+import { buildPromptRequest } from "../../../services/promptRequest";
+import { editImage, generateImage } from "../../../services/imagesApi";
 import type { ImageClient } from "./imageClient";
 
 type DirectClientConfig = {
@@ -68,10 +69,8 @@ export function createDirectImagesClient(config: DirectClientConfig): ImageClien
         prompt: input.prompt,
         promptMode: input.promptRequestSettings.promptMode,
         promptWordbanks: input.promptRequestSettings.promptWordbanks,
-        promptRewriteGuardEnabled:
-          input.promptRequestSettings.promptRewriteGuardEnabled,
-        promptRewriteGuardText:
-          input.promptRequestSettings.promptRewriteGuardText,
+        promptRewriteGuardEnabled: input.promptRequestSettings.promptRewriteGuardEnabled,
+        promptRewriteGuardText: input.promptRequestSettings.promptRewriteGuardText,
         ragContext: input.promptRequestSettings.ragContext,
         streamImages: config.getStreamImages(),
         streamPartialImages: config.getStreamPartialImages(),
@@ -154,10 +153,8 @@ export function createDirectImagesClient(config: DirectClientConfig): ImageClien
         prompt: input.prompt,
         promptMode: input.promptRequestSettings.promptMode,
         promptWordbanks: input.promptRequestSettings.promptWordbanks,
-        promptRewriteGuardEnabled:
-          input.promptRequestSettings.promptRewriteGuardEnabled,
-        promptRewriteGuardText:
-          input.promptRequestSettings.promptRewriteGuardText,
+        promptRewriteGuardEnabled: input.promptRequestSettings.promptRewriteGuardEnabled,
+        promptRewriteGuardText: input.promptRequestSettings.promptRewriteGuardText,
         ragContext: input.promptRequestSettings.ragContext,
         streamImages: config.getStreamImages(),
         streamPartialImages: config.getStreamPartialImages(),

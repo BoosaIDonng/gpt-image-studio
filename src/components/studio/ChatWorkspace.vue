@@ -4,10 +4,7 @@ import { storeToRefs } from "pinia";
 import { useComposerStore } from "../../stores/composerStore";
 import { useGenerationStore } from "../../stores/generationStore";
 import { useImagesStore } from "../../stores/imagesStore";
-import type {
-  Conversation,
-  Message,
-} from "../../types/studio";
+import type { Conversation, Message } from "../../types/studio";
 import ChatComposer from "../chat/ChatComposer.vue";
 import CreativeCenterBanner from "./CreativeCenterBanner.vue";
 import EditMaskModal from "../chat/EditMaskModal.vue";
@@ -96,10 +93,7 @@ function closeMaskModal() {
 
 function importFromDrop(event: DragEvent) {
   resetDragState();
-  const files = imageFilesFromTransfer(
-    event.dataTransfer?.files,
-    event.dataTransfer?.items,
-  );
+  const files = imageFilesFromTransfer(event.dataTransfer?.files, event.dataTransfer?.items);
 
   if (!files.length) return;
   images.importImages(files);
@@ -137,9 +131,7 @@ function imageFilesFromTransfer(
   fileList?: FileList | null,
   itemList?: DataTransferItemList | null,
 ) {
-  const files = Array.from(fileList ?? []).filter((file) =>
-    file.type.startsWith("image/"),
-  );
+  const files = Array.from(fileList ?? []).filter((file) => file.type.startsWith("image/"));
 
   if (files.length) return files;
 
@@ -167,9 +159,13 @@ function failedMessageCount() {
       v-if="isDragActive"
       class="pointer-events-none absolute inset-0 z-40 flex items-center justify-center bg-white/85 dark:bg-gray-900/85 backdrop-blur-sm"
     >
-      <div class="rounded-2xl border border-dashed border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-900 px-8 py-6 text-center shadow-xl">
+      <div
+        class="rounded-2xl border border-dashed border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-900 px-8 py-6 text-center shadow-xl"
+      >
         <div class="text-base font-semibold text-gray-900 dark:text-gray-100">松开以上传图片</div>
-        <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">图片会保存到图片库，并作为下一条消息的引用图</div>
+        <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          图片会保存到图片库，并作为下一条消息的引用图
+        </div>
       </div>
     </div>
 
@@ -185,7 +181,7 @@ function failedMessageCount() {
           会话
         </button>
         <h1 class="truncate text-base font-semibold text-gray-800 dark:text-gray-100">
-          {{ header.activeConversation?.title || '新的对话' }}
+          {{ header.activeConversation?.title || "新的对话" }}
         </h1>
       </div>
       <div class="flex items-center gap-1">
@@ -202,7 +198,17 @@ function failedMessageCount() {
           class="cursor-pointer rounded-lg p-1.5 text-sm text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
           aria-label="GitHub 仓库"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="currentColor"
+            viewBox="0 0 16 16"
+          >
+            <path
+              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+            />
+          </svg>
         </a>
         <button
           class="cursor-pointer rounded-lg p-1.5 text-sm text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 md:hidden"
@@ -220,7 +226,9 @@ function failedMessageCount() {
             stroke-linejoin="round"
             aria-hidden="true"
           >
-            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+            <path
+              d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+            />
             <circle cx="12" cy="12" r="3" />
           </svg>
         </button>
@@ -254,9 +262,7 @@ function failedMessageCount() {
       @preview-image="actions.previewImage"
       @rename-image="actions.renameImage"
       @refresh-image="actions.refreshImage"
-      @retry-message="
-        (message, prompt) => actions.retryMessage(message, prompt)
-      "
+      @retry-message="(message, prompt) => actions.retryMessage(message, prompt)"
     />
 
     <ChatComposer

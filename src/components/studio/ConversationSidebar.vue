@@ -24,9 +24,7 @@ const filteredConversations = computed(() => {
   if (!query) return conversations.conversations;
 
   return conversations.conversations.filter((conversation) =>
-    `${conversation.title} ${conversation.summary}`
-      .toLowerCase()
-      .includes(query),
+    `${conversation.title} ${conversation.summary}`.toLowerCase().includes(query),
   );
 });
 
@@ -51,16 +49,9 @@ function closeSidebar() {
   >
     <div class="flex items-center justify-between px-3 pt-3 pb-1">
       <div class="flex min-w-0 items-center gap-2 px-2 py-2">
-        <img
-          class="h-8 w-8 shrink-0"
-          src="/favicon.svg"
-          alt=""
-          aria-hidden="true"
-        />
+        <img class="h-8 w-8 shrink-0" src="/favicon.svg" alt="" aria-hidden="true" />
         <div class="min-w-0">
-          <div class="truncate text-sm font-semibold text-white">
-            GPT Image Studio
-          </div>
+          <div class="truncate text-sm font-semibold text-white">GPT Image Studio</div>
           <div class="truncate text-xs text-gray-500">BoosaIDonng</div>
         </div>
       </div>
@@ -72,16 +63,53 @@ function closeSidebar() {
         @click="toggleTheme"
       >
         <!-- 浅色模式：显示太阳图标 -->
-        <svg v-if="theme === 'light'" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+        <svg
+          v-if="theme === 'light'"
+          class="size-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2" />
+          <path d="M12 20v2" />
+          <path d="m4.93 4.93 1.41 1.41" />
+          <path d="m17.66 17.66 1.41 1.41" />
+          <path d="M2 12h2" />
+          <path d="M20 12h2" />
+          <path d="m6.34 17.66-1.41 1.41" />
+          <path d="m19.07 4.93-1.41 1.41" />
         </svg>
         <!-- 深色模式：显示月亮图标 -->
-        <svg v-else-if="theme === 'dark'" class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+        <svg
+          v-else-if="theme === 'dark'"
+          class="size-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
         </svg>
         <!-- 跟随系统：显示显示器图标 -->
-        <svg v-else class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/>
+        <svg
+          v-else
+          class="size-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect width="20" height="14" x="2" y="3" rx="2" />
+          <line x1="8" x2="16" y1="21" y2="21" />
+          <line x1="12" x2="12" y1="17" y2="21" />
         </svg>
       </button>
       <button
@@ -151,12 +179,7 @@ function closeSidebar() {
           type="button"
           @click="searchText = ''"
         >
-          <svg
-            class="h-4 w-4"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            aria-hidden="true"
-          >
+          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path
               d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22z"
             />
@@ -166,10 +189,7 @@ function closeSidebar() {
     </div>
 
     <nav class="flex-1 overflow-y-auto px-2 py-1">
-      <div
-        v-if="!filteredConversations.length"
-        class="px-3 py-8 text-center text-sm text-gray-500"
-      >
+      <div v-if="!filteredConversations.length" class="px-3 py-8 text-center text-sm text-gray-500">
         没有找到会话
       </div>
       <div
@@ -220,12 +240,7 @@ function closeSidebar() {
     </nav>
 
     <div class="flex items-center gap-2 border-t border-white/10 p-3">
-      <img
-        class="h-5 w-5 shrink-0"
-        src="/favicon.svg"
-        alt=""
-        aria-hidden="true"
-      />
+      <img class="h-5 w-5 shrink-0" src="/favicon.svg" alt="" aria-hidden="true" />
       <div class="text-xs text-gray-500">GPT Image Studio - BoosaIDonng</div>
     </div>
   </aside>

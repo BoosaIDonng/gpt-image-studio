@@ -47,10 +47,7 @@ function confirm() {
         role="dialog"
       >
         <div class="mb-4">
-          <h2
-            id="confirmInputTitle"
-            class="text-base font-semibold text-gray-900"
-          >
+          <h2 id="confirmInputTitle" class="text-base font-semibold text-gray-900">
             {{ title }}
           </h2>
           <div class="mt-1 text-sm leading-relaxed text-gray-500">

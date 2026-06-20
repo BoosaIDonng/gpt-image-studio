@@ -55,10 +55,7 @@ describe("conversationDrafts feature", () => {
 
     const result = await loadConversationDraft("c-1");
 
-    expect(mocks.getFromStore).toHaveBeenCalledWith(
-      STORE_NAMES.conversationDrafts,
-      "c-1",
-    );
+    expect(mocks.getFromStore).toHaveBeenCalledWith(STORE_NAMES.conversationDrafts, "c-1");
     expect(result).toEqual(draft);
   });
 
@@ -67,10 +64,7 @@ describe("conversationDrafts feature", () => {
 
     await saveConversationDraft(draft);
 
-    expect(mocks.putInStore).toHaveBeenCalledWith(
-      STORE_NAMES.conversationDrafts,
-      draft,
-    );
+    expect(mocks.putInStore).toHaveBeenCalledWith(STORE_NAMES.conversationDrafts, draft);
   });
 
   it("deletes single draft", async () => {
@@ -78,10 +72,7 @@ describe("conversationDrafts feature", () => {
 
     await deleteConversationDraft("c-1");
 
-    expect(mocks.deleteFromStore).toHaveBeenCalledWith(
-      STORE_NAMES.conversationDrafts,
-      "c-1",
-    );
+    expect(mocks.deleteFromStore).toHaveBeenCalledWith(STORE_NAMES.conversationDrafts, "c-1");
   });
 
   it("deletes multiple drafts", async () => {
@@ -90,16 +81,8 @@ describe("conversationDrafts feature", () => {
     await deleteConversationDrafts(["c-1", "c-2"]);
 
     expect(mocks.deleteFromStore).toHaveBeenCalledTimes(2);
-    expect(mocks.deleteFromStore).toHaveBeenNthCalledWith(
-      1,
-      STORE_NAMES.conversationDrafts,
-      "c-1",
-    );
-    expect(mocks.deleteFromStore).toHaveBeenNthCalledWith(
-      2,
-      STORE_NAMES.conversationDrafts,
-      "c-2",
-    );
+    expect(mocks.deleteFromStore).toHaveBeenNthCalledWith(1, STORE_NAMES.conversationDrafts, "c-1");
+    expect(mocks.deleteFromStore).toHaveBeenNthCalledWith(2, STORE_NAMES.conversationDrafts, "c-2");
   });
 
   it("lists all drafts", async () => {
@@ -107,9 +90,7 @@ describe("conversationDrafts feature", () => {
 
     const result = await listConversationDrafts();
 
-    expect(mocks.getAllFromStore).toHaveBeenCalledWith(
-      STORE_NAMES.conversationDrafts,
-    );
+    expect(mocks.getAllFromStore).toHaveBeenCalledWith(STORE_NAMES.conversationDrafts);
     expect(result).toEqual([draft]);
   });
 });

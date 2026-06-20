@@ -6,10 +6,7 @@ import { useImagesStore } from "../../stores/imagesStore";
 import type { ImageAsset } from "../../types/studio";
 import ImageDetailsPanel from "../image-library/ImageDetailsPanel.vue";
 import ImageGrid from "../image-library/ImageGrid.vue";
-import {
-  IMAGE_TAG_COLORS,
-  imageTagDotColor,
-} from "../image-library/imageTagColors";
+import { IMAGE_TAG_COLORS, imageTagDotColor } from "../image-library/imageTagColors";
 import StorageUsagePanel from "../image-library/StorageUsagePanel.vue";
 
 const emit = defineEmits<{
@@ -24,9 +21,7 @@ const images = useImagesStore();
 const activeFilter = ref<"current" | "all">(composer.imageLibraryScope);
 const activeColorFilter = ref<"all" | ImageAsset["tagColor"]>("all");
 const selectedImageId = ref("");
-const libraryImages = computed(() =>
-  images.imageAssets.filter((image) => !image.isTransientMask),
-);
+const libraryImages = computed(() => images.imageAssets.filter((image) => !image.isTransientMask));
 
 const currentConversationImages = computed(() =>
   libraryImages.value.filter(
@@ -34,22 +29,15 @@ const currentConversationImages = computed(() =>
   ),
 );
 const scopeImages = computed(() =>
-  activeFilter.value === "current"
-    ? currentConversationImages.value
-    : libraryImages.value,
+  activeFilter.value === "current" ? currentConversationImages.value : libraryImages.value,
 );
 const filteredImages = computed(() => {
   if (activeColorFilter.value === "all") return scopeImages.value;
-  return scopeImages.value.filter(
-    (image) => image.tagColor === activeColorFilter.value,
-  );
+  return scopeImages.value.filter((image) => image.tagColor === activeColorFilter.value);
 });
 const selectedImage = computed(() => {
   if (!selectedImageId.value) return null;
-  return (
-    libraryImages.value.find((image) => image.id === selectedImageId.value) ??
-    null
-  );
+  return libraryImages.value.find((image) => image.id === selectedImageId.value) ?? null;
 });
 watch(
   () => composer.imageLibraryScope,
@@ -59,23 +47,14 @@ watch(
 );
 
 watch(
-  () =>
-    [
-      libraryImages.value,
-      activeFilter.value,
-      conversations.activeConversationId,
-    ] as const,
+  () => [libraryImages.value, activeFilter.value, conversations.activeConversationId] as const,
   () => {
     if (!selectedImage.value) {
       selectedImageId.value = "";
       return;
     }
 
-    if (
-      !filteredImages.value.some(
-        (image) => image.id === selectedImage.value?.id,
-      )
-    ) {
+    if (!filteredImages.value.some((image) => image.id === selectedImage.value?.id)) {
       selectedImageId.value = filteredImages.value[0]?.id ?? "";
     }
   },
@@ -136,10 +115,7 @@ function toggleColorFilter(nextColor: ImageAsset["tagColor"] | "all") {
   activeColorFilter.value = nextColor;
 }
 
-function setImageTagColor(
-  id: string,
-  color: ImageAsset["tagColor"] | undefined,
-) {
+function setImageTagColor(id: string, color: ImageAsset["tagColor"] | undefined) {
   images.setImageTagColor(id, color);
 }
 </script>
@@ -154,9 +130,7 @@ function setImageTagColor(
   <aside
     :class="[
       'flex w-[320px] shrink-0 flex-col border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 max-lg:fixed max-lg:inset-y-0 max-lg:right-0 max-lg:z-20 max-lg:transition-transform max-lg:duration-200 max-lg:ease-out',
-      composer.isLibraryOpen
-        ? 'max-lg:translate-x-0'
-        : 'max-lg:translate-x-full',
+      composer.isLibraryOpen ? 'max-lg:translate-x-0' : 'max-lg:translate-x-full',
     ]"
     aria-label="图片库"
   >
@@ -182,12 +156,7 @@ function setImageTagColor(
             type="button"
             @click="composer.setLibraryOpen(false)"
           >
-            <svg
-              class="h-4 w-4"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
+            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
               <path
                 d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22z"
               />
@@ -195,10 +164,7 @@ function setImageTagColor(
           </button>
         </div>
       </div>
-      <StorageUsagePanel
-        v-if="images.storageUsage"
-        :storage-usage="images.storageUsage"
-      />
+      <StorageUsagePanel v-if="images.storageUsage" :storage-usage="images.storageUsage" />
 
       <div class="mt-3 grid grid-cols-2 rounded-lg bg-gray-100 dark:bg-gray-800 p-1 text-sm">
         <button

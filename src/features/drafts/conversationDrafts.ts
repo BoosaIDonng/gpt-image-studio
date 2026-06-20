@@ -37,16 +37,12 @@ export async function deleteConversationDrafts(conversationIds: string[]) {
 }
 
 export async function listConversationDrafts() {
-  const drafts = await getAllFromStore<StoredConversationDraft>(
-    STORE_NAMES.conversationDrafts,
-  );
+  const drafts = await getAllFromStore<StoredConversationDraft>(STORE_NAMES.conversationDrafts);
 
   return drafts.map(normalizeConversationDraft);
 }
 
-function normalizeConversationDraft(
-  draft: StoredConversationDraft,
-): ConversationDraft {
+function normalizeConversationDraft(draft: StoredConversationDraft): ConversationDraft {
   return {
     ...draft,
     generationParams: normalizeGenerationParams(draft.generationParams),

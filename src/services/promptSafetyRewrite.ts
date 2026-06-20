@@ -1,7 +1,4 @@
-import {
-  streamChatReply,
-  type ChatMessage,
-} from "./floatingChatService";
+import { streamChatReply, type ChatMessage } from "./floatingChatService";
 import type { PromptRiskMatch } from "./moderationAdvice";
 
 export type PromptSafetyRewriteInput = {
@@ -11,9 +8,7 @@ export type PromptSafetyRewriteInput = {
   riskMatches?: PromptRiskMatch[];
 };
 
-export async function rewritePromptWithAssistant(
-  input: PromptSafetyRewriteInput,
-) {
+export async function rewritePromptWithAssistant(input: PromptSafetyRewriteInput) {
   const messages: ChatMessage[] = [
     {
       role: "system",
@@ -25,12 +20,9 @@ export async function rewritePromptWithAssistant(
       content: buildSafetyRewritePrompt(input, false),
     },
   ];
-  const response = await streamChatReply(
-    messages,
-    () => undefined,
-    undefined,
-    { useBuiltinPersona: false },
-  );
+  const response = await streamChatReply(messages, () => undefined, undefined, {
+    useBuiltinPersona: false,
+  });
   const cleaned = cleanAssistantPromptRewrite(response);
   if (!isProbablyLocalFallbackCopy(cleaned, input.fallbackPrompt)) {
     return cleaned;
@@ -44,12 +36,9 @@ export async function rewritePromptWithAssistant(
       content: buildFallbackCopyRetryPrompt(input),
     },
   ];
-  const retryResponse = await streamChatReply(
-    retryMessages,
-    () => undefined,
-    undefined,
-    { useBuiltinPersona: false },
-  );
+  const retryResponse = await streamChatReply(retryMessages, () => undefined, undefined, {
+    useBuiltinPersona: false,
+  });
   return cleanAssistantPromptRewrite(retryResponse);
 }
 
@@ -82,14 +71,9 @@ export function isProbablyLocalFallbackCopy(text: string, fallback?: string) {
   return textCoverage >= 0.8 && fallbackCoverage >= 0.55;
 }
 
-function buildSafetyRewritePrompt(
-  input: PromptSafetyRewriteInput,
-  includeFallbackPrompt: boolean,
-) {
+function buildSafetyRewritePrompt(input: PromptSafetyRewriteInput, includeFallbackPrompt: boolean) {
   const riskLines = input.riskMatches?.length
-    ? input.riskMatches
-        .map((match) => `- ${match.term} -> ${match.replacement}`)
-        .join("\n")
+    ? input.riskMatches.map((match) => `- ${match.term} -> ${match.replacement}`).join("\n")
     : "- No explicit local risk terms were detected.";
   const fallbackInstruction = input.fallbackPrompt?.trim()
     ? [

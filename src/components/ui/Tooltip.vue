@@ -48,10 +48,7 @@ async function updatePosition() {
   const height = tooltipRect.height;
   const triggerCenter = rect.left + rect.width / 2;
   const unclampedLeft = triggerCenter - width / 2;
-  const left = Math.min(
-    Math.max(margin, unclampedLeft),
-    Math.max(margin, vpW - width - margin),
-  );
+  const left = Math.min(Math.max(margin, unclampedLeft), Math.max(margin, vpW - width - margin));
   const y =
     props.preferredPlacement === "top"
       ? rect.top - height - gap >= margin
@@ -60,10 +57,7 @@ async function updatePosition() {
       : rect.bottom + gap + height > vpH
         ? "top"
         : "bottom";
-  const top =
-    y === "bottom"
-      ? rect.bottom + gap
-      : Math.max(margin, rect.top - height - gap);
+  const top = y === "bottom" ? rect.bottom + gap : Math.max(margin, rect.top - height - gap);
   const arrowLeft = Math.min(Math.max(12, triggerCenter - left), width - 12);
 
   placement.value = {
@@ -150,9 +144,7 @@ function hideTooltip() {
         class="absolute border-4 border-transparent"
         :style="{ left: `${position.arrowLeft}px` }"
         :class="[
-          placement.y === 'bottom'
-            ? 'bottom-full border-b-gray-800'
-            : 'top-full border-t-gray-800',
+          placement.y === 'bottom' ? 'bottom-full border-b-gray-800' : 'top-full border-t-gray-800',
           '-translate-x-1/2',
         ]"
       ></span>

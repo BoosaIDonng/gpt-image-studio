@@ -28,19 +28,19 @@ type ShapeSelection = {
 type Selection = BrushSelection | ShapeSelection;
 type RenderedSelection =
   | {
-    type: "brush";
-    path: string;
-    radius: number;
-    operation: SelectionOperation;
-  }
+      type: "brush";
+      path: string;
+      radius: number;
+      operation: SelectionOperation;
+    }
   | {
-    type: "rect" | "ellipse";
-    left: number;
-    top: number;
-    width: number;
-    height: number;
-    operation: SelectionOperation;
-  };
+      type: "rect" | "ellipse";
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+      operation: SelectionOperation;
+    };
 
 const props = defineProps<{
   image?: ImageAsset;
@@ -76,8 +76,8 @@ const hasSelection = computed(() => allSelections.value.length > 0);
 const canApply = computed(() => hasSelection.value);
 const canUndo = computed(() => selections.value.length > 0);
 const canRedo = computed(() => redoSelections.value.length > 0);
-const contentTransform = computed(() =>
-  `translate(${panX.value}px, ${panY.value}px) scale(${zoom.value})`,
+const contentTransform = computed(
+  () => `translate(${panX.value}px, ${panY.value}px) scale(${zoom.value})`,
 );
 
 function closeModal() {
@@ -223,16 +223,8 @@ function pointerPosition(event: PointerEvent) {
   const width = imageRef.value?.clientWidth ?? bounds?.width ?? 1;
   const height = imageRef.value?.clientHeight ?? bounds?.height ?? 1;
   if (!bounds) return { x: 0, y: 0 };
-  const x = clamp(
-    ((event.clientX - bounds.left) / bounds.width) * width,
-    0,
-    width,
-  );
-  const y = clamp(
-    ((event.clientY - bounds.top) / bounds.height) * height,
-    0,
-    height,
-  );
+  const x = clamp(((event.clientX - bounds.left) / bounds.width) * width, 0, width);
+  const y = clamp(((event.clientY - bounds.top) / bounds.height) * height, 0, height);
   return { x, y };
 }
 
@@ -278,14 +270,12 @@ function drawSelection(
   if (selection.kind === "brush") {
     ctx.save();
     applySelectionOperation(ctx, selection.operation);
-    ctx.filter = selection.feather > 0
-      ? `blur(${selection.feather * ((scaleX + scaleY) / 2)}px)`
-      : "none";
+    ctx.filter =
+      selection.feather > 0 ? `blur(${selection.feather * ((scaleX + scaleY) / 2)}px)` : "none";
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.strokeStyle = selection.operation === "erase"
-      ? "rgba(255, 255, 255, 1)"
-      : "rgba(0, 0, 0, 1)";
+    ctx.strokeStyle =
+      selection.operation === "erase" ? "rgba(255, 255, 255, 1)" : "rgba(0, 0, 0, 1)";
 
     const points = selection.points.map((point) => ({
       x: point.x * scaleX,
@@ -309,12 +299,9 @@ function drawSelection(
 
   ctx.save();
   applySelectionOperation(ctx, selection.operation);
-  ctx.filter = selection.feather > 0
-    ? `blur(${selection.feather * ((scaleX + scaleY) / 2)}px)`
-    : "none";
-  ctx.fillStyle = selection.operation === "erase"
-    ? "rgba(255, 255, 255, 1)"
-    : "rgba(0, 0, 0, 1)";
+  ctx.filter =
+    selection.feather > 0 ? `blur(${selection.feather * ((scaleX + scaleY) / 2)}px)` : "none";
+  ctx.fillStyle = selection.operation === "erase" ? "rgba(255, 255, 255, 1)" : "rgba(0, 0, 0, 1)";
   const left = Math.min(selection.start.x, selection.end.x) * scaleX;
   const top = Math.min(selection.start.y, selection.end.y) * scaleY;
   const width = Math.abs(selection.end.x - selection.start.x) * scaleX;
@@ -333,10 +320,7 @@ function drawSelection(
   ctx.restore();
 }
 
-function applySelectionOperation(
-  ctx: CanvasRenderingContext2D,
-  operation: SelectionOperation,
-) {
+function applySelectionOperation(ctx: CanvasRenderingContext2D, operation: SelectionOperation) {
   ctx.globalCompositeOperation = operation === "erase" ? "source-over" : "destination-out";
 }
 
@@ -398,225 +382,419 @@ function clamp(value: number, min: number, max: number) {
         aria-modal="true"
         @mousedown.self="closeModal"
       >
-      <div class="w-full max-w-5xl rounded-xl bg-white p-4">
-        <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div class="text-sm font-semibold text-gray-900">选择要编辑的区域</div>
-            <div class="text-xs text-gray-500">支持画笔、矩形、圆形，多次叠加选区</div>
-          </div>
-          <div class="flex items-center gap-1">
-            <div v-if="tool === 'brush' || tool === 'eraser'" class="mr-2 flex items-center gap-2 whitespace-nowrap">
-              <span class="text-xs text-gray-500">{{ tool === "eraser" ? "橡皮" : "画笔" }}</span>
-              <input
-                v-model.number="brushRadius"
-                class="styled-range w-40"
-                type="range"
-                min="6"
-                max="80"
-                step="1"
-              />
+        <div class="w-full max-w-5xl rounded-xl bg-white p-4">
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="text-sm font-semibold text-gray-900">选择要编辑的区域</div>
+              <div class="text-xs text-gray-500">支持画笔、矩形、圆形，多次叠加选区</div>
             </div>
-            <div class="mr-2 flex items-center gap-2">
-              <span class="text-xs text-gray-500">软边</span>
-              <input v-model.number="edgeSoftness" class="styled-range" type="range" min="0" max="24" step="1" />
+            <div class="flex items-center gap-1">
+              <div
+                v-if="tool === 'brush' || tool === 'eraser'"
+                class="mr-2 flex items-center gap-2 whitespace-nowrap"
+              >
+                <span class="text-xs text-gray-500">{{ tool === "eraser" ? "橡皮" : "画笔" }}</span>
+                <input
+                  v-model.number="brushRadius"
+                  class="styled-range w-40"
+                  type="range"
+                  min="6"
+                  max="80"
+                  step="1"
+                />
+              </div>
+              <div class="mr-2 flex items-center gap-2">
+                <span class="text-xs text-gray-500">软边</span>
+                <input
+                  v-model.number="edgeSoftness"
+                  class="styled-range"
+                  type="range"
+                  min="0"
+                  max="24"
+                  step="1"
+                />
+              </div>
+              <Tooltip text="画笔" :delay="2000">
+                <button
+                  :class="[
+                    'rounded-lg p-2',
+                    tool === 'brush' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100',
+                  ]"
+                  type="button"
+                  @click="tool = 'brush'"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z"
+                    />
+                    <path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7" />
+                    <path d="M14.5 17.5 4.5 15" />
+                  </svg>
+                </button>
+              </Tooltip>
+              <Tooltip text="橡皮" :delay="2000">
+                <button
+                  :class="[
+                    'rounded-lg p-2',
+                    tool === 'eraser' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100',
+                  ]"
+                  type="button"
+                  @click="tool = 'eraser'"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"
+                    />
+                    <path d="M22 21H7" />
+                    <path d="m5 11 9 9" />
+                  </svg>
+                </button>
+              </Tooltip>
+              <Tooltip text="方框" :delay="2000">
+                <button
+                  :class="[
+                    'rounded-lg p-2',
+                    tool === 'rect' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100',
+                  ]"
+                  type="button"
+                  @click="tool = 'rect'"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                  </svg>
+                </button>
+              </Tooltip>
+              <Tooltip text="圆框" :delay="2000">
+                <button
+                  :class="[
+                    'rounded-lg p-2',
+                    tool === 'ellipse' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100',
+                  ]"
+                  type="button"
+                  @click="tool = 'ellipse'"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                  </svg>
+                </button>
+              </Tooltip>
+              <Tooltip text="移动" :delay="2000">
+                <button
+                  :class="[
+                    'rounded-lg p-2',
+                    tool === 'pan' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100',
+                  ]"
+                  type="button"
+                  @click="tool = 'pan'"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2" />
+                    <path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2" />
+                    <path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8" />
+                    <path
+                      d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"
+                    />
+                  </svg>
+                </button>
+              </Tooltip>
             </div>
-            <Tooltip text="画笔" :delay="2000">
-              <button
-                :class="[
-                  'rounded-lg p-2',
-                  tool === 'brush' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100',
-                ]"
-                type="button"
-                @click="tool = 'brush'"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z"/><path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7"/><path d="M14.5 17.5 4.5 15"/></svg>
-              </button>
-            </Tooltip>
-            <Tooltip text="橡皮" :delay="2000">
-              <button
-                :class="[
-                  'rounded-lg p-2',
-                  tool === 'eraser' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100',
-                ]"
-                type="button"
-                @click="tool = 'eraser'"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>
-              </button>
-            </Tooltip>
-            <Tooltip text="方框" :delay="2000">
-              <button
-                :class="[
-                  'rounded-lg p-2',
-                  tool === 'rect' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100',
-                ]"
-                type="button"
-                @click="tool = 'rect'"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-              </button>
-            </Tooltip>
-            <Tooltip text="圆框" :delay="2000">
-              <button
-                :class="[
-                  'rounded-lg p-2',
-                  tool === 'ellipse' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100',
-                ]"
-                type="button"
-                @click="tool = 'ellipse'"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
-              </button>
-            </Tooltip>
-            <Tooltip text="移动" :delay="2000">
-              <button
-                :class="[
-                  'rounded-lg p-2',
-                  tool === 'pan' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100',
-                ]"
-                type="button"
-                @click="tool = 'pan'"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>
-              </button>
-            </Tooltip>
           </div>
-        </div>
-        <div class="mb-3 flex items-center justify-end gap-1">
-          <Tooltip text="撤销" :delay="2000">
-            <button
-              class="rounded-lg p-2 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
-              type="button"
-              :disabled="!canUndo"
-              @click="undoSelection"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
-            </button>
-          </Tooltip>
-          <Tooltip text="重做" :delay="2000">
-            <button
-              class="rounded-lg p-2 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
-              type="button"
-              :disabled="!canRedo"
-              @click="redoSelection"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
-            </button>
-          </Tooltip>
-          <Tooltip text="重置选区" :delay="2000">
-            <button
-              class="rounded-lg p-2 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
-              type="button"
-              :disabled="!hasSelection"
-              @click="resetSelection"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-            </button>
-          </Tooltip>
-          <div class="mx-1 h-5 w-px bg-gray-200"></div>
-          <Tooltip text="缩小" :delay="2000">
-            <button
-              class="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
-              type="button"
-              @click="zoomOut"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-            </button>
-          </Tooltip>
-          <span class="min-w-10 text-center text-xs text-gray-500">{{ Math.round(zoom * 100) }}%</span>
-          <Tooltip text="放大" :delay="2000">
-            <button
-              class="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
-              type="button"
-              @click="zoomIn"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-            </button>
-          </Tooltip>
-          <Tooltip text="复位视图" :delay="2000">
-            <button
-              class="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
-              type="button"
-              @click="resetViewport"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
-            </button>
-          </Tooltip>
-          <div class="mx-1 h-5 w-px bg-gray-200"></div>
-          <button
-            class="rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
-            type="button"
-            @click="closeModal"
-          >
-            取消
-          </button>
-          <button
-            class="rounded-lg bg-black px-3 py-1.5 text-sm text-white disabled:cursor-not-allowed disabled:opacity-40"
-            type="button"
-            :disabled="!canApply"
-            @click="applyMask"
-          >
-            应用区域
-          </button>
-        </div>
-        <div
-          class="relative mx-auto flex max-h-[70vh] items-center justify-center overflow-auto rounded-lg bg-gray-50 p-2"
-          :class="tool === 'pan' ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-crosshair'"
-          @wheel="handleWheel"
-          @pointerdown.prevent="startSelection"
-          @pointermove.prevent="updateSelection"
-          @pointerup.prevent="stopSelection"
-          @pointerleave.prevent="stopSelection"
-        >
-          <div class="relative shrink-0" :style="{ transform: contentTransform, transformOrigin: 'center center' }">
-            <img
-              ref="imageRef"
-              class="max-h-[66vh] max-w-full select-none rounded object-contain"
-              :src="image.previewUrl"
-              :alt="image.name"
-            />
-            <svg
-              class="pointer-events-none absolute inset-0 h-full w-full"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <template v-for="(selection, index) in renderedSelections" :key="index">
-                <polyline
-                  v-if="selection.type === 'brush'"
-                  :points="selection.path"
+          <div class="mb-3 flex items-center justify-end gap-1">
+            <Tooltip text="撤销" :delay="2000">
+              <button
+                class="rounded-lg p-2 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                type="button"
+                :disabled="!canUndo"
+                @click="undoSelection"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
                   fill="none"
-                  :stroke="selection.operation === 'erase' ? 'rgba(34, 197, 94, 0.5)' : 'rgba(0, 0, 0, 0.35)'"
-                  :stroke-width="selection.radius * 2"
+                  stroke="currentColor"
+                  stroke-width="2"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                />
-                <rect
-                  v-else-if="selection.type === 'rect'"
-                  :x="selection.left"
-                  :y="selection.top"
-                  :width="selection.width"
-                  :height="selection.height"
-                  :fill="selection.operation === 'erase' ? 'rgba(34, 197, 94, 0.18)' : 'rgba(0, 0, 0, 0.2)'"
-                  :stroke="selection.operation === 'erase' ? 'rgba(34, 197, 94, 0.7)' : 'rgba(0, 0, 0, 0.6)'"
+                >
+                  <path d="M3 7v6h6" />
+                  <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+                </svg>
+              </button>
+            </Tooltip>
+            <Tooltip text="重做" :delay="2000">
+              <button
+                class="rounded-lg p-2 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                type="button"
+                :disabled="!canRedo"
+                @click="redoSelection"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
                   stroke-width="2"
-                />
-                <ellipse
-                  v-else
-                  :cx="selection.left + selection.width / 2"
-                  :cy="selection.top + selection.height / 2"
-                  :rx="selection.width / 2"
-                  :ry="selection.height / 2"
-                  :fill="selection.operation === 'erase' ? 'rgba(34, 197, 94, 0.18)' : 'rgba(0, 0, 0, 0.2)'"
-                  :stroke="selection.operation === 'erase' ? 'rgba(34, 197, 94, 0.7)' : 'rgba(0, 0, 0, 0.6)'"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M21 7v6h-6" />
+                  <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" />
+                </svg>
+              </button>
+            </Tooltip>
+            <Tooltip text="重置选区" :delay="2000">
+              <button
+                class="rounded-lg p-2 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                type="button"
+                :disabled="!hasSelection"
+                @click="resetSelection"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
                   stroke-width="2"
-                />
-              </template>
-            </svg>
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M3 6h18" />
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                </svg>
+              </button>
+            </Tooltip>
+            <div class="mx-1 h-5 w-px bg-gray-200"></div>
+            <Tooltip text="缩小" :delay="2000">
+              <button
+                class="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+                type="button"
+                @click="zoomOut"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  <line x1="8" y1="11" x2="14" y2="11" />
+                </svg>
+              </button>
+            </Tooltip>
+            <span class="min-w-10 text-center text-xs text-gray-500"
+              >{{ Math.round(zoom * 100) }}%</span
+            >
+            <Tooltip text="放大" :delay="2000">
+              <button
+                class="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+                type="button"
+                @click="zoomIn"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  <line x1="11" y1="8" x2="11" y2="14" />
+                  <line x1="8" y1="11" x2="14" y2="11" />
+                </svg>
+              </button>
+            </Tooltip>
+            <Tooltip text="复位视图" :delay="2000">
+              <button
+                class="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+                type="button"
+                @click="resetViewport"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M3 7V5a2 2 0 0 1 2-2h2" />
+                  <path d="M17 3h2a2 2 0 0 1 2 2v2" />
+                  <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
+                  <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
+                </svg>
+              </button>
+            </Tooltip>
+            <div class="mx-1 h-5 w-px bg-gray-200"></div>
+            <button
+              class="rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
+              type="button"
+              @click="closeModal"
+            >
+              取消
+            </button>
+            <button
+              class="rounded-lg bg-black px-3 py-1.5 text-sm text-white disabled:cursor-not-allowed disabled:opacity-40"
+              type="button"
+              :disabled="!canApply"
+              @click="applyMask"
+            >
+              应用区域
+            </button>
+          </div>
+          <div
+            class="relative mx-auto flex max-h-[70vh] items-center justify-center overflow-auto rounded-lg bg-gray-50 p-2"
+            :class="
+              tool === 'pan' ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-crosshair'
+            "
+            @wheel="handleWheel"
+            @pointerdown.prevent="startSelection"
+            @pointermove.prevent="updateSelection"
+            @pointerup.prevent="stopSelection"
+            @pointerleave.prevent="stopSelection"
+          >
+            <div
+              class="relative shrink-0"
+              :style="{ transform: contentTransform, transformOrigin: 'center center' }"
+            >
+              <img
+                ref="imageRef"
+                class="max-h-[66vh] max-w-full select-none rounded object-contain"
+                :src="image.previewUrl"
+                :alt="image.name"
+              />
+              <svg
+                class="pointer-events-none absolute inset-0 h-full w-full"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <template v-for="(selection, index) in renderedSelections" :key="index">
+                  <polyline
+                    v-if="selection.type === 'brush'"
+                    :points="selection.path"
+                    fill="none"
+                    :stroke="
+                      selection.operation === 'erase'
+                        ? 'rgba(34, 197, 94, 0.5)'
+                        : 'rgba(0, 0, 0, 0.35)'
+                    "
+                    :stroke-width="selection.radius * 2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <rect
+                    v-else-if="selection.type === 'rect'"
+                    :x="selection.left"
+                    :y="selection.top"
+                    :width="selection.width"
+                    :height="selection.height"
+                    :fill="
+                      selection.operation === 'erase'
+                        ? 'rgba(34, 197, 94, 0.18)'
+                        : 'rgba(0, 0, 0, 0.2)'
+                    "
+                    :stroke="
+                      selection.operation === 'erase'
+                        ? 'rgba(34, 197, 94, 0.7)'
+                        : 'rgba(0, 0, 0, 0.6)'
+                    "
+                    stroke-width="2"
+                  />
+                  <ellipse
+                    v-else
+                    :cx="selection.left + selection.width / 2"
+                    :cy="selection.top + selection.height / 2"
+                    :rx="selection.width / 2"
+                    :ry="selection.height / 2"
+                    :fill="
+                      selection.operation === 'erase'
+                        ? 'rgba(34, 197, 94, 0.18)'
+                        : 'rgba(0, 0, 0, 0.2)'
+                    "
+                    :stroke="
+                      selection.operation === 'erase'
+                        ? 'rgba(34, 197, 94, 0.7)'
+                        : 'rgba(0, 0, 0, 0.6)'
+                    "
+                    stroke-width="2"
+                  />
+                </template>
+              </svg>
+            </div>
+          </div>
+          <div class="mt-2 text-xs text-gray-500">
+            预览说明：黑色区域=编辑区域，绿色区域=擦除已选区域；支持多选区、撤销重做、缩放平移。
           </div>
         </div>
-        <div class="mt-2 text-xs text-gray-500">
-          预览说明：黑色区域=编辑区域，绿色区域=擦除已选区域；支持多选区、撤销重做、缩放平移。
-        </div>
-      </div>
       </div>
     </FocusTrap>
   </Teleport>
@@ -643,7 +821,9 @@ function clamp(value: number, min: number, max: number) {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   border: 2px solid #6366f1;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .styled-range::-webkit-slider-thumb:hover {
@@ -665,7 +845,9 @@ function clamp(value: number, min: number, max: number) {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   border: 2px solid #6366f1;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .styled-range::-moz-range-thumb:hover {

@@ -74,9 +74,7 @@ export const useComposerStore = defineStore("composer", () => {
   }
 
   function restoreRagMatch(id: string) {
-    ragExcludedMatchIds.value = ragExcludedMatchIds.value.filter(
-      (item) => item !== id,
-    );
+    ragExcludedMatchIds.value = ragExcludedMatchIds.value.filter((item) => item !== id);
   }
 
   function clearRagExclusions() {

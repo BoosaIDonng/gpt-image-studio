@@ -30,8 +30,9 @@ const providerLabel = computed(() => {
   if (settings.apiProvider === "gemini") return "Gemini";
   return "OpenAI";
 });
-const previewSourcePrompt = computed(() =>
-  composer.composerText.trim() ||
+const previewSourcePrompt = computed(
+  () =>
+    composer.composerText.trim() ||
     (images.activeAttachments.length ? "基于引用图片继续编辑。" : ""),
 );
 const ragDocuments = computed(() =>
@@ -95,19 +96,13 @@ function ragWeightedScoreLabel(score: number) {
 
 <template>
   <div class="flex min-w-0 flex-wrap items-center gap-1.5">
-    <span
-      class="cursor-not-allowed rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-400"
-    >
+    <span class="cursor-not-allowed rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-400">
       供应商: {{ providerLabel }}
     </span>
-    <span
-      class="cursor-not-allowed rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-400"
-    >
+    <span class="cursor-not-allowed rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-400">
       模型: {{ settings.model }}
     </span>
-    <span
-      class="cursor-not-allowed rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-400"
-    >
+    <span class="cursor-not-allowed rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-400">
       内容: {{ promptModeLabel }}
     </span>
     <button
@@ -211,7 +206,9 @@ function ragWeightedScoreLabel(score: number) {
               @click="composer.closePromptPreview()"
             >
               <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                <path
+                  d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"
+                />
               </svg>
             </button>
           </header>
@@ -220,12 +217,12 @@ function ragWeightedScoreLabel(score: number) {
               v-if="settings.ragEnabled && previewRagResult"
               class="mb-3 rounded-md border border-gray-200 bg-white"
             >
-              <div class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-3 py-2">
+              <div
+                class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-3 py-2"
+              >
                 <div>
                   <div class="text-xs font-semibold text-gray-800">RAG 命中</div>
-                  <div class="mt-0.5 text-[11px] text-gray-500">
-                    仅使用成功图片命中的词库参考
-                  </div>
+                  <div class="mt-0.5 text-[11px] text-gray-500">仅使用成功图片命中的词库参考</div>
                 </div>
                 <button
                   v-if="composer.ragExcludedMatchIds.length"
@@ -258,7 +255,9 @@ function ragWeightedScoreLabel(score: number) {
                           {{ item.title }}
                         </span>
                         <span class="text-[11px] text-gray-400">
-                          加权 {{ ragWeightedScoreLabel(item.score) }} / 原始 {{ ragScoreLabel(item.rawScore) }} / 权重 {{ item.sourceWeight.toFixed(2) }}
+                          加权 {{ ragWeightedScoreLabel(item.score) }} / 原始
+                          {{ ragScoreLabel(item.rawScore) }} / 权重
+                          {{ item.sourceWeight.toFixed(2) }}
                         </span>
                       </div>
                       <div class="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-700">
@@ -275,20 +274,17 @@ function ragWeightedScoreLabel(score: number) {
                   </div>
                 </div>
 
-                <div
-                  v-if="excludedRagMatches.length"
-                  class="mt-2 border-t border-gray-200 pt-2"
-                >
-                  <div class="mb-1 px-1 text-[11px] font-medium text-gray-500">
-                    已排除
-                  </div>
+                <div v-if="excludedRagMatches.length" class="mt-2 border-t border-gray-200 pt-2">
+                  <div class="mb-1 px-1 text-[11px] font-medium text-gray-500">已排除</div>
                   <div class="space-y-1">
                     <div
                       v-for="item in excludedRagMatches"
                       :key="item.id"
                       class="flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5"
                     >
-                      <span class="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500">
+                      <span
+                        class="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500"
+                      >
                         {{ ragSourceLabel(item.source) }}
                       </span>
                       <span class="min-w-0 flex-1 truncate text-xs text-gray-500">

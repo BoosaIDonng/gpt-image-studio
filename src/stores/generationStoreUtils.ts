@@ -12,18 +12,12 @@ export function titleFromPrompt(prompt: string) {
 
 export function filenameFromAsset(asset: ImageAsset) {
   const extension =
-    asset.mimeType === "image/jpeg"
-      ? "jpeg"
-      : asset.mimeType === "image/webp"
-        ? "webp"
-        : "png";
+    asset.mimeType === "image/jpeg" ? "jpeg" : asset.mimeType === "image/webp" ? "webp" : "png";
 
   return `${asset.name || asset.id}.${extension}`;
 }
 
-export function outputFormatToMimeType(
-  outputFormat: GenerationParams["outputFormat"],
-) {
+export function outputFormatToMimeType(outputFormat: GenerationParams["outputFormat"]) {
   return outputFormat === "jpeg" ? "image/jpeg" : `image/${outputFormat}`;
 }
 
@@ -41,29 +35,18 @@ export function pendingGenerationLabel(isEdit: boolean, count: number) {
   return count > 1 ? `正在生成 ${count} 张图片。` : "正在生成图片。";
 }
 
-export function continuedGenerationLabel(
-  isEdit: boolean,
-  isReplacing: boolean,
-  count: number,
-) {
+export function continuedGenerationLabel(isEdit: boolean, isReplacing: boolean, count: number) {
   if (isEdit) {
     if (isReplacing) return "正在重新生成编辑结果。";
-    return count > 1
-      ? `正在继续生成 ${count} 张编辑结果。`
-      : "正在继续生成编辑结果。";
+    return count > 1 ? `正在继续生成 ${count} 张编辑结果。` : "正在继续生成编辑结果。";
   }
 
   if (isReplacing) return "正在重新生成图片。";
   return count > 1 ? `正在继续生成 ${count} 张图片。` : "正在继续生成图片。";
 }
 
-export function pendingResultLabel(
-  isEdit: boolean,
-  generatedCount: number,
-  pendingCount: number,
-) {
-  const generatedPart =
-    generatedCount > 0 ? `已生成 ${generatedCount} 张，` : "";
+export function pendingResultLabel(isEdit: boolean, generatedCount: number, pendingCount: number) {
+  const generatedPart = generatedCount > 0 ? `已生成 ${generatedCount} 张，` : "";
   const noun = isEdit ? "编辑结果" : "图片";
   return `${generatedPart}还有 ${pendingCount} 张${noun}正在生成。`;
 }
@@ -79,19 +62,13 @@ export function toPlainMessage(message: Message): Message {
     status: message.status,
     createdAt: message.createdAt,
     generationStartedAt: message.generationStartedAt,
-    generationParams: message.generationParams
-      ? { ...message.generationParams }
-      : undefined,
+    generationParams: message.generationParams ? { ...message.generationParams } : undefined,
     promptRequestSettings: message.promptRequestSettings
       ? {
           promptMode: message.promptRequestSettings.promptMode,
-          promptWordbanks: clonePromptWordbanks(
-            message.promptRequestSettings.promptWordbanks,
-          ),
-          promptRewriteGuardEnabled:
-            message.promptRequestSettings.promptRewriteGuardEnabled,
-          promptRewriteGuardText:
-            message.promptRequestSettings.promptRewriteGuardText,
+          promptWordbanks: clonePromptWordbanks(message.promptRequestSettings.promptWordbanks),
+          promptRewriteGuardEnabled: message.promptRequestSettings.promptRewriteGuardEnabled,
+          promptRewriteGuardText: message.promptRequestSettings.promptRewriteGuardText,
           ragContext: message.promptRequestSettings.ragContext,
         }
       : undefined,

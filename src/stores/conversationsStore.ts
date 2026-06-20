@@ -34,9 +34,7 @@ export const useConversationsStore = defineStore("conversations", () => {
     conversations.value.find((item) => item.id === activeConversationId.value),
   );
   const activeMessages = computed(() =>
-    messages.value.filter(
-      (message) => message.conversationId === activeConversationId.value,
-    ),
+    messages.value.filter((message) => message.conversationId === activeConversationId.value),
   );
 
   function configureConversationsStore(nextContext: ConversationsStoreContext) {
@@ -61,13 +59,9 @@ export const useConversationsStore = defineStore("conversations", () => {
     });
     if (!confirmed) return;
 
-    const deletedMessages = messages.value.filter(
-      (message) => message.conversationId === id,
-    );
+    const deletedMessages = messages.value.filter((message) => message.conversationId === id);
     conversations.value = conversations.value.filter((item) => item.id !== id);
-    messages.value = messages.value.filter(
-      (message) => message.conversationId !== id,
-    );
+    messages.value = messages.value.filter((message) => message.conversationId !== id);
 
     if (activeConversationId.value === id) {
       activeConversationId.value = conversations.value[0]?.id ?? "";
@@ -93,15 +87,9 @@ export const useConversationsStore = defineStore("conversations", () => {
 
     const input = getContext();
     const feedback = useFeedbackStore();
-    const deletedMessages = messages.value.filter((message) =>
-      idSet.has(message.conversationId),
-    );
-    conversations.value = conversations.value.filter(
-      (conversation) => !idSet.has(conversation.id),
-    );
-    messages.value = messages.value.filter(
-      (message) => !idSet.has(message.conversationId),
-    );
+    const deletedMessages = messages.value.filter((message) => idSet.has(message.conversationId));
+    conversations.value = conversations.value.filter((conversation) => !idSet.has(conversation.id));
+    messages.value = messages.value.filter((message) => !idSet.has(message.conversationId));
 
     if (idSet.has(activeConversationId.value)) {
       activeConversationId.value = conversations.value[0]?.id ?? "";
@@ -179,9 +167,7 @@ export const useConversationsStore = defineStore("conversations", () => {
     summary: string,
     updatedAt = isoTimestamp(),
   ) {
-    const conversation = conversations.value.find(
-      (item) => item.id === conversationId,
-    );
+    const conversation = conversations.value.find((item) => item.id === conversationId);
     if (!conversation) return null;
 
     if (!conversation.isTitleManuallySet) {
@@ -208,10 +194,7 @@ export const useConversationsStore = defineStore("conversations", () => {
     conversation.title = trimmedTitle;
     conversation.isTitleManuallySet = true;
     conversation.updatedAt = isoTimestamp();
-    conversations.value = [
-      conversation,
-      ...conversations.value.filter((item) => item.id !== id),
-    ];
+    conversations.value = [conversation, ...conversations.value.filter((item) => item.id !== id)];
     await persistConversation(conversation);
     return true;
   }

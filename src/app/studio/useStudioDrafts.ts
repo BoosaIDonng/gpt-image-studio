@@ -11,7 +11,6 @@ import type {
   GenerationParams,
   ImageAsset,
   Message,
-  SizeRatio,
   SizeResolution,
 } from "../../types/studio";
 
@@ -182,18 +181,16 @@ export function useStudioDrafts(ctx: {
   }
 
   function selectConversationWithDraft(id: string) {
-    draftSwitchQueue = draftSwitchQueue
-      .catch(ctx.reportStorageError)
-      .then(async () => {
-        await saveActiveDraft();
-        ctx.selectConversation(id);
-        const nextDraft = await loadConversationDraft(id).catch(ctx.reportStorageError);
-        if (nextDraft) {
-          applyConversationDraft(nextDraft);
-        } else {
-          applyConversationDraft(createDefaultDraft(id));
-        }
-      });
+    draftSwitchQueue = draftSwitchQueue.catch(ctx.reportStorageError).then(async () => {
+      await saveActiveDraft();
+      ctx.selectConversation(id);
+      const nextDraft = await loadConversationDraft(id).catch(ctx.reportStorageError);
+      if (nextDraft) {
+        applyConversationDraft(nextDraft);
+      } else {
+        applyConversationDraft(createDefaultDraft(id));
+      }
+    });
   }
 
   async function createConversationWithDraft() {

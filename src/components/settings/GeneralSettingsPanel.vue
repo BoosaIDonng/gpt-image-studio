@@ -27,12 +27,12 @@ async function handleFetchModels() {
 
 <template>
   <section aria-labelledby="generalSettingsTitle">
-    <h3 id="generalSettingsTitle" class="text-base font-semibold text-gray-900">
-      通用
-    </h3>
+    <h3 id="generalSettingsTitle" class="text-base font-semibold text-gray-900">通用</h3>
 
     <div class="mt-4 space-y-4">
-      <div class="flex items-start justify-between gap-4 rounded-lg border border-gray-200 px-3 py-2.5">
+      <div
+        class="flex items-start justify-between gap-4 rounded-lg border border-gray-200 px-3 py-2.5"
+      >
         <div>
           <div class="text-sm font-medium text-gray-700">网络失败自动重试</div>
           <p class="mt-1 text-xs leading-relaxed text-gray-500">
@@ -43,10 +43,18 @@ async function handleFetchModels() {
           type="button"
           role="switch"
           :aria-checked="ctx.autoRetryOnNetworkError.value"
-          :class="['relative mt-0.5 inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', ctx.autoRetryOnNetworkError.value ? 'bg-gray-900' : 'bg-gray-300']"
+          :class="[
+            'relative mt-0.5 inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors',
+            ctx.autoRetryOnNetworkError.value ? 'bg-gray-900' : 'bg-gray-300',
+          ]"
           @click="ctx.updateAutoRetryOnNetworkError(!ctx.autoRetryOnNetworkError.value)"
         >
-          <span :class="['inline-block h-4 w-4 rounded-full bg-white transition-transform', ctx.autoRetryOnNetworkError.value ? 'translate-x-4' : 'translate-x-0.5']" />
+          <span
+            :class="[
+              'inline-block h-4 w-4 rounded-full bg-white transition-transform',
+              ctx.autoRetryOnNetworkError.value ? 'translate-x-4' : 'translate-x-0.5',
+            ]"
+          />
         </button>
       </div>
 
@@ -63,16 +71,26 @@ async function handleFetchModels() {
             type="button"
             role="switch"
             :aria-checked="ctx.promptExpandEnabled.value"
-            :class="['relative mt-0.5 inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors', ctx.promptExpandEnabled.value ? 'bg-gray-900' : 'bg-gray-300']"
+            :class="[
+              'relative mt-0.5 inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors',
+              ctx.promptExpandEnabled.value ? 'bg-gray-900' : 'bg-gray-300',
+            ]"
             @click="ctx.updatePromptExpandEnabled(!ctx.promptExpandEnabled.value)"
           >
-            <span :class="['inline-block h-4 w-4 rounded-full bg-white transition-transform', ctx.promptExpandEnabled.value ? 'translate-x-4' : 'translate-x-0.5']" />
+            <span
+              :class="[
+                'inline-block h-4 w-4 rounded-full bg-white transition-transform',
+                ctx.promptExpandEnabled.value ? 'translate-x-4' : 'translate-x-0.5',
+              ]"
+            />
           </button>
         </div>
 
         <div v-if="ctx.promptExpandEnabled.value" class="space-y-3">
           <div>
-            <label class="mb-1 block text-xs font-medium text-gray-600" for="chatApiKey">Chat API Key</label>
+            <label class="mb-1 block text-xs font-medium text-gray-600" for="chatApiKey"
+              >Chat API Key</label
+            >
             <input
               id="chatApiKey"
               :value="ctx.chatApiKey.value"
@@ -84,7 +102,9 @@ async function handleFetchModels() {
             />
           </div>
           <div>
-            <label class="mb-1 block text-xs font-medium text-gray-600" for="chatApiBaseUrl">Chat API Base URL</label>
+            <label class="mb-1 block text-xs font-medium text-gray-600" for="chatApiBaseUrl"
+              >Chat API Base URL</label
+            >
             <input
               id="chatApiBaseUrl"
               :value="ctx.chatApiBaseUrl.value"
@@ -92,7 +112,11 @@ async function handleFetchModels() {
               type="url"
               placeholder="https://api.deepseek.com"
               @input="ctx.updateChatApiBaseUrl(($event.target as HTMLInputElement).value)"
-              @blur="ctx.updateChatApiBaseUrl(($event.target as HTMLInputElement).value.trim().replace(/\/+$/, ''))"
+              @blur="
+                ctx.updateChatApiBaseUrl(
+                  ($event.target as HTMLInputElement).value.trim().replace(/\/+$/, ''),
+                )
+              "
             />
           </div>
           <div>
@@ -131,7 +155,9 @@ async function handleFetchModels() {
           </div>
           <div>
             <div class="mb-1 flex items-center justify-between">
-              <label class="text-xs font-medium text-gray-600" for="chatSystemPrompt">System Prompt</label>
+              <label class="text-xs font-medium text-gray-600" for="chatSystemPrompt"
+                >System Prompt</label
+              >
               <button
                 type="button"
                 class="text-xs text-gray-400 hover:text-gray-600 cursor-pointer"

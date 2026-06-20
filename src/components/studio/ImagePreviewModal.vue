@@ -23,9 +23,7 @@ let panStartY = 0;
 let didDrag = false;
 let pointerDownOnSelf = false;
 
-const isTransformed = computed(
-  () => zoom.value !== 1 || panX.value !== 0 || panY.value !== 0,
-);
+const isTransformed = computed(() => zoom.value !== 1 || panX.value !== 0 || panY.value !== 0);
 
 watch(
   () => props.image?.id,
@@ -160,7 +158,9 @@ function handleEdit() {
       </div>
 
       <!-- 底部控制栏 -->
-      <div class="pointer-events-none absolute right-0 bottom-0 left-0 z-10 flex justify-center pb-6">
+      <div
+        class="pointer-events-none absolute right-0 bottom-0 left-0 z-10 flex justify-center pb-6"
+      >
         <div
           class="pointer-events-auto flex items-center gap-1 rounded-xl bg-white/10 p-1.5 backdrop-blur-sm"
         >

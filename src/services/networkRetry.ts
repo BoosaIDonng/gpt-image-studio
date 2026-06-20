@@ -47,8 +47,10 @@ export function isNetworkError(error: unknown): boolean {
   if (error instanceof NetworkError) {
     return error.status === undefined || isRetryableStatus(error.status);
   }
-  return error instanceof TypeError ||
-    (error instanceof Error && error.message.includes(SERVER_DISCONNECTED_MESSAGE));
+  return (
+    error instanceof TypeError ||
+    (error instanceof Error && error.message.includes(SERVER_DISCONNECTED_MESSAGE))
+  );
 }
 
 function sleep(ms: number) {

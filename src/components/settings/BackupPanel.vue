@@ -23,15 +23,9 @@ function importBackupFromInput(event: Event) {
 
 <template>
   <section aria-labelledby="backupSettingsTitle">
-    <h3
-      id="backupSettingsTitle"
-      class="text-base font-semibold text-gray-900"
-    >
-      数据备份
-    </h3>
+    <h3 id="backupSettingsTitle" class="text-base font-semibold text-gray-900">数据备份</h3>
     <p class="mt-1 text-sm leading-relaxed text-gray-500">
-      导出会话、消息和图片；API key
-      不会写入备份。恢复备份会覆盖当前浏览器里的本地数据。
+      导出会话、消息和图片；API key 不会写入备份。恢复备份会覆盖当前浏览器里的本地数据。
     </p>
 
     <div class="mt-5 flex flex-wrap gap-2">

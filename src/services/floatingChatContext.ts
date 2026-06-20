@@ -82,8 +82,8 @@ function messageLines(messages: Message[]) {
   const recentMessages = messages.slice(-MAX_CONTEXT_MESSAGES);
   if (!recentMessages.length) return ["无"];
 
-  return recentMessages.map((message) =>
-    `- ${message.role}/${message.status}: ${safeText(message.content) || "空"}`,
+  return recentMessages.map(
+    (message) => `- ${message.role}/${message.status}: ${safeText(message.content) || "空"}`,
   );
 }
 
@@ -103,9 +103,7 @@ function imageLines(images: ImageAsset[]) {
 
 function generationLine(generation: FloatingChatGenerationContext) {
   const size =
-    generation.size === "custom"
-      ? `${generation.width}x${generation.height}`
-      : generation.size;
+    generation.size === "custom" ? `${generation.width}x${generation.height}` : generation.size;
 
   return [
     `供应商 ${generation.apiProvider}`,
@@ -145,8 +143,7 @@ function ragLines(input: FloatingChatProjectContextInput) {
   return [
     `开启；topK ${input.rag.topK}`,
     ...items.map(
-      (item) =>
-        `- ${safeText(item.text)} (${item.title}, score ${item.score.toFixed(2)})`,
+      (item) => `- ${safeText(item.text)} (${item.title}, score ${item.score.toFixed(2)})`,
     ),
   ];
 }
@@ -157,10 +154,7 @@ function safeText(value: unknown) {
   return value
     .replace(/sk-[A-Za-z0-9_-]+/g, "[redacted-key]")
     .replace(/blob:[^\s]+/g, "[redacted-blob-url]")
-    .replace(
-      /data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g,
-      "[redacted-image-data]",
-    )
+    .replace(/data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g, "[redacted-image-data]")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, MAX_TEXT_LENGTH);

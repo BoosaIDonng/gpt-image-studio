@@ -29,16 +29,9 @@ import { GROK_SUPPORTED_RATIOS, GROK_SUPPORTED_RESOLUTIONS } from "../services/g
 import { isoTimestamp } from "../shared/dateTime";
 import { normalizeRagTopK } from "../shared/normalizers";
 import { createId } from "../shared/id";
-import {
-  MAX_CUSTOM_DIMENSION,
-  MAX_CUSTOM_PIXELS,
-  SIZE_STEP,
-} from "../shared/imageConstraints";
+import { MAX_CUSTOM_DIMENSION, MAX_CUSTOM_PIXELS, SIZE_STEP } from "../shared/imageConstraints";
 import { readJsonStorage, readStorage, writeStorage } from "../shared/localStorage";
-import {
-  FIXED_IMAGE_MODEL,
-  defaultModelForProvider,
-} from "../shared/models";
+import { FIXED_IMAGE_MODEL, defaultModelForProvider } from "../shared/models";
 import type {
   ApiMode,
   ApiProvider,
@@ -100,15 +93,11 @@ export const useSettingsStore = defineStore("settings", () => {
   const model = ref(initialApiSettings.model);
   const apiKey = ref(initialApiSettings.apiKey);
   const apiBaseUrl = ref(initialApiSettings.apiBaseUrl);
-  const apiBaseUrlMode = ref<AppSettings["apiBaseUrlMode"]>(
-    initialApiSettings.apiBaseUrlMode,
-  );
+  const apiBaseUrlMode = ref<AppSettings["apiBaseUrlMode"]>(initialApiSettings.apiBaseUrlMode);
   const streamImages = ref(false);
   const streamPartialImages = ref<0 | 1 | 2 | 3>(1);
   const promptMode = ref<PromptMode>("default");
-  const promptWordbanks = ref<PromptWordbanks>(
-    clonePromptWordbanks(defaultPromptWordbanks),
-  );
+  const promptWordbanks = ref<PromptWordbanks>(clonePromptWordbanks(defaultPromptWordbanks));
   const promptRewriteGuardEnabled = ref(true);
   const promptRewriteGuardText = ref(PROMPT_REWRITE_GUARD_PREFIX);
   const promptExpandEnabled = ref(false);
@@ -130,9 +119,7 @@ export const useSettingsStore = defineStore("settings", () => {
   const companionUrl = ref(
     readStorage(SETTINGS_STORAGE_KEYS.companionUrl, "http://127.0.0.1:19750"),
   );
-  const companionSessionToken = ref(
-    readStorage(SETTINGS_STORAGE_KEYS.companionSessionToken, ""),
-  );
+  const companionSessionToken = ref(readStorage(SETTINGS_STORAGE_KEYS.companionSessionToken, ""));
   const companionPaired = computed(() => companionSessionToken.value !== "");
   const imageWidth = ref(1024);
   const imageHeight = ref(1024);
@@ -144,14 +131,16 @@ export const useSettingsStore = defineStore("settings", () => {
   const sizeRatioOptions = computed(() =>
     apiProvider.value === "grok"
       ? SIZE_RATIO_OPTIONS.filter((opt) =>
-          GROK_SUPPORTED_RATIOS.includes(opt.value as typeof GROK_SUPPORTED_RATIOS[number]),
+          GROK_SUPPORTED_RATIOS.includes(opt.value as (typeof GROK_SUPPORTED_RATIOS)[number]),
         )
       : SIZE_RATIO_OPTIONS,
   );
   const sizeResolutionOptions = computed(() =>
     (apiProvider.value === "grok"
       ? SIZE_RESOLUTION_OPTIONS.filter((opt) =>
-          GROK_SUPPORTED_RESOLUTIONS.includes(opt.value as typeof GROK_SUPPORTED_RESOLUTIONS[number]),
+          GROK_SUPPORTED_RESOLUTIONS.includes(
+            opt.value as (typeof GROK_SUPPORTED_RESOLUTIONS)[number],
+          ),
         )
       : SIZE_RESOLUTION_OPTIONS
     ).map(({ value, label }) => ({ value, label })),
@@ -179,8 +168,7 @@ export const useSettingsStore = defineStore("settings", () => {
   let skipNextProviderRestore = false;
   const sizeLabel = computed(() => {
     if (activeSizePreset.value === "auto") return "自动";
-    if (activeSizePreset.value === "custom")
-      return `${imageWidth.value} x ${imageHeight.value}`;
+    if (activeSizePreset.value === "custom") return `${imageWidth.value} x ${imageHeight.value}`;
     return `${imageWidth.value} x ${imageHeight.value}`;
   });
   const customSizeError = computed(() => {
@@ -189,14 +177,10 @@ export const useSettingsStore = defineStore("settings", () => {
     return getCustomSizeError(imageWidth.value, imageHeight.value);
   });
   const qualityLabel = computed(
-    () =>
-      qualityOptions.find((o) => o.value === quality.value)?.label ??
-      quality.value,
+    () => qualityOptions.find((o) => o.value === quality.value)?.label ?? quality.value,
   );
   const backgroundLabel = computed(
-    () =>
-      backgroundOptions.find((o) => o.value === background.value)?.label ??
-      background.value,
+    () => backgroundOptions.find((o) => o.value === background.value)?.label ?? background.value,
   );
   const transparentDisabled = computed(
     () =>
@@ -205,9 +189,7 @@ export const useSettingsStore = defineStore("settings", () => {
       model.value === FIXED_IMAGE_MODEL,
   );
   const formatLabel = computed(
-    () =>
-      formatOptions.find((o) => o.value === outputFormat.value)?.label ??
-      outputFormat.value,
+    () => formatOptions.find((o) => o.value === outputFormat.value)?.label ?? outputFormat.value,
   );
 
   function applyRatioDimensions(ratio: SizeRatio, resolution: SizeResolution) {
@@ -250,9 +232,7 @@ export const useSettingsStore = defineStore("settings", () => {
     promptMode.value = settings.promptMode;
     promptWordbanks.value = normalizePromptWordbanks(settings.promptWordbanks);
     promptRewriteGuardEnabled.value = settings.promptRewriteGuardEnabled;
-    promptRewriteGuardText.value = normalizePromptRewriteGuardText(
-      settings.promptRewriteGuardText,
-    );
+    promptRewriteGuardText.value = normalizePromptRewriteGuardText(settings.promptRewriteGuardText);
     autoRetryOnNetworkError.value = settings.autoRetryOnNetworkError ?? false;
     ragEnabled.value = settings.ragEnabled ?? false;
     ragTopK.value = normalizeRagTopK(settings.ragTopK);
@@ -333,9 +313,7 @@ export const useSettingsStore = defineStore("settings", () => {
     imageCountMode.value = mode;
     if (
       mode === "preset" &&
-      !imageCountPresets.includes(
-        imageCount.value as (typeof IMAGE_COUNT_PRESETS)[number],
-      )
+      !imageCountPresets.includes(imageCount.value as (typeof IMAGE_COUNT_PRESETS)[number])
     ) {
       imageCount.value = imageCountPresets[0];
     }
@@ -370,11 +348,17 @@ export const useSettingsStore = defineStore("settings", () => {
       if (
         activeSizePreset.value === "custom" ||
         (activeSizePreset.value !== "auto" &&
-          !GROK_SUPPORTED_RATIOS.includes(activeSizePreset.value as typeof GROK_SUPPORTED_RATIOS[number]))
+          !GROK_SUPPORTED_RATIOS.includes(
+            activeSizePreset.value as (typeof GROK_SUPPORTED_RATIOS)[number],
+          ))
       ) {
         applySizePreset("1:1");
       }
-      if (!GROK_SUPPORTED_RESOLUTIONS.includes(sizeResolution.value as typeof GROK_SUPPORTED_RESOLUTIONS[number])) {
+      if (
+        !GROK_SUPPORTED_RESOLUTIONS.includes(
+          sizeResolution.value as (typeof GROK_SUPPORTED_RESOLUTIONS)[number],
+        )
+      ) {
         applySizeResolution("1k");
       }
     }
@@ -399,11 +383,7 @@ export const useSettingsStore = defineStore("settings", () => {
 
   function savePromptWordbank(section: PromptWordbankSectionKey, terms: string[]) {
     const normalizedTerms = normalizeWordbankTerms(terms);
-    promptWordbanks.value = setPromptWordbankTerms(
-      promptWordbanks.value,
-      section,
-      normalizedTerms,
-    );
+    promptWordbanks.value = setPromptWordbankTerms(promptWordbanks.value, section, normalizedTerms);
   }
 
   function restoreDefaultPromptWordbank(section: PromptWordbankSectionKey) {
@@ -425,10 +405,7 @@ export const useSettingsStore = defineStore("settings", () => {
     return true;
   }
 
-  function updateFavoritePrompt(
-    id: string,
-    input: { title?: string; text?: string },
-  ) {
+  function updateFavoritePrompt(id: string, input: { title?: string; text?: string }) {
     const update = normalizeFavoritePromptUpdate(input);
     if (!update.text) return false;
 
@@ -446,15 +423,11 @@ export const useSettingsStore = defineStore("settings", () => {
   }
 
   function deleteFavoritePrompt(id: string) {
-    favoritePrompts.value = favoritePrompts.value.filter(
-      (item) => item.id !== id,
-    );
+    favoritePrompts.value = favoritePrompts.value.filter((item) => item.id !== id);
   }
 
   function restorePromptRewriteGuardHistoryItem(id: string) {
-    const item = promptRewriteGuardHistory.value.find(
-      (entry) => entry.id === id,
-    );
+    const item = promptRewriteGuardHistory.value.find((entry) => entry.id === id);
     if (!item) return false;
     promptRewriteGuardText.value = normalizePromptRewriteGuardText(item.text);
     return true;
@@ -466,12 +439,8 @@ export const useSettingsStore = defineStore("settings", () => {
     );
   }
 
-  watch(companionUrl, (v) =>
-    writeStorage(SETTINGS_STORAGE_KEYS.companionUrl, v),
-  );
-  watch(companionSessionToken, (v) =>
-    writeStorage(SETTINGS_STORAGE_KEYS.companionSessionToken, v),
-  );
+  watch(companionUrl, (v) => writeStorage(SETTINGS_STORAGE_KEYS.companionUrl, v));
+  watch(companionSessionToken, (v) => writeStorage(SETTINGS_STORAGE_KEYS.companionSessionToken, v));
   watch(
     [apiKey, apiBaseUrl, apiBaseUrlMode, apiMode, model],
     () => {
@@ -491,10 +460,7 @@ export const useSettingsStore = defineStore("settings", () => {
       saveProviderApiSettings(previousProvider);
     }
 
-    const next = readProviderApiSettings(
-      provider,
-      defaultProviderApiSettings(provider),
-    );
+    const next = readProviderApiSettings(provider, defaultProviderApiSettings(provider));
     apiKey.value = next.apiKey;
     apiBaseUrl.value = next.apiBaseUrl;
     apiBaseUrlMode.value = next.apiBaseUrlMode;
@@ -604,9 +570,8 @@ function normalizeProviderApiSettings(
   fallback: ProviderApiSettings,
 ): ProviderApiSettings {
   const apiBaseUrlMode = settings.apiBaseUrlMode === "full" ? "full" : "origin";
-  const apiMode = provider === "openai" && settings.apiMode === "responses"
-    ? "responses"
-    : "images";
+  const apiMode =
+    provider === "openai" && settings.apiMode === "responses" ? "responses" : "images";
   const model = normalizeProviderModel(provider, settings.model);
 
   return {
@@ -636,10 +601,7 @@ function defaultProviderApiSettings(provider: ApiProvider): ProviderApiSettings 
   };
 }
 
-function getPromptWordbankTerms(
-  wordbanks: PromptWordbanks,
-  section: PromptWordbankSectionKey,
-) {
+function getPromptWordbankTerms(wordbanks: PromptWordbanks, section: PromptWordbankSectionKey) {
   if (section === "pose.safe") return wordbanks.pose.safe;
   if (section === "pose.creative") return wordbanks.pose.creative;
   if (section === "pose.nsfw") return wordbanks.pose.nsfw;
@@ -687,10 +649,7 @@ function normalizePromptRewriteGuardHistory(
   return normalizedItems.slice(0, MAX_PROMPT_REWRITE_GUARD_HISTORY);
 }
 
-function addPromptGuardHistoryItem(
-  history: PromptRewriteGuardHistoryItem[],
-  text: string,
-) {
+function addPromptGuardHistoryItem(history: PromptRewriteGuardHistoryItem[], text: string) {
   if (history[0]?.text === text) return history;
 
   return [
@@ -737,13 +696,15 @@ function displayApiBaseUrl(apiBaseUrl: string, mode: AppSettings["apiBaseUrlMode
 }
 
 function stripImagesApiPath(apiBaseUrl: string) {
-  return apiBaseUrl.trim().replace(/\/+$/, "").replace(/\/v1\/images$/i, "");
+  return apiBaseUrl
+    .trim()
+    .replace(/\/+$/, "")
+    .replace(/\/v1\/images$/i, "");
 }
 
 function dimensionsForRatio(ratio: SizeRatio, resolution: SizeResolution) {
   const ratioOption =
-    SIZE_RATIO_OPTIONS.find((option) => option.value === ratio) ??
-    SIZE_RATIO_OPTIONS[4];
+    SIZE_RATIO_OPTIONS.find((option) => option.value === ratio) ?? SIZE_RATIO_OPTIONS[4];
   const resolutionOption =
     SIZE_RESOLUTION_OPTIONS.find((option) => option.value === resolution) ??
     SIZE_RESOLUTION_OPTIONS[0];

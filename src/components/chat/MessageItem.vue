@@ -32,12 +32,8 @@ const emit = defineEmits<{
 
 const attachedImageIds = computed(() => new Set(props.attachedImageIds));
 const generation = useGenerationStore();
-const createdAtLabel = computed(() =>
-  formatRelativeTime(props.message.createdAt, props.nowMs),
-);
-const pendingPreviewUrl = computed(() =>
-  generation.getPartialPreviewUrl(props.message.id),
-);
+const createdAtLabel = computed(() => formatRelativeTime(props.message.createdAt, props.nowMs));
+const pendingPreviewUrl = computed(() => generation.getPartialPreviewUrl(props.message.id));
 const hasImagePanel = computed(
   () =>
     props.message.resultImageIds.length ||
@@ -103,12 +99,7 @@ function stopPendingTimer() {
 </script>
 
 <template>
-  <div
-    :class="[
-      'group/message relative',
-      message.role === 'user' ? 'mb-9' : 'mb-6',
-    ]"
-  >
+  <div :class="['group/message relative', message.role === 'user' ? 'mb-9' : 'mb-6']">
     <UserMessageActions
       v-if="message.role === 'user'"
       :message="message"
@@ -117,12 +108,7 @@ function stopPendingTimer() {
       @load-message-config="emit('loadMessageConfig', $event)"
     />
 
-    <article
-      :class="[
-        'rounded-2xl px-5 py-4',
-        message.role === 'user' ? 'bg-gray-50' : '',
-      ]"
-    >
+    <article :class="['rounded-2xl px-5 py-4', message.role === 'user' ? 'bg-gray-50' : '']">
       <div class="mb-1.5 flex items-center gap-2 text-xs text-gray-500">
         <span class="font-semibold text-gray-700">
           {{ message.role === "user" ? "你" : "Image Studio" }}
@@ -153,9 +139,7 @@ function stopPendingTimer() {
           @generate-another="emit('generateAnother', $event)"
           @preview-image="emit('previewImage', $event)"
           @rename-image="emit('renameImage', $event)"
-          @refresh-image="
-            (message, imageId) => emit('refreshImage', message, imageId)
-          "
+          @refresh-image="(message, imageId) => emit('refreshImage', message, imageId)"
         />
 
         <PendingGenerationCard
@@ -170,9 +154,7 @@ function stopPendingTimer() {
           :message="message"
           :source-prompt="sourcePrompt"
           @copy-text="emit('copyText', $event)"
-          @retry-message="
-            (message, prompt) => emit('retryMessage', message, prompt)
-          "
+          @retry-message="(message, prompt) => emit('retryMessage', message, prompt)"
         />
       </div>
     </article>

@@ -64,16 +64,23 @@ function restorePosition() {
         posBottom.value = clampBottom(bottom);
       }
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 function savePosition() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      right: posRight.value,
-      bottom: posBottom.value,
-    }));
-  } catch { /* ignore */ }
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        right: posRight.value,
+        bottom: posBottom.value,
+      }),
+    );
+  } catch {
+    /* ignore */
+  }
 }
 
 function clampRight(value: number) {
@@ -190,14 +197,27 @@ function buildProjectContext() {
     v-if="!chat.isOpen"
     class="z-40 flex h-12 w-12 touch-none select-none items-center justify-center rounded-full bg-gray-900 text-white shadow-lg"
     :class="isDragging ? 'cursor-grabbing' : 'cursor-grab hover:scale-105'"
-    :style="{ position: 'fixed', right: posRight + 'px', bottom: posBottom + 'px', transition: isDragging ? 'none' : 'transform 0.15s' }"
+    :style="{
+      position: 'fixed',
+      right: posRight + 'px',
+      bottom: posBottom + 'px',
+      transition: isDragging ? 'none' : 'transform 0.15s',
+    }"
     type="button"
     title="AI 助手（可拖动）"
     @pointerdown="onPointerDown"
     @click="onBubbleClick"
   >
-    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    <svg
+      class="h-5 w-5"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
   </button>
 
@@ -208,7 +228,9 @@ function buildProjectContext() {
     :style="panelStyle"
   >
     <!-- 头部 -->
-    <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-4 py-3">
+    <div
+      class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-4 py-3"
+    >
       <div>
         <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">AI 助手</h3>
         <p class="text-xs text-gray-400 dark:text-gray-500">改写 prompt、提问、聊天</p>
@@ -221,8 +243,18 @@ function buildProjectContext() {
           title="清空对话"
           @click="chat.clear"
         >
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          <svg
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M3 6h18" />
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
           </svg>
         </button>
         <button
@@ -231,8 +263,17 @@ function buildProjectContext() {
           title="关闭"
           @click="chat.close"
         >
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+          <svg
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
           </svg>
         </button>
       </div>
@@ -240,7 +281,10 @@ function buildProjectContext() {
 
     <!-- 消息列表 -->
     <div ref="listRef" class="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-      <div v-if="!chat.messages.length" class="text-center text-xs text-gray-400 dark:text-gray-500 py-8">
+      <div
+        v-if="!chat.messages.length"
+        class="text-center text-xs text-gray-400 dark:text-gray-500 py-8"
+      >
         发一句试试。例如「帮我把这个 prompt 改写得更有电影感：一个女孩在咖啡馆」
       </div>
       <div
@@ -251,12 +295,18 @@ function buildProjectContext() {
         <div
           :class="[
             'max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words',
-            msg.role === 'user' ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200',
+            msg.role === 'user'
+              ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200',
           ]"
         >
-          {{ msg.content || (chat.isStreaming && i === chat.messages.length - 1 ? '...' : '') }}
+          {{ msg.content || (chat.isStreaming && i === chat.messages.length - 1 ? "..." : "") }}
           <button
-            v-if="msg.role === 'assistant' && msg.content && !(chat.isStreaming && i === chat.messages.length - 1)"
+            v-if="
+              msg.role === 'assistant' &&
+              msg.content &&
+              !(chat.isStreaming && i === chat.messages.length - 1)
+            "
             class="mt-2 block text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
             type="button"
             @click="insertToComposer(msg.content)"
@@ -265,7 +315,9 @@ function buildProjectContext() {
           </button>
         </div>
       </div>
-      <div v-if="chat.error" class="text-xs text-red-500 dark:text-red-400 px-2">{{ chat.error }}</div>
+      <div v-if="chat.error" class="text-xs text-red-500 dark:text-red-400 px-2">
+        {{ chat.error }}
+      </div>
     </div>
 
     <!-- 输入区 -->
@@ -285,7 +337,7 @@ function buildProjectContext() {
           :disabled="!chat.input.trim() || chat.isStreaming"
           @click="sendWithProjectContext"
         >
-          {{ chat.isStreaming ? '...' : '发送' }}
+          {{ chat.isStreaming ? "..." : "发送" }}
         </button>
       </div>
     </div>

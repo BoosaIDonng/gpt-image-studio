@@ -1,19 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { defaultPromptWordbanks } from "./promptWordbanks";
-import {
-  PROMPT_REWRITE_GUARD_PREFIX,
-  buildFinalRequestPrompt,
-} from "./promptRequest";
+import { PROMPT_REWRITE_GUARD_PREFIX, buildFinalRequestPrompt } from "./promptRequest";
 
 describe("buildFinalRequestPrompt", () => {
   it("returns the original prompt in default mode without guard", () => {
-    expect(buildFinalRequestPrompt({
-      prompt: "画一张雨夜街头照片",
-      promptMode: "default",
-      promptWordbanks: defaultPromptWordbanks,
-      promptRewriteGuardEnabled: false,
-      promptRewriteGuardText: PROMPT_REWRITE_GUARD_PREFIX,
-    })).toBe("画一张雨夜街头照片");
+    expect(
+      buildFinalRequestPrompt({
+        prompt: "画一张雨夜街头照片",
+        promptMode: "default",
+        promptWordbanks: defaultPromptWordbanks,
+        promptRewriteGuardEnabled: false,
+        promptRewriteGuardText: PROMPT_REWRITE_GUARD_PREFIX,
+      }),
+    ).toBe("画一张雨夜街头照片");
   });
 
   it("applies prompt mode wordbanks before wrapping the final prompt guard", () => {

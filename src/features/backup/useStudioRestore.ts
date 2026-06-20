@@ -1,4 +1,7 @@
-import { deleteConversation as deleteConversationRecord, listConversations } from "../../services/conversations";
+import {
+  deleteConversation as deleteConversationRecord,
+  listConversations,
+} from "../../services/conversations";
 import { deleteImageAsset, deleteImageBlob, listImageAssets } from "../../services/imageAssets";
 import { deleteMessage, listMessages, saveMessage } from "../../services/messages";
 import { loadSettings } from "../../services/settings";
@@ -32,12 +35,7 @@ export function useStudioRestore(input: UseStudioRestoreInput) {
       await migrateLegacyTimeFields();
 
       const [savedSettings, savedConversations, savedMessages, savedImageAssets] =
-        await Promise.all([
-          loadSettings(),
-          listConversations(),
-          listMessages(),
-          listImageAssets(),
-        ]);
+        await Promise.all([loadSettings(), listConversations(), listMessages(), listImageAssets()]);
 
       if (savedSettings) {
         input.applySettings(savedSettings);
@@ -45,11 +43,7 @@ export function useStudioRestore(input: UseStudioRestoreInput) {
         await input.saveCurrentSettings();
       }
 
-      await removeLegacySeedRecords(
-        savedConversations,
-        savedMessages,
-        savedImageAssets,
-      );
+      await removeLegacySeedRecords(savedConversations, savedMessages, savedImageAssets);
 
       const restoredConversations = savedConversations.filter(
         (conversation) => !LEGACY_SEED_CONVERSATION_IDS.has(conversation.id),
@@ -57,10 +51,7 @@ export function useStudioRestore(input: UseStudioRestoreInput) {
       const restoredImages = savedImageAssets.filter(
         (image) =>
           !LEGACY_SEED_IMAGE_IDS.has(image.id) &&
-          !(
-            image.conversationId &&
-            LEGACY_SEED_CONVERSATION_IDS.has(image.conversationId)
-          ),
+          !(image.conversationId && LEGACY_SEED_CONVERSATION_IDS.has(image.conversationId)),
       );
       const restoredMessages = savedMessages.filter(
         (message) =>
@@ -106,10 +97,7 @@ function normalizeRestoredMessages(messages: Message[]) {
   });
 }
 
-async function persistNormalizedMessages(
-  originalMessages: Message[],
-  restoredMessages: Message[],
-) {
+async function persistNormalizedMessages(originalMessages: Message[], restoredMessages: Message[]) {
   const changedMessages = restoredMessages.filter(
     (message, index) => message.status !== originalMessages[index]?.status,
   );
@@ -135,10 +123,7 @@ async function removeLegacySeedRecords(
   const staleImages = imageAssets.filter(
     (image) =>
       LEGACY_SEED_IMAGE_IDS.has(image.id) ||
-      Boolean(
-        image.conversationId &&
-          LEGACY_SEED_CONVERSATION_IDS.has(image.conversationId),
-      ),
+      Boolean(image.conversationId && LEGACY_SEED_CONVERSATION_IDS.has(image.conversationId)),
   );
 
   if (!staleConversations.length && !staleMessages.length && !staleImages.length) {
@@ -146,9 +131,7 @@ async function removeLegacySeedRecords(
   }
 
   await Promise.all([
-    ...staleConversations.map((conversation) =>
-      deleteConversationRecord(conversation.id),
-    ),
+    ...staleConversations.map((conversation) => deleteConversationRecord(conversation.id)),
     ...staleMessages.map((message) => deleteMessage(message.id)),
     ...staleImages.map((image) => deleteImageAsset(image.id)),
     ...staleImages

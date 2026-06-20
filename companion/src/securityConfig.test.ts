@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  createSecurityConfig,
-  isOriginAllowed,
-  normalizeOrigin,
-} from "./securityConfig.js";
+import { createSecurityConfig, isOriginAllowed, normalizeOrigin } from "./securityConfig.js";
 
 describe("companion security config", () => {
   it("uses stable origins by default", () => {

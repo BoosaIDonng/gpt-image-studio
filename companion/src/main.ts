@@ -30,7 +30,11 @@ type ServeLikeOptions = {
 function addServeOptions(command: ReturnType<typeof program.command>) {
   return command
     .option("-p, --port <port>", "监听端口", DEFAULT_PORT)
-    .option("--channel <channel>", "安全渠道：stable 或 dev", process.env.GPT_IMAGE_STUDIO_COMPANION_CHANNEL)
+    .option(
+      "--channel <channel>",
+      "安全渠道：stable 或 dev",
+      process.env.GPT_IMAGE_STUDIO_COMPANION_CHANNEL,
+    )
     .option("--allow-origin <origin...>", "额外允许的完整 origin，例如 http://localhost:5173")
     .option("--session-ttl-days <days>", "配对 session 有效天数", DEFAULT_SESSION_TTL_DAYS)
     .addOption(new Option("--managed", "由 start 命令托管的后台服务").hideHelp());
@@ -41,10 +45,8 @@ program
   .description("GPT Image Studio 本地 CLI Companion")
   .version(VERSION);
 
-addServeOptions(program
-  .command("serve")
-  .description("前台启动本地 companion HTTP 服务"))
-  .action(async (opts: ServeLikeOptions) => {
+addServeOptions(program.command("serve").description("前台启动本地 companion HTTP 服务")).action(
+  async (opts: ServeLikeOptions) => {
     const { startServer } = await import("./server.js");
     await startServer({
       port: Number(opts.port),
@@ -55,12 +57,11 @@ addServeOptions(program
       }),
       runMode: opts.managed ? "managed" : "serve",
     });
-  });
+  },
+);
 
-addServeOptions(program
-  .command("start")
-  .description("后台启动本地 companion 服务"))
-  .action(async (opts: ServeLikeOptions) => {
+addServeOptions(program.command("start").description("后台启动本地 companion 服务")).action(
+  async (opts: ServeLikeOptions) => {
     const info = startManagedProcess({
       port: Number(opts.port),
       channel: opts.channel ?? "stable",
@@ -72,7 +73,8 @@ addServeOptions(program
     console.log(`PID: ${info.pid}`);
     console.log(`日志: ${info.logFile}`);
     console.log("需要配对时请运行：gpt-image-studio pair");
-  });
+  },
+);
 
 program
   .command("stop")
@@ -88,10 +90,8 @@ program
     }
   });
 
-addServeOptions(program
-  .command("restart")
-  .description("重启后台 companion 服务"))
-  .action(async (opts: ServeLikeOptions) => {
+addServeOptions(program.command("restart").description("重启后台 companion 服务")).action(
+  async (opts: ServeLikeOptions) => {
     const stopped = stopManagedProcess();
     if (stopped.stopped && stopped.info) {
       console.log(`已停止后台 Companion，PID: ${stopped.info.pid}`);
@@ -107,7 +107,8 @@ addServeOptions(program
     console.log(`PID: ${info.pid}`);
     console.log(`日志: ${info.logFile}`);
     console.log("需要配对时请运行：gpt-image-studio pair");
-  });
+  },
+);
 
 program
   .command("logs")
@@ -118,7 +119,7 @@ program
   .action(async (opts) => {
     const logFile = opts.date
       ? getLogFilePath(new Date(`${opts.date}T00:00:00.000Z`))
-      : readManagedProcessInfo()?.logFile ?? getLogFilePath();
+      : (readManagedProcessInfo()?.logFile ?? getLogFilePath());
     const lines = readLastLines(logFile, Number(opts.lines));
     if (lines.length === 0) {
       console.log(`没有日志：${logFile}`);
@@ -158,7 +159,7 @@ program
         signal: AbortSignal.timeout(3000),
       });
       if (!res.ok) throw new Error(await res.text());
-      result = await res.json() as PairWaitResponse;
+      result = (await res.json()) as PairWaitResponse;
     } catch {
       console.log(`无法连接 Companion 服务：${baseUrl}`);
       console.log("请先运行 gpt-image-studio start，或确认 serve 正在前台运行。");
@@ -182,22 +183,21 @@ program
   .description("配置 API 凭据")
   .action(async () => {
     const rl = createInterface({ input: process.stdin, output: process.stdout });
-    const ask = (q: string): Promise<string> =>
-      new Promise((resolve) => rl.question(q, resolve));
+    const ask = (q: string): Promise<string> => new Promise((resolve) => rl.question(q, resolve));
 
-    const providerInput = (await ask("Provider (openai/grok/gemini，默认 openai): ")).trim().toLowerCase();
-    const provider = providerInput === "grok"
-      ? "grok"
-      : providerInput === "gemini"
-        ? "gemini"
-        : "openai";
-    const defaultApiBaseUrl = provider === "grok"
-      ? "https://api.x.ai/v1"
-      : provider === "gemini"
-        ? "https://generativelanguage.googleapis.com"
-        : "https://api.packyapi.com/v1/images";
-    const apiBaseUrl = (await ask(`API Base URL (默认 ${defaultApiBaseUrl}): `)).trim()
-      || defaultApiBaseUrl;
+    const providerInput = (await ask("Provider (openai/grok/gemini，默认 openai): "))
+      .trim()
+      .toLowerCase();
+    const provider =
+      providerInput === "grok" ? "grok" : providerInput === "gemini" ? "gemini" : "openai";
+    const defaultApiBaseUrl =
+      provider === "grok"
+        ? "https://api.x.ai/v1"
+        : provider === "gemini"
+          ? "https://generativelanguage.googleapis.com"
+          : "https://api.packyapi.com/v1/images";
+    const apiBaseUrl =
+      (await ask(`API Base URL (默认 ${defaultApiBaseUrl}): `)).trim() || defaultApiBaseUrl;
 
     const apiKey = await new Promise<string>((resolve) => {
       process.stdout.write("API Key: ");
@@ -280,7 +280,9 @@ program
 
     const statusPort = managed?.port ?? 19750;
     try {
-      const res = await fetch(`http://127.0.0.1:${statusPort}/health`, { signal: AbortSignal.timeout(2000) });
+      const res = await fetch(`http://127.0.0.1:${statusPort}/health`, {
+        signal: AbortSignal.timeout(2000),
+      });
       if (res.ok) {
         console.log(`服务:    运行中 (127.0.0.1:${statusPort})`);
       } else {
@@ -351,7 +353,7 @@ async function isRemotePaired(baseUrl: string): Promise<boolean> {
   try {
     const res = await fetch(`${baseUrl}/health`, { signal: AbortSignal.timeout(2000) });
     if (!res.ok) return false;
-    const health = await res.json() as CompanionHealthResponse;
+    const health = (await res.json()) as CompanionHealthResponse;
     return health.paired;
   } catch {
     return false;

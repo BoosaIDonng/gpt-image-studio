@@ -186,8 +186,7 @@ function moveActivePrompt(delta: number) {
   const prompts = filteredFavoritePrompts.value;
   if (!prompts.length) return;
 
-  activePromptIndex.value =
-    (activePromptIndex.value + delta + prompts.length) % prompts.length;
+  activePromptIndex.value = (activePromptIndex.value + delta + prompts.length) % prompts.length;
   void nextTick(scrollActivePromptIntoView);
 }
 
@@ -196,8 +195,7 @@ function scrollActivePromptIntoView() {
   const optionEl = promptOptionRefs.value[activePromptIndex.value];
   if (!listEl || !optionEl) return;
 
-  const targetScrollTop =
-    optionEl.offsetTop - (listEl.clientHeight - optionEl.offsetHeight) / 2;
+  const targetScrollTop = optionEl.offsetTop - (listEl.clientHeight - optionEl.offsetHeight) / 2;
   listEl.scrollTo({
     top: Math.max(0, targetScrollTop),
     behavior: "smooth",
@@ -305,10 +303,7 @@ function importFromInput(event: Event) {
 }
 
 function importFromPaste(event: ClipboardEvent) {
-  const files = imageFilesFromTransfer(
-    event.clipboardData?.files,
-    event.clipboardData?.items,
-  );
+  const files = imageFilesFromTransfer(event.clipboardData?.files, event.clipboardData?.items);
 
   if (!files.length) return;
   event.preventDefault();
@@ -319,9 +314,7 @@ function imageFilesFromTransfer(
   fileList?: FileList | null,
   itemList?: DataTransferItemList | null,
 ) {
-  const files = Array.from(fileList ?? []).filter((file) =>
-    file.type.startsWith("image/"),
-  );
+  const files = Array.from(fileList ?? []).filter((file) => file.type.startsWith("image/"));
 
   if (files.length) return files;
 
@@ -338,9 +331,7 @@ defineExpose({ focusComposer });
   <div
     :class="[
       'relative rounded-2xl border bg-white px-3 py-2 shadow-sm transition-all focus-within:border-gray-400 focus-within:shadow-md',
-      isDragActive
-        ? 'border-gray-500 ring-2 ring-gray-200'
-        : 'border-gray-300',
+      isDragActive ? 'border-gray-500 ring-2 ring-gray-200' : 'border-gray-300',
     ]"
   >
     <label class="sr-only" for="composerText">输入图片需求</label>
@@ -351,9 +342,7 @@ defineExpose({ focusComposer });
       class="max-h-40 w-full resize-none bg-transparent py-1 text-[15px] leading-relaxed text-gray-800 outline-none placeholder:text-gray-400"
       :placeholder="composerPlaceholder"
       rows="2"
-      @input="
-        handleComposerInput($event);
-      "
+      @input="handleComposerInput($event)"
       @keydown="handleComposerKeydown"
       @click="handleComposerClick"
       @paste="importFromPaste"
@@ -404,12 +393,8 @@ defineExpose({ focusComposer });
         class="fixed z-70 w-72 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl"
         :style="promptMenuStyle"
       >
-        <div
-          class="flex items-center justify-between border-b border-gray-100 bg-white px-3 py-2"
-        >
-          <span class="text-xs font-medium text-gray-500">
-            常用提示词
-          </span>
+        <div class="flex items-center justify-between border-b border-gray-100 bg-white px-3 py-2">
+          <span class="text-xs font-medium text-gray-500"> 常用提示词 </span>
           <button
             class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
             aria-label="管理常用提示词"
@@ -427,15 +412,14 @@ defineExpose({ focusComposer });
               stroke-linejoin="round"
               aria-hidden="true"
             >
-              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+              <path
+                d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+              />
               <circle cx="12" cy="12" r="3" />
             </svg>
           </button>
         </div>
-        <div
-          ref="promptMenuListRef"
-          class="max-h-56 overflow-y-auto py-1"
-        >
+        <div ref="promptMenuListRef" class="max-h-56 overflow-y-auto py-1">
           <button
             v-for="(prompt, index) in filteredFavoritePrompts"
             :key="prompt.id"

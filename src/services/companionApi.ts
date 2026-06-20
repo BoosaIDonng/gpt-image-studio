@@ -7,9 +7,7 @@ import type {
   PairUnpairResponse,
 } from "../types/companion";
 
-export async function checkCompanionHealth(
-  url: string,
-): Promise<CompanionHealthResponse | null> {
+export async function checkCompanionHealth(url: string): Promise<CompanionHealthResponse | null> {
   try {
     const res = await fetch(`${url}/health`, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) return null;
@@ -50,7 +48,7 @@ export async function startPairing(url: string): Promise<PairStartResponse> {
   if (!res.ok) {
     let message = "发起配对失败";
     try {
-      const data = await res.json() as { error?: string };
+      const data = (await res.json()) as { error?: string };
       message = data.error || message;
     } catch {}
     throw new Error(message);

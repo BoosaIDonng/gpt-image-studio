@@ -19,9 +19,7 @@ describe("createZipArchive", () => {
     expect(zip.type).toBe("application/zip");
 
     const files = await readLocalZipFiles(zip);
-    expect(files.get("manifest.json")).toBe(
-      JSON.stringify({ app: "gpt-image-studio" }),
-    );
+    expect(files.get("manifest.json")).toBe(JSON.stringify({ app: "gpt-image-studio" }));
     expect(files.get("blobs/%E5%9B%BE%E7%89%87")).toBe("image-bytes");
   });
 
@@ -38,10 +36,7 @@ describe("createZipArchive", () => {
     expect(view.getUint16(endOfCentralDirectoryOffset + 8, true)).toBe(2);
     expect(view.getUint16(endOfCentralDirectoryOffset + 10, true)).toBe(2);
 
-    const centralDirectoryOffset = view.getUint32(
-      endOfCentralDirectoryOffset + 16,
-      true,
-    );
+    const centralDirectoryOffset = view.getUint32(endOfCentralDirectoryOffset + 16, true);
     expect(view.getUint32(centralDirectoryOffset, true)).toBe(0x02014b50);
   });
 });

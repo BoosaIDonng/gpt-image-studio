@@ -15,10 +15,7 @@ const storageTotalBytes = computed(
 const storageUsedPercent = computed(() => {
   if (!props.storageUsage.quotaBytes) return 0;
 
-  return percentOf(
-    props.storageUsage.projectBytes,
-    props.storageUsage.quotaBytes,
-  );
+  return percentOf(props.storageUsage.projectBytes, props.storageUsage.quotaBytes);
 });
 const imageStoragePercent = computed(() =>
   percentOf(props.storageUsage.imageBytes, storageTotalBytes.value),
@@ -47,7 +44,9 @@ function percentOf(value: number, total: number) {
 </script>
 
 <template>
-  <div class="mt-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+  <div
+    class="mt-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+  >
     <button
       class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs"
       @click="storageExpanded = !storageExpanded"

@@ -2,10 +2,7 @@
 import { computed } from "vue";
 import { formatRelativeTime } from "../../shared/dateTime";
 import type { ImageAsset } from "../../types/studio";
-import {
-  imageDownloadName,
-  sourceLabel,
-} from "./imageLibraryFormatters";
+import { imageDownloadName, sourceLabel } from "./imageLibraryFormatters";
 import { imageTagCardBackground, imageTagDotColor } from "./imageTagColors";
 
 const props = defineProps<{
@@ -21,9 +18,7 @@ const emit = defineEmits<{
   selectImage: [id: string];
 }>();
 
-const createdAtLabel = computed(() =>
-  formatRelativeTime(props.image.createdAt, props.nowMs),
-);
+const createdAtLabel = computed(() => formatRelativeTime(props.image.createdAt, props.nowMs));
 const cardStyle = computed(() => {
   if (!props.image.tagColor) return undefined;
   return {
@@ -53,7 +48,9 @@ const titleStyle = computed(() => {
   <article
     :class="[
       'mb-2 flex cursor-pointer items-center gap-3 rounded-xl border p-2 transition-colors',
-      isSelected ? '' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800',
+      isSelected
+        ? ''
+        : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800',
     ]"
     :style="[cardStyle, selectedBorderStyle]"
     @click="emit('selectImage', image.id)"
@@ -81,7 +78,10 @@ const titleStyle = computed(() => {
       </button>
     </div>
     <div class="min-w-0 flex-1">
-      <div class="truncate text-sm font-medium text-gray-800 dark:text-gray-200" :style="titleStyle">
+      <div
+        class="truncate text-sm font-medium text-gray-800 dark:text-gray-200"
+        :style="titleStyle"
+      >
         {{ image.name }}
       </div>
       <div class="truncate text-xs text-gray-500 dark:text-gray-400">

@@ -76,9 +76,7 @@ function attachmentName(item: AttachmentRow): string {
 }
 
 function attachmentPreviewUrl(item: AttachmentRow): string | undefined {
-  return item.kind === "editingPair"
-    ? item.source.previewUrl
-    : item.image.previewUrl;
+  return item.kind === "editingPair" ? item.source.previewUrl : item.image.previewUrl;
 }
 
 function handleClick(item: AttachmentRow) {
@@ -135,9 +133,7 @@ const totalSizeLabel = computed(() => {
             <path
               d="M3 2a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1H3zm1 2h4v1H4V4zm0 2.5h4v1H4v-1zm0 2.5h3v1H4V9z"
             />
-            <path
-              d="M11.5 5.5l1.5-1.5a1 1 0 0 1 1.414 1.414L12.5 7l-1.5-1.5z"
-            />
+            <path d="M11.5 5.5l1.5-1.5a1 1 0 0 1 1.414 1.414L12.5 7l-1.5-1.5z" />
             <path d="M11 6.5L8.5 9 8 11l2-0.5L12.5 8 11 6.5z" />
           </svg>
         </span>
@@ -147,12 +143,7 @@ const totalSizeLabel = computed(() => {
           aria-label="移除引用图片"
           @click="handleRemove($event, item)"
         >
-          <svg
-            class="h-4 w-4"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            aria-hidden="true"
-          >
+          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path
               d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22z"
             />

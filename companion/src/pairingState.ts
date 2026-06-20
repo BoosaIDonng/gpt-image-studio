@@ -74,7 +74,10 @@ export function getSessionInfo(): { paired: boolean; expiresAt: string | null } 
   return { paired: true, expiresAt: new Date(sessionExpiresAt).toISOString() };
 }
 
-export function enterPairingMode(timeoutMs = PAIRING_CODE_EXPIRY_MS): { waiting: true; expiresInSeconds: number } {
+export function enterPairingMode(timeoutMs = PAIRING_CODE_EXPIRY_MS): {
+  waiting: true;
+  expiresInSeconds: number;
+} {
   clearSession();
   clearPairingMode();
   pairingWaitExpiresAt = Date.now() + timeoutMs;
@@ -96,7 +99,9 @@ export function isPairingModeActive(): boolean {
   return false;
 }
 
-export function startPairing(opts: { requirePairingMode?: boolean } = {}): { expiresInSeconds: number } | null {
+export function startPairing(
+  opts: { requirePairingMode?: boolean } = {},
+): { expiresInSeconds: number } | null {
   if (opts.requirePairingMode !== false && !isPairingModeActive()) return null;
 
   clearSession();

@@ -16,9 +16,7 @@ export async function streamChatReply(
   projectContext?: ChatMessage,
   options: StreamChatReplyOptions = {},
 ): Promise<string> {
-  const outgoingMessages = projectContext
-    ? [projectContext, ...messages]
-    : messages;
+  const outgoingMessages = projectContext ? [projectContext, ...messages] : messages;
   const useBuiltinPersona = options.useBuiltinPersona ?? true;
 
   const response = await fetch(DEFAULT_WORKER_URL, {

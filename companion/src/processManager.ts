@@ -171,7 +171,11 @@ export function startManagedProcess(input: StartManagedProcessInput): ManagedPro
   return info;
 }
 
-export function stopManagedProcess(): { stopped: boolean; info: ManagedProcessInfo | null; stale: boolean } {
+export function stopManagedProcess(): {
+  stopped: boolean;
+  info: ManagedProcessInfo | null;
+  stale: boolean;
+} {
   const info = readManagedProcessInfo();
   if (!info) return { stopped: false, info: null, stale: false };
   if (!isProcessRunning(info.pid)) {

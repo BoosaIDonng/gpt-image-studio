@@ -7,7 +7,8 @@ import type { PromptRewriteGuardHistoryItem } from "../../types/studio";
 
 const ctx = useSettingsModalContext();
 const {
-  promptRewriteGuardEnabled: enabled, promptRewriteGuardText: text,
+  promptRewriteGuardEnabled: enabled,
+  promptRewriteGuardText: text,
   promptRewriteGuardHistory: history,
   updatePromptRewriteGuardEnabled: updateEnabled,
   savePromptRewriteGuardText: saveText,
@@ -20,9 +21,7 @@ const draftText = ref(text.value);
 const copiedId = ref("");
 const hasChanges = computed(() => draftText.value !== text.value);
 const sortedHistory = computed(() =>
-  [...history.value].sort(
-    (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
-  ),
+  [...history.value].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)),
 );
 
 watch(
@@ -78,15 +77,15 @@ function isDefaultHistoryItem(item: PromptRewriteGuardHistoryItem) {
 
 <template>
   <section aria-labelledby="promptGuardSettingsTitle">
-    <h3 id="promptGuardSettingsTitle" class="text-base font-semibold text-gray-900">
-      提示词保护
-    </h3>
+    <h3 id="promptGuardSettingsTitle" class="text-base font-semibold text-gray-900">提示词保护</h3>
     <p class="mt-1 text-sm leading-relaxed text-gray-500">
       当前设置只会影响发送给图片接口的请求文本，不会改写聊天记录里的原始提示词。
     </p>
 
     <div class="mt-4 space-y-4">
-      <div class="flex items-start justify-between gap-4 rounded-lg border border-gray-200 px-3 py-2.5">
+      <div
+        class="flex items-start justify-between gap-4 rounded-lg border border-gray-200 px-3 py-2.5"
+      >
         <div>
           <div class="text-sm font-medium text-gray-700">启用提示词防改写</div>
           <p class="mt-1 text-xs leading-relaxed text-gray-500">
@@ -132,9 +131,7 @@ function isDefaultHistoryItem(item: PromptRewriteGuardHistoryItem) {
           spellcheck="false"
         />
         <div class="mt-2 flex items-center justify-between gap-3">
-          <p class="text-xs text-gray-500">
-            文本为空时会自动使用默认英文指令。
-          </p>
+          <p class="text-xs text-gray-500">文本为空时会自动使用默认英文指令。</p>
           <button
             class="cursor-pointer rounded-lg bg-black px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
             type="button"
@@ -194,7 +191,9 @@ function isDefaultHistoryItem(item: PromptRewriteGuardHistoryItem) {
                 </button>
               </div>
             </div>
-            <p class="line-clamp-2 whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-gray-600">
+            <p
+              class="line-clamp-2 whitespace-pre-wrap break-words font-mono text-xs leading-relaxed text-gray-600"
+            >
               {{ item.text }}
             </p>
           </article>

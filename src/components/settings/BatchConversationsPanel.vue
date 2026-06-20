@@ -27,32 +27,24 @@ const emit = defineEmits<{
 }>();
 
 const now = useNow();
-const updatedAtLabels = computed(() =>
-  new Map(
-    props.filteredConversations.map((conversation) => [
-      conversation.id,
-      formatRelativeTime(conversation.updatedAt, now.value),
-    ]),
-  ),
+const updatedAtLabels = computed(
+  () =>
+    new Map(
+      props.filteredConversations.map((conversation) => [
+        conversation.id,
+        formatRelativeTime(conversation.updatedAt, now.value),
+      ]),
+    ),
 );
 </script>
 
 <template>
-  <section
-    class="mt-5 flex min-h-0 flex-1 flex-col"
-    aria-labelledby="batchConversationsTitle"
-  >
+  <section class="mt-5 flex min-h-0 flex-1 flex-col" aria-labelledby="batchConversationsTitle">
     <div class="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
       <div>
-        <h4
-          id="batchConversationsTitle"
-          class="text-sm font-semibold text-gray-900"
-        >
-          对话
-        </h4>
+        <h4 id="batchConversationsTitle" class="text-sm font-semibold text-gray-900">对话</h4>
         <p class="mt-0.5 text-xs text-gray-500">
-          找到 {{ filteredConversations.length }} 个，共
-          {{ conversations.length }} 个，已选
+          找到 {{ filteredConversations.length }} 个，共 {{ conversations.length }} 个，已选
           {{ selectedConversations.length }} 个
         </p>
       </div>
@@ -132,12 +124,7 @@ const updatedAtLabels = computed(() =>
             class="pointer-events-none absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-gray-900 text-[11px] font-bold text-white shadow"
             aria-hidden="true"
           >
-            <svg
-              class="h-3 w-3"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
+            <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
               <path
                 fill-rule="evenodd"
                 d="M16.704 5.29a1 1 0 0 1 .006 1.414l-7.25 7.31a1 1 0 0 1-1.42 0L3.29 9.224a1 1 0 1 1 1.42-1.408l4.04 4.074 6.54-6.594a1 1 0 0 1 1.414-.006z"
@@ -159,18 +146,8 @@ const updatedAtLabels = computed(() =>
         v-if="!filteredConversations.length"
         class="rounded-xl border border-dashed border-gray-200 px-6 py-10 text-center"
       >
-        <p
-          v-if="searchText"
-          class="text-sm font-medium text-gray-600"
-        >
-          没有找到匹配的对话
-        </p>
-        <p
-          v-else
-          class="text-sm font-medium text-gray-600"
-        >
-          还没有可批量处理的对话
-        </p>
+        <p v-if="searchText" class="text-sm font-medium text-gray-600">没有找到匹配的对话</p>
+        <p v-else class="text-sm font-medium text-gray-600">还没有可批量处理的对话</p>
         <p class="mt-1 text-xs leading-relaxed text-gray-400">
           {{
             searchText

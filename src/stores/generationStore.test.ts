@@ -56,9 +56,7 @@ describe("generation store", () => {
         promptWordbanks: defaultPromptWordbanks,
         promptRewriteGuardEnabled: false,
         promptRewriteGuardText: PROMPT_REWRITE_GUARD_PREFIX,
-        ragContext: prompt
-          ? `RAG 参考内容：\n1. ${prompt} 的历史参考`
-          : undefined,
+        ragContext: prompt ? `RAG 参考内容：\n1. ${prompt} 的历史参考` : undefined,
       }),
     );
 
@@ -142,9 +140,7 @@ describe("generation store", () => {
       imageById: () => undefined,
       imageClient: {
         generate: vi.fn(() =>
-          Promise.reject(
-            new Error("HTTP 400：Generated image rejected by content moderation."),
-          ),
+          Promise.reject(new Error("HTTP 400：Generated image rejected by content moderation.")),
         ),
         edit: vi.fn(),
       },
@@ -170,8 +166,7 @@ describe("generation store", () => {
     expect(messages.value[1]?.errorMessage).toContain("建议改写");
     expect(messages.value[1]?.errorMessage).toContain("nsfw -> tasteful editorial style");
     expect(messages.value[1]?.errorMessage).toContain("fully clothed");
-    const saferPromptText =
-      messages.value[1]?.errorMessage?.split("\n").at(-1) ?? "";
+    const saferPromptText = messages.value[1]?.errorMessage?.split("\n").at(-1) ?? "";
     expect(saferPromptText).not.toMatch(/nsfw|nude|nipples/i);
   });
 
@@ -248,10 +243,7 @@ describe("generation store", () => {
       updateConversationSummary: vi.fn(() => conversation),
     });
 
-    await store.retryMessage(
-      assistantMessage,
-      "fully clothed, rain street portrait",
-    );
+    await store.retryMessage(assistantMessage, "fully clothed, rain street portrait");
 
     expect(imageClient.generate).toHaveBeenCalledWith(
       expect.objectContaining({

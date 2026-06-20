@@ -26,32 +26,21 @@ describe("floating chat service", () => {
   });
 
   it("prepends hidden project context before visible messages", async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(streamResponse());
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(streamResponse());
     const context: ChatMessage = {
       role: "user",
       content: "项目上下文",
     };
 
-    await streamChatReply(
-      [{ role: "user", content: "帮我改 prompt" }],
-      vi.fn(),
-      context,
-    );
+    await streamChatReply([{ role: "user", content: "帮我改 prompt" }], vi.fn(), context);
 
     const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
-    expect(body.messages).toEqual([
-      context,
-      { role: "user", content: "帮我改 prompt" },
-    ]);
+    expect(body.messages).toEqual([context, { role: "user", content: "帮我改 prompt" }]);
     expect(body.use_builtin_persona).toBe(true);
   });
 
   it("keeps the current payload shape when no project context is provided", async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(streamResponse());
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(streamResponse());
 
     await streamChatReply([{ role: "user", content: "你好" }], vi.fn());
 
@@ -60,16 +49,11 @@ describe("floating chat service", () => {
   });
 
   it("can disable the worker builtin persona for tool requests", async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(streamResponse());
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(streamResponse());
 
-    await streamChatReply(
-      [{ role: "user", content: "rewrite this prompt" }],
-      vi.fn(),
-      undefined,
-      { useBuiltinPersona: false },
-    );
+    await streamChatReply([{ role: "user", content: "rewrite this prompt" }], vi.fn(), undefined, {
+      useBuiltinPersona: false,
+    });
 
     const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
     expect(body.use_builtin_persona).toBe(false);

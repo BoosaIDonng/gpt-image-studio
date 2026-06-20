@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  formatRelativeTime,
-  isoTimestamp,
-} from "./dateTime";
+import { formatRelativeTime, isoTimestamp } from "./dateTime";
 
 describe("date time helpers", () => {
   const base = Date.parse("2026-05-08T10:00:00.000Z");

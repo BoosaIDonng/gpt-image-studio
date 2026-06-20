@@ -241,24 +241,17 @@ describe("studio backups", () => {
     await restoreStudioBackup(fileFromBlob(backup));
 
     expect(mocks.clearStore).toHaveBeenCalledTimes(5);
-    expect(mocks.bulkPut).toHaveBeenCalledWith(
-      STORE_NAMES.conversations,
-      [conversation],
-    );
+    expect(mocks.bulkPut).toHaveBeenCalledWith(STORE_NAMES.conversations, [conversation]);
     expect(mocks.bulkPut).toHaveBeenCalledWith(STORE_NAMES.messages, [message]);
-    expect(mocks.bulkPut).toHaveBeenCalledWith(
-      STORE_NAMES.imageAssets,
-      [expect.not.objectContaining({ previewUrl: expect.anything() })],
-    );
-    expect(mocks.bulkPut).toHaveBeenCalledWith(
-      STORE_NAMES.imageBlobs,
-      [
-        expect.objectContaining({
-          key: "blob 1",
-          blob: expect.any(Blob),
-        }),
-      ],
-    );
+    expect(mocks.bulkPut).toHaveBeenCalledWith(STORE_NAMES.imageAssets, [
+      expect.not.objectContaining({ previewUrl: expect.anything() }),
+    ]);
+    expect(mocks.bulkPut).toHaveBeenCalledWith(STORE_NAMES.imageBlobs, [
+      expect.objectContaining({
+        key: "blob 1",
+        blob: expect.any(Blob),
+      }),
+    ]);
     expect(mocks.saveSettings).toHaveBeenCalledWith({
       ...settings,
       apiKey: "sk-current",

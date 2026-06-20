@@ -21,7 +21,14 @@ describe("ConfirmDialog", () => {
     document.body.innerHTML = "";
   });
 
-  function mountDialog(dialog: { title: string; description: string; confirmLabel: string; tone?: "danger" | "default" } | null) {
+  function mountDialog(
+    dialog: {
+      title: string;
+      description: string;
+      confirmLabel: string;
+      tone?: "danger" | "default";
+    } | null,
+  ) {
     return mount(ConfirmDialog, {
       props: { dialog },
       attachTo: document.body,
@@ -75,7 +82,12 @@ describe("ConfirmDialog", () => {
   });
 
   it("applies default tone styles", () => {
-    const wrapper = mountDialog({ title: "确认", description: "描述", confirmLabel: "确定", tone: "default" as const });
+    const wrapper = mountDialog({
+      title: "确认",
+      description: "描述",
+      confirmLabel: "确定",
+      tone: "default" as const,
+    });
     const buttons = document.body.querySelectorAll("button");
     const confirmButton = Array.from(buttons).find((b) => b.textContent?.includes("确定"));
     expect(confirmButton!.className).toContain("bg-black");

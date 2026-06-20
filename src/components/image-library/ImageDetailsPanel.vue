@@ -26,9 +26,7 @@ const emit = defineEmits<{
 }>();
 
 const now = useNow();
-const createdAtLabel = computed(() =>
-  formatRelativeTime(props.image.createdAt, now.value),
-);
+const createdAtLabel = computed(() => formatRelativeTime(props.image.createdAt, now.value));
 
 function toggleTagColor(nextColor: ImageAsset["tagColor"]) {
   if (props.image.tagColor === nextColor) {
@@ -139,7 +137,9 @@ function toggleTagColor(nextColor: ImageAsset["tagColor"]) {
           multiline
           preferred-placement="top"
         >
-          <p class="mt-1 line-clamp-2 text-left text-xs leading-relaxed text-gray-600 dark:text-gray-400">
+          <p
+            class="mt-1 line-clamp-2 text-left text-xs leading-relaxed text-gray-600 dark:text-gray-400"
+          >
             {{ image.prompt }}
           </p>
         </Tooltip>
@@ -155,13 +155,13 @@ function toggleTagColor(nextColor: ImageAsset["tagColor"]) {
           multiline
           preferred-placement="top"
         >
-          <p class="mt-1 line-clamp-2 text-left text-xs leading-relaxed text-gray-600 dark:text-gray-400">
+          <p
+            class="mt-1 line-clamp-2 text-left text-xs leading-relaxed text-gray-600 dark:text-gray-400"
+          >
             {{ image.requestPrompt }}
           </p>
         </Tooltip>
-        <p v-else class="mt-1 text-xs leading-relaxed text-gray-400 dark:text-gray-500">
-          未记录
-        </p>
+        <p v-else class="mt-1 text-xs leading-relaxed text-gray-400 dark:text-gray-500">未记录</p>
       </div>
       <div class="min-w-0">
         <div class="text-xs text-gray-400 dark:text-gray-500">API 改写 Prompt</div>
@@ -174,13 +174,13 @@ function toggleTagColor(nextColor: ImageAsset["tagColor"]) {
           multiline
           preferred-placement="top"
         >
-          <p class="mt-1 line-clamp-2 text-left text-xs leading-relaxed text-gray-600 dark:text-gray-400">
+          <p
+            class="mt-1 line-clamp-2 text-left text-xs leading-relaxed text-gray-600 dark:text-gray-400"
+          >
             {{ image.revisedPrompt }}
           </p>
         </Tooltip>
-        <p v-else class="mt-1 text-xs leading-relaxed text-gray-400 dark:text-gray-500">
-          未返回
-        </p>
+        <p v-else class="mt-1 text-xs leading-relaxed text-gray-400 dark:text-gray-500">未返回</p>
       </div>
     </div>
   </div>

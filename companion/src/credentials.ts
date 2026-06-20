@@ -23,7 +23,11 @@ export function loadCredentials(): Credentials | null {
   }
 }
 
-export function saveCredentials(apiBaseUrl: string, apiKey: string, provider: "openai" | "grok" | "gemini" = "openai"): void {
+export function saveCredentials(
+  apiBaseUrl: string,
+  apiKey: string,
+  provider: "openai" | "grok" | "gemini" = "openai",
+): void {
   if (!existsSync(CONFIG_DIR)) {
     mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
   }

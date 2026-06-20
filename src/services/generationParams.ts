@@ -1,7 +1,10 @@
 import type { GenerationParams, SizeRatio, SizeResolution } from "../types/studio";
 
 export type LegacySizePreset = "1024x1024" | "1536x1024" | "1024x1536";
-export type StoredGenerationParams = Omit<GenerationParams, "imageCount" | "resolution" | "size"> & {
+export type StoredGenerationParams = Omit<
+  GenerationParams,
+  "imageCount" | "resolution" | "size"
+> & {
   imageCount?: number;
   resolution?: SizeResolution;
   size: GenerationParams["size"] | LegacySizePreset;
@@ -18,7 +21,9 @@ export function normalizeGenerationParams(params: StoredGenerationParams): Gener
   };
 }
 
-export function normalizeSizePreset(size: StoredGenerationParams["size"]): GenerationParams["size"] {
+export function normalizeSizePreset(
+  size: StoredGenerationParams["size"],
+): GenerationParams["size"] {
   if (size === "1024x1024") return "1:1";
   if (size === "1536x1024") return "3:2";
   if (size === "1024x1536") return "2:3";

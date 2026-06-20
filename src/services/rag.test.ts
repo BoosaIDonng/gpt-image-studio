@@ -113,9 +113,7 @@ describe("RAG", () => {
       documents,
       topK: 3,
     });
-    const wordbankDocuments = documents.filter(
-      (document) => document.source === "wordbank",
-    );
+    const wordbankDocuments = documents.filter((document) => document.source === "wordbank");
 
     expect(wordbankDocuments).toHaveLength(1);
     expect(wordbankDocuments[0].sourceImageIds).toEqual(["img-red", "img-blue"]);

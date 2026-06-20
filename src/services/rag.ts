@@ -57,36 +57,30 @@ export function collectRagDocuments(input: CollectRagDocumentsInput): RagDocumen
   const documents: RagDocument[] = [];
   const documentsByText = new Map<string, RagDocument>();
 
-  input.imageAssets
-    .filter(isSuccessfulGeneratedImage)
-    .forEach((image) => {
-      const promptTexts = successfulImagePromptTexts(image);
-      const searchText = promptTexts.join(" ");
-      matchedWordbankTermsFromImage(
-        promptTexts,
-        image.id,
-        input.wordbanks,
-      ).forEach((term, index) => {
-        addDocument(documents, documentsByText, {
-          id: `image-wordbank:${image.id}:${index}`,
-          source: "wordbank",
-          title: `成功图片匹配词库: ${image.name}`,
-          text: term,
-          searchText,
-          sourceImageId: image.id,
-          sourceImageIds: [image.id],
-        });
-      });
-
+  input.imageAssets.filter(isSuccessfulGeneratedImage).forEach((image) => {
+    const promptTexts = successfulImagePromptTexts(image);
+    const searchText = promptTexts.join(" ");
+    matchedWordbankTermsFromImage(promptTexts, image.id, input.wordbanks).forEach((term, index) => {
       addDocument(documents, documentsByText, {
-        id: `image-prompt:${image.id}`,
-        source: "image",
-        title: `成功图片 Prompt: ${image.name}`,
-        text: cleanRagText(searchText),
+        id: `image-wordbank:${image.id}:${index}`,
+        source: "wordbank",
+        title: `成功图片匹配词库: ${image.name}`,
+        text: term,
+        searchText,
         sourceImageId: image.id,
         sourceImageIds: [image.id],
       });
     });
+
+    addDocument(documents, documentsByText, {
+      id: `image-prompt:${image.id}`,
+      source: "image",
+      title: `成功图片 Prompt: ${image.name}`,
+      text: cleanRagText(searchText),
+      sourceImageId: image.id,
+      sourceImageIds: [image.id],
+    });
+  });
 
   (input.favoritePrompts ?? []).forEach((favorite) => {
     addDocument(documents, documentsByText, {
@@ -97,16 +91,14 @@ export function collectRagDocuments(input: CollectRagDocumentsInput): RagDocumen
     });
   });
 
-  recentHistoryMessages(input.messages ?? [], input.maxHistoryMessages).forEach(
-    (message) => {
-      addDocument(documents, documentsByText, {
-        id: `history:${message.id}`,
-        source: "history",
-        title: "历史 Prompt",
-        text: cleanRagText(message.content),
-      });
-    },
-  );
+  recentHistoryMessages(input.messages ?? [], input.maxHistoryMessages).forEach((message) => {
+    addDocument(documents, documentsByText, {
+      id: `history:${message.id}`,
+      source: "history",
+      title: "历史 Prompt",
+      text: cleanRagText(message.content),
+    });
+  });
 
   return documents;
 }
@@ -175,10 +167,8 @@ export function retrieveRagContext(input: RetrieveRagContextInput) {
       score: item.rawScore * item.sourceWeight,
     }))
     .filter((item) => item.score >= minScore)
-    .sort((a, b) =>
-      b.score - a.score ||
-      b.sourceWeight - a.sourceWeight ||
-      a.id.localeCompare(b.id),
+    .sort(
+      (a, b) => b.score - a.score || b.sourceWeight - a.sourceWeight || a.id.localeCompare(b.id),
     )
     .slice(0, topK);
 
@@ -216,9 +206,7 @@ export function buildRagMatchBarState(input: {
   const visibleLimit = normalizeVisibleItemCount(input.maxVisibleItems);
   const visibleItems = input.items.slice(0, visibleLimit);
   const sourceImageIds = new Set(
-    input.items
-      .flatMap((item) => item.sourceImageIds ?? item.sourceImageId ?? [])
-      .filter(Boolean),
+    input.items.flatMap((item) => item.sourceImageIds ?? item.sourceImageId ?? []).filter(Boolean),
   );
   const excludedCount = input.excludedItems?.length ?? 0;
 
@@ -260,19 +248,15 @@ function mergeRagDocument(target: RagDocument, document: RagDocument) {
     target.searchText = normalizeText(`${target.searchText ?? ""} ${nextSearchText}`);
   }
 
-  const sourceImageIds = target.sourceImageIds ?? (
-    target.sourceImageId ? [target.sourceImageId] : []
-  );
+  const sourceImageIds =
+    target.sourceImageIds ?? (target.sourceImageId ? [target.sourceImageId] : []);
   if (document.sourceImageId && !sourceImageIds.includes(document.sourceImageId)) {
     sourceImageIds.push(document.sourceImageId);
   }
   target.sourceImageIds = sourceImageIds;
 }
 
-function matchesExcludedText(
-  document: RagDocument,
-  excludedTexts: Set<string>,
-) {
+function matchesExcludedText(document: RagDocument, excludedTexts: Set<string>) {
   if (!excludedTexts.size) return false;
   const documentText = normalizeText(document.text);
   if (!documentText) return false;
@@ -348,10 +332,7 @@ function normalizeToken(token: string) {
   return token;
 }
 
-function cosineSimilarity(
-  left: Map<string, number>,
-  right: Map<string, number>,
-) {
+function cosineSimilarity(left: Map<string, number>, right: Map<string, number>) {
   if (!left.size || !right.size) return 0;
 
   let dot = 0;

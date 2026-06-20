@@ -93,5 +93,10 @@ export async function startServer(opts: {
 /** 判断 Host 头是否指向本地地址（127.0.0.1 / localhost / ::1）。 */
 function isLocalHost(host: string): boolean {
   const hostname = host.replace(/:\d+$/, "").toLowerCase();
-  return hostname === "127.0.0.1" || hostname === "localhost" || hostname === "::1" || hostname === "[::1]";
+  return (
+    hostname === "127.0.0.1" ||
+    hostname === "localhost" ||
+    hostname === "::1" ||
+    hostname === "[::1]"
+  );
 }

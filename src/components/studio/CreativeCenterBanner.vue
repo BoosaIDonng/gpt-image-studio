@@ -78,7 +78,9 @@ function statusToneClass(tone: "ok" | "warning") {
             >
               {{ status.connectionLabel }}
             </span>
-            <span class="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+            <span
+              class="rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700"
+            >
               {{ status.activityLabel }}
             </span>
           </div>
@@ -106,9 +108,7 @@ function statusToneClass(tone: "ok" | "warning") {
         class="grid gap-3 border-t border-gray-100 p-4 lg:grid-cols-[1fr_1.6fr]"
       >
         <section class="rounded-lg border border-gray-100 bg-gray-50 p-3">
-          <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-500">
-            项目状态
-          </h2>
+          <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-500">项目状态</h2>
           <div class="mt-3 space-y-2">
             <div class="flex items-center justify-between gap-3 text-sm">
               <span class="text-gray-600">连接</span>
@@ -142,9 +142,7 @@ function statusToneClass(tone: "ok" | "warning") {
         </section>
 
         <section class="rounded-lg border border-gray-100 bg-gray-50 p-3">
-          <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-500">
-            模板中心
-          </h2>
+          <h2 class="text-xs font-semibold uppercase tracking-wide text-gray-500">模板中心</h2>
           <div class="mt-3 grid gap-2 sm:grid-cols-2">
             <button
               v-for="template in creativeTemplates"

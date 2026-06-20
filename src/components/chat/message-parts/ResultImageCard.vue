@@ -42,11 +42,7 @@ function attachActionLabel() {
         type="button"
         @click="emit('previewImage', imageId)"
       >
-        <img
-          class="h-full w-full object-contain"
-          :alt="image?.name"
-          :src="image?.previewUrl"
-        />
+        <img class="h-full w-full object-contain" :alt="image?.name" :src="image?.previewUrl" />
         <span
           class="absolute inset-0 flex items-center justify-center bg-black/45 text-sm font-medium text-white opacity-0 transition-opacity group-hover:opacity-100"
         >
@@ -58,9 +54,7 @@ function attachActionLabel() {
         class="flex h-full w-full flex-col items-center justify-center gap-1 border border-dashed border-gray-300 bg-gray-50 px-4 text-center"
       >
         <span class="text-sm font-medium text-gray-500">图片已删除</span>
-        <span class="text-xs text-gray-400">
-          这张图片已从图片库移除，无法显示预览
-        </span>
+        <span class="text-xs text-gray-400"> 这张图片已从图片库移除，无法显示预览 </span>
       </div>
     </div>
     <figcaption class="px-3 py-2">

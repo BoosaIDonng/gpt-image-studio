@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import type {
-  PromptMode,
-  PromptWordbankSectionKey,
-  PromptWordbanks,
-} from "../../types/studio";
+import type { PromptMode, PromptWordbankSectionKey, PromptWordbanks } from "../../types/studio";
 import { useSettingsModalContext } from "./settingsModalContext";
 
 const ctx = useSettingsModalContext();
-const { promptMode: modelValue, promptWordbanks: wordbanks, ragEnabled, ragTopK,
-  updatePromptMode: updateModelValue, updateRagEnabled, updateRagTopK: ctxUpdateRagTopK,
-  saveWordbank, restoreDefaultWordbank } = ctx;
+const {
+  promptMode: modelValue,
+  promptWordbanks: wordbanks,
+  ragEnabled,
+  ragTopK,
+  updatePromptMode: updateModelValue,
+  updateRagEnabled,
+  updateRagTopK: ctxUpdateRagTopK,
+  saveWordbank,
+  restoreDefaultWordbank,
+} = ctx;
 
 const options: Array<{
   value: PromptMode;
@@ -72,12 +76,9 @@ const searchText = ref("");
 
 const activeSectionMeta = computed(
   () =>
-    wordbankSections.find((section) => section.key === activeSection.value) ??
-    wordbankSections[0],
+    wordbankSections.find((section) => section.key === activeSection.value) ?? wordbankSections[0],
 );
-const activeTerms = computed(() =>
-  getWordbankTerms(wordbanks.value, activeSection.value),
-);
+const activeTerms = computed(() => getWordbankTerms(wordbanks.value, activeSection.value));
 const parsedDraftTerms = computed(() => parseTerms(draftText.value));
 const hasChanges = computed(
   () => termsSignature(parsedDraftTerms.value) !== termsSignature(activeTerms.value),
@@ -139,9 +140,7 @@ function getWordbankTerms(wordbanks: PromptWordbanks, section: PromptWordbankSec
 <template>
   <section aria-labelledby="promptModeSettingsTitle" class="space-y-6">
     <div>
-      <h3 id="promptModeSettingsTitle" class="text-base font-semibold text-gray-900">
-        提示词模式
-      </h3>
+      <h3 id="promptModeSettingsTitle" class="text-base font-semibold text-gray-900">提示词模式</h3>
       <p class="mt-1 text-sm leading-relaxed text-gray-500">
         当前设置只影响发送给图片接口的请求文本，不会改写聊天记录里的原始提示词。
       </p>
@@ -182,7 +181,9 @@ function getWordbankTerms(wordbanks: PromptWordbanks, section: PromptWordbankSec
         </div>
         <button
           class="cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors"
-          :class="ragEnabled ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
+          :class="
+            ragEnabled ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+          "
           type="button"
           @click="updateRagEnabled(!ragEnabled)"
         >
@@ -200,7 +201,7 @@ function getWordbankTerms(wordbanks: PromptWordbanks, section: PromptWordbankSec
           type="number"
           :value="ragTopK"
           @change="handleRagTopKChange(($event.target as HTMLInputElement).value)"
-        >
+        />
       </label>
     </div>
 
@@ -269,7 +270,7 @@ function getWordbankTerms(wordbanks: PromptWordbanks, section: PromptWordbankSec
               class="h-9 min-w-0 flex-1 rounded-lg border border-gray-300 px-3 text-sm outline-none transition-colors focus:border-gray-500"
               placeholder="搜索当前词库"
               type="search"
-            >
+            />
             <button
               class="cursor-pointer rounded-lg bg-black px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
               type="button"
@@ -285,10 +286,7 @@ function getWordbankTerms(wordbanks: PromptWordbanks, section: PromptWordbankSec
               匹配 {{ filteredTerms.length }} 条
             </div>
             <div class="max-h-40 overflow-y-auto p-2">
-              <div
-                v-if="!filteredTerms.length"
-                class="px-2 py-5 text-center text-sm text-gray-400"
-              >
+              <div v-if="!filteredTerms.length" class="px-2 py-5 text-center text-sm text-gray-400">
                 没有匹配的灵感词
               </div>
               <div v-else class="flex flex-wrap gap-1.5">

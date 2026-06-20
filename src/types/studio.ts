@@ -1,14 +1,7 @@
 export type MessageRole = "user" | "assistant";
 export type MessageStatus = "pending" | "success" | "error";
 export type ImageSource = "generated" | "imported";
-export type ImageTagColor =
-  | "red"
-  | "orange"
-  | "yellow"
-  | "green"
-  | "cyan"
-  | "blue"
-  | "purple";
+export type ImageTagColor = "red" | "orange" | "yellow" | "green" | "cyan" | "blue" | "purple";
 export type ApiMode = "images" | "responses";
 export type ApiProvider = "openai" | "grok" | "gemini";
 

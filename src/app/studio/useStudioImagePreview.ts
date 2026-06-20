@@ -17,9 +17,7 @@ export function useStudioImagePreview(ctx: {
     return maskAsset?.previewUrl;
   });
 
-  const attachedImageIds = computed(() =>
-    ctx.activeAttachments.value.map((image) => image.id),
-  );
+  const attachedImageIds = computed(() => ctx.activeAttachments.value.map((image) => image.id));
 
   function previewImageById(id: string) {
     previewImageId.value = id;

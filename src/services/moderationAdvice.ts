@@ -67,13 +67,7 @@ const RISK_RULES: RiskRule[] = [
   },
   {
     reason: "提示词可能包含血腥、暴力或伤害性元素。",
-    patterns: [
-      /\bblood\b/i,
-      /\bgore\b/i,
-      /\bwound\b/i,
-      /\bviolence\b/i,
-      /血腥|流血|伤口|暴力/,
-    ],
+    patterns: [/\bblood\b/i, /\bgore\b/i, /\bwound\b/i, /\bviolence\b/i, /血腥|流血|伤口|暴力/],
   },
 ];
 
@@ -104,10 +98,7 @@ const PROMPT_REPLACEMENTS: Array<[RegExp, string]> = [
   [/血腥|流血/g, "无血腥"],
 ];
 
-export function analyzeModerationRejection(
-  errorMessage: string,
-  prompt = "",
-): ModerationAdvice {
+export function analyzeModerationRejection(errorMessage: string, prompt = ""): ModerationAdvice {
   const isModerationRejection = MODERATION_ERROR_PATTERNS.some((pattern) =>
     pattern.test(errorMessage),
   );
@@ -122,13 +113,15 @@ export function analyzeModerationRejection(
   const riskMatches = findPromptRiskMatches(prompt);
   const reasons = [
     "接口内容审核拒绝了这次图片生成请求。",
-    ...RISK_RULES.filter((rule) =>
-      rule.patterns.some((pattern) => pattern.test(prompt)),
-    ).map((rule) => rule.reason),
+    ...RISK_RULES.filter((rule) => rule.patterns.some((pattern) => pattern.test(prompt))).map(
+      (rule) => rule.reason,
+    ),
   ];
 
   if (reasons.length === 1) {
-    reasons.push("具体命中项不会由接口完整返回，通常需要从提示词里的裸露、性暗示、血腥暴力或敏感主体组合排查。");
+    reasons.push(
+      "具体命中项不会由接口完整返回，通常需要从提示词里的裸露、性暗示、血腥暴力或敏感主体组合排查。",
+    );
   }
 
   return {
@@ -142,17 +135,12 @@ export function analyzeModerationRejection(
 export function formatModerationAdvice(advice: ModerationAdvice) {
   if (!advice.isModerationRejection) return "";
 
-  const lines = [
-    "可能触发内容审核的原因：",
-    ...advice.reasons.map((reason) => `- ${reason}`),
-  ];
+  const lines = ["可能触发内容审核的原因：", ...advice.reasons.map((reason) => `- ${reason}`)];
 
   if (advice.riskMatches.length) {
     lines.push(
       "命中风险词：",
-      ...advice.riskMatches.map(
-        (match) => `- ${match.term} -> ${match.replacement}`,
-      ),
+      ...advice.riskMatches.map((match) => `- ${match.term} -> ${match.replacement}`),
     );
   }
 
@@ -222,8 +210,7 @@ function buildSaferPrompt(prompt: string) {
     })
     .join(", ");
 
-  return [
-    saferPrompt,
-    "fully clothed, non-explicit, tasteful editorial, safe for work, 非露骨",
-  ].filter(Boolean).join(", ");
+  return [saferPrompt, "fully clothed, non-explicit, tasteful editorial, safe for work, 非露骨"]
+    .filter(Boolean)
+    .join(", ");
 }

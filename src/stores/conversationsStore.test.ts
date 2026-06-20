@@ -41,9 +41,7 @@ describe("conversations store single-message management", () => {
 
     const feedback = useFeedbackStore();
     vi.spyOn(feedback, "requestConfirmation").mockResolvedValue(true);
-    const notifySuccess = vi
-      .spyOn(feedback, "notifySuccess")
-      .mockImplementation(() => undefined);
+    const notifySuccess = vi.spyOn(feedback, "notifySuccess").mockImplementation(() => undefined);
 
     await store.deleteSingleMessage("m2");
 
@@ -75,11 +73,7 @@ describe("conversations store single-message management", () => {
   });
 });
 
-function message(input: {
-  id: string;
-  content: string;
-  role?: Message["role"];
-}): Message {
+function message(input: { id: string; content: string; role?: Message["role"] }): Message {
   return {
     id: input.id,
     conversationId: "c1",

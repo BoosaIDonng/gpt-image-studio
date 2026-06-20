@@ -17,12 +17,7 @@ defineProps<{
         previewUrl ? 'generation-skeleton-media--preview bg-gray-900' : 'bg-gray-50',
       ]"
     >
-      <img
-        v-if="previewUrl"
-        :src="previewUrl"
-        alt=""
-        class="h-full w-full object-cover"
-      />
+      <img v-if="previewUrl" :src="previewUrl" alt="" class="h-full w-full object-cover" />
       <div
         v-if="!previewUrl"
         class="generation-orbit flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white shadow-sm"
@@ -86,12 +81,7 @@ defineProps<{
   position: absolute;
   inset: 0;
   transform: translateX(-120%);
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.76),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.76), transparent);
   animation: generation-shimmer 1.75s ease-in-out infinite;
 }
 
@@ -101,17 +91,8 @@ defineProps<{
   inset: 18px;
   border-radius: 9999px;
   background:
-    radial-gradient(
-      circle at center,
-      rgba(255, 255, 255, 0.9),
-      transparent 34%
-    ),
-    conic-gradient(
-      from 90deg,
-      transparent,
-      rgba(156, 163, 175, 0.22),
-      transparent 42%
-    );
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.9), transparent 34%),
+    conic-gradient(from 90deg, transparent, rgba(156, 163, 175, 0.22), transparent 42%);
   filter: blur(18px);
   opacity: 0.8;
   animation: generation-glow 2.8s ease-in-out infinite;

@@ -83,27 +83,9 @@ function openDb(): Promise<IDBDatabase> {
       }
 
       if (event.oldVersion < 2) {
-        replaceIndex(
-          transaction,
-          db,
-          STORE_NAMES.conversations,
-          "updatedAtMs",
-          "updatedAt",
-        );
-        replaceIndex(
-          transaction,
-          db,
-          STORE_NAMES.messages,
-          "createdAtMs",
-          "createdAt",
-        );
-        replaceIndex(
-          transaction,
-          db,
-          STORE_NAMES.imageAssets,
-          "createdAtMs",
-          "createdAt",
-        );
+        replaceIndex(transaction, db, STORE_NAMES.conversations, "updatedAtMs", "updatedAt");
+        replaceIndex(transaction, db, STORE_NAMES.messages, "createdAtMs", "createdAt");
+        replaceIndex(transaction, db, STORE_NAMES.imageAssets, "createdAtMs", "createdAt");
       }
     };
 

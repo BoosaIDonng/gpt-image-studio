@@ -10,10 +10,7 @@ export type CompanionSecurityConfig = {
   allowedEditImageMimeTypes: string[];
 };
 
-const STABLE_ORIGINS = [
-  "https://image.honlnk.com",
-  "https://image.idurspace.cn",
-];
+const STABLE_ORIGINS = ["https://image.honlnk.com", "https://image.idurspace.cn"];
 const DEV_ORIGINS = [
   "https://image.honlnk.com",
   "https://image.idurspace.cn",
@@ -61,11 +58,13 @@ export function parseAllowOrigins(values: string[] = []): string[] {
   return values.map(normalizeOrigin);
 }
 
-export function createSecurityConfig(opts: {
-  channel?: string;
-  allowOrigins?: string[];
-  sessionTtlDays?: number;
-} = {}): CompanionSecurityConfig {
+export function createSecurityConfig(
+  opts: {
+    channel?: string;
+    allowOrigins?: string[];
+    sessionTtlDays?: number;
+  } = {},
+): CompanionSecurityConfig {
   const channel = resolveChannel(opts.channel);
   const baseOrigins = channel === "dev" ? DEV_ORIGINS : STABLE_ORIGINS;
   const extraOrigins = parseAllowOrigins(opts.allowOrigins);

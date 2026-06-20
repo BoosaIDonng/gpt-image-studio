@@ -1,7 +1,4 @@
-import {
-  normalizeGenerationParams,
-  type StoredGenerationParams,
-} from "./generationParams";
+import { normalizeGenerationParams, type StoredGenerationParams } from "./generationParams";
 import type { Message } from "../types/studio";
 import { timestampFromCreatedAt } from "../shared/dateTime";
 import { deleteFromStore, getAllFromStore, putInStore, STORE_NAMES } from "./db";
@@ -13,9 +10,9 @@ type StoredMessage = Omit<Message, "generationParams"> & {
 export async function listMessages() {
   const messages = await getAllFromStore<StoredMessage>(STORE_NAMES.messages);
 
-  return messages.map(normalizeMessage).sort(
-    (a, b) => timestampFromCreatedAt(a) - timestampFromCreatedAt(b),
-  );
+  return messages
+    .map(normalizeMessage)
+    .sort((a, b) => timestampFromCreatedAt(a) - timestampFromCreatedAt(b));
 }
 
 export function saveMessage(message: Message) {

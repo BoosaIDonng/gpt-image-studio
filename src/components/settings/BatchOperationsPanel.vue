@@ -52,21 +52,15 @@ const conversationSortOptions: { key: ConversationSortKey; label: string }[] = [
 const normalizedSearchText = computed(() => searchText.value.trim().toLowerCase());
 const filteredImages = computed(() => {
   const list = normalizedSearchText.value
-    ? images.value.filter((image) =>
-        image.name.toLowerCase().includes(normalizedSearchText.value),
-      )
+    ? images.value.filter((image) => image.name.toLowerCase().includes(normalizedSearchText.value))
     : images.value;
 
   return [...list].sort(compareImages);
 });
 const selectedImages = computed(() =>
-  filteredImages.value.filter(
-    (image) => image.previewUrl && selectedImageIds.value.has(image.id),
-  ),
+  filteredImages.value.filter((image) => image.previewUrl && selectedImageIds.value.has(image.id)),
 );
-const downloadableImages = computed(() =>
-  filteredImages.value.filter((image) => image.previewUrl),
-);
+const downloadableImages = computed(() => filteredImages.value.filter((image) => image.previewUrl));
 const messagesByConversationId = computed(() => {
   const grouped = new Map<string, Message[]>();
   messages.value.forEach((message) => {
@@ -139,9 +133,7 @@ watch(
   () => images.value,
   () => {
     selectedImageIds.value = new Set(
-      [...selectedImageIds.value].filter((id) =>
-        images.value.some((image) => image.id === id),
-      ),
+      [...selectedImageIds.value].filter((id) => images.value.some((image) => image.id === id)),
     );
   },
 );
@@ -162,16 +154,11 @@ function toggleImageSelection(id: string) {
 }
 
 function toggleConversationSelection(id: string) {
-  selectedConversationIds.value = toggledSelection(
-    selectedConversationIds.value,
-    id,
-  );
+  selectedConversationIds.value = toggledSelection(selectedConversationIds.value, id);
 }
 
 function selectAllImages() {
-  selectedImageIds.value = new Set(
-    downloadableImages.value.map((image) => image.id),
-  );
+  selectedImageIds.value = new Set(downloadableImages.value.map((image) => image.id));
 }
 
 function selectAllConversations() {
@@ -192,9 +179,7 @@ function setImageSort(key: ImageSortKey) {
 
 function setConversationSort(key: ConversationSortKey) {
   if (conversationSortKey.value === key) {
-    conversationSortDirection.value = toggleSortDirection(
-      conversationSortDirection.value,
-    );
+    conversationSortDirection.value = toggleSortDirection(conversationSortDirection.value);
     return;
   }
 
@@ -259,16 +244,12 @@ function cancelConfirm() {
 
 function confirmPendingAction() {
   if (confirmAction.value === "deleteImages") {
-    deleteImages(
-      selectedImages.value.map((image) => image.id),
-    );
+    deleteImages(selectedImages.value.map((image) => image.id));
     selectedImageIds.value = new Set();
   }
 
   if (confirmAction.value === "deleteConversations") {
-    deleteConversations(
-      selectedConversations.value.map((conversation) => conversation.id),
-    );
+    deleteConversations(selectedConversations.value.map((conversation) => conversation.id));
     selectedConversationIds.value = new Set();
   }
 
@@ -328,14 +309,9 @@ function uniqueZipEntryName(filename: string, index: number) {
 </script>
 
 <template>
-  <section
-    aria-labelledby="batchSettingsTitle"
-    class="flex min-h-0 flex-1 flex-col"
-  >
+  <section aria-labelledby="batchSettingsTitle" class="flex min-h-0 flex-1 flex-col">
     <div class="shrink-0">
-      <h3 id="batchSettingsTitle" class="text-base font-semibold text-gray-900">
-        批量操作
-      </h3>
+      <h3 id="batchSettingsTitle" class="text-base font-semibold text-gray-900">批量操作</h3>
 
       <div class="mt-4 flex flex-col gap-2 sm:flex-row">
         <div class="grid rounded-lg bg-gray-100 p-1 sm:w-80 sm:grid-cols-2">
@@ -382,12 +358,7 @@ function uniqueZipEntryName(filename: string, index: number) {
             type="button"
             @click="searchText = ''"
           >
-            <svg
-              class="h-4 w-4"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
+            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
               <path
                 d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22z"
               />

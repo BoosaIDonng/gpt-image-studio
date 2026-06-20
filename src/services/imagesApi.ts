@@ -138,28 +138,35 @@ export async function editImage(input: EditImageInput) {
   return { ...result, requestPrompt: prompt };
 }
 
-async function generateImageViaImagesApi(input: GenerateImageInput & {
-  prompt: string;
-  requestParams: Record<string, string>;
-}) {
+async function generateImageViaImagesApi(
+  input: GenerateImageInput & {
+    prompt: string;
+    requestParams: Record<string, string>;
+  },
+) {
   let response: Response;
   try {
-    response = await fetch(buildApiEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "images", "generations"), {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${input.apiKey}`,
-        "Content-Type": "application/json",
+    response = await fetch(
+      buildApiEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "images", "generations"),
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${input.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: input.model,
+          prompt: input.prompt,
+          ...input.requestParams,
+          ...(input.streamImages
+            ? {
+                stream: true,
+                partial_images: normalizeStreamPartialImages(input.streamPartialImages),
+              }
+            : {}),
+        }),
       },
-      body: JSON.stringify({
-        model: input.model,
-        prompt: input.prompt,
-        ...input.requestParams,
-        ...(input.streamImages ? {
-          stream: true,
-          partial_images: normalizeStreamPartialImages(input.streamPartialImages),
-        } : {}),
-      }),
-    });
+    );
   } catch {
     throw new Error(SERVER_DISCONNECTED_MESSAGE);
   }
@@ -176,10 +183,12 @@ async function generateImageViaImagesApi(input: GenerateImageInput & {
   return extractImageResult(payload);
 }
 
-async function editImageViaImagesApi(input: EditImageInput & {
-  prompt: string;
-  requestParams: Record<string, string>;
-}) {
+async function editImageViaImagesApi(
+  input: EditImageInput & {
+    prompt: string;
+    requestParams: Record<string, string>;
+  },
+) {
   const body = new FormData();
   body.append("model", input.model);
   body.append("prompt", input.prompt);
@@ -199,28 +208,37 @@ async function editImageViaImagesApi(input: EditImageInput & {
 
   logImageRequest("edit", input.model, input.images);
   if (input.mask) {
-    console.info("[imagesApi] mask payload", JSON.stringify({
-      name: input.mask.name,
-      sizeBytes: input.mask.blob.size,
-      type: input.mask.blob.type || "unknown",
-    }));
+    console.info(
+      "[imagesApi] mask payload",
+      JSON.stringify({
+        name: input.mask.name,
+        sizeBytes: input.mask.blob.size,
+        type: input.mask.blob.type || "unknown",
+      }),
+    );
   }
 
   let response: Response;
   try {
-    response = await fetch(buildApiEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "images", "edits"), {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${input.apiKey}`,
+    response = await fetch(
+      buildApiEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "images", "edits"),
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${input.apiKey}`,
+        },
+        body,
       },
-      body,
-    });
+    );
   } catch (error) {
-    console.error("[imagesApi] edit request failed before response", JSON.stringify({
-      imageCount: input.images.length,
-      images: imageDebugInfo(input.images),
-      error: error instanceof Error ? error.message : String(error),
-    }));
+    console.error(
+      "[imagesApi] edit request failed before response",
+      JSON.stringify({
+        imageCount: input.images.length,
+        images: imageDebugInfo(input.images),
+        error: error instanceof Error ? error.message : String(error),
+      }),
+    );
     throw new Error(SERVER_DISCONNECTED_MESSAGE);
   }
 
@@ -239,20 +257,30 @@ async function editImageViaImagesApi(input: EditImageInput & {
 async function generateImageViaResponses(input: GenerateImageInput & { prompt: string }) {
   let response: Response;
   try {
-    response = await fetch(buildApiEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "responses", "responses"), {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${input.apiKey}`,
-        "Content-Type": "application/json",
+    response = await fetch(
+      buildApiEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "responses", "responses"),
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${input.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: input.model,
+          input: input.prompt,
+          tools: [
+            createResponsesImageTool(
+              input.params,
+              false,
+              input.streamImages,
+              input.streamPartialImages,
+            ),
+          ],
+          tool_choice: "required",
+          ...(input.streamImages ? { stream: true } : {}),
+        }),
       },
-      body: JSON.stringify({
-        model: input.model,
-        input: input.prompt,
-        tools: [createResponsesImageTool(input.params, false, input.streamImages, input.streamPartialImages)],
-        tool_choice: "required",
-        ...(input.streamImages ? { stream: true } : {}),
-      }),
-    });
+    );
   } catch {
     throw new Error(SERVER_DISCONNECTED_MESSAGE);
   }
@@ -277,28 +305,31 @@ async function editImageViaResponses(input: EditImageInput & { prompt: string })
 
   let response: Response;
   try {
-    response = await fetch(buildApiEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "responses", "responses"), {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${input.apiKey}`,
-        "Content-Type": "application/json",
+    response = await fetch(
+      buildApiEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "responses", "responses"),
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${input.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: input.model,
+          input: createResponsesInput(input.prompt, inputImageDataUrls),
+          tools: [
+            createResponsesImageTool(
+              input.params,
+              true,
+              input.streamImages,
+              input.streamPartialImages,
+              maskDataUrl,
+            ),
+          ],
+          tool_choice: "required",
+          ...(input.streamImages ? { stream: true } : {}),
+        }),
       },
-      body: JSON.stringify({
-        model: input.model,
-        input: createResponsesInput(input.prompt, inputImageDataUrls),
-        tools: [
-          createResponsesImageTool(
-            input.params,
-            true,
-            input.streamImages,
-            input.streamPartialImages,
-            maskDataUrl,
-          ),
-        ],
-        tool_choice: "required",
-        ...(input.streamImages ? { stream: true } : {}),
-      }),
-    });
+    );
   } catch {
     throw new Error(SERVER_DISCONNECTED_MESSAGE);
   }
@@ -330,11 +361,13 @@ function createResponsesImageTool(
     background: params.background,
     output_format: params.outputFormat,
     ...(streamImages ? { partial_images: normalizeStreamPartialImages(streamPartialImages) } : {}),
-    ...(maskDataUrl ? {
-      input_image_mask: {
-        image_url: maskDataUrl,
-      },
-    } : {}),
+    ...(maskDataUrl
+      ? {
+          input_image_mask: {
+            image_url: maskDataUrl,
+          },
+        }
+      : {}),
   };
 }
 
@@ -359,12 +392,15 @@ function logImageRequest(
   model: string,
   images: Array<{ blob: Blob; name: string }>,
 ) {
-  console.info("[imagesApi] image request", JSON.stringify({
-    action,
-    model,
-    imageCount: images.length,
-    images: imageDebugInfo(images),
-  }));
+  console.info(
+    "[imagesApi] image request",
+    JSON.stringify({
+      action,
+      model,
+      imageCount: images.length,
+      images: imageDebugInfo(images),
+    }),
+  );
 }
 
 function imageDebugInfo(images: Array<{ blob: Blob; name: string }>) {
@@ -472,10 +508,11 @@ async function getApiErrorMessage(response: Response) {
       error?: { message?: string } | string;
       message?: string;
     };
-    const detail = typeof payload.error === "string"
-      ? payload.error
-      : payload.error?.message || payload.message;
-    return detail ? `请求失败：HTTP ${response.status}：${detail}` : `请求失败：HTTP ${response.status}`;
+    const detail =
+      typeof payload.error === "string" ? payload.error : payload.error?.message || payload.message;
+    return detail
+      ? `请求失败：HTTP ${response.status}：${detail}`
+      : `请求失败：HTTP ${response.status}`;
   } catch {
     return `请求失败：HTTP ${response.status}`;
   }

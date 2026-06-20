@@ -33,9 +33,7 @@ export async function createZipArchive(entries: ZipEntry[]) {
   }
 
   const centralDirectoryOffset = offset;
-  const centralDirectoryParts = preparedEntries.map((entry) =>
-    zipCentralDirectoryHeader(entry),
-  );
+  const centralDirectoryParts = preparedEntries.map((entry) => zipCentralDirectoryHeader(entry));
   const centralDirectorySize = centralDirectoryParts.reduce(
     (size, part) => size + part.byteLength,
     0,
@@ -43,11 +41,7 @@ export async function createZipArchive(entries: ZipEntry[]) {
 
   parts.push(...centralDirectoryParts);
   parts.push(
-    zipEndOfCentralDirectory(
-      preparedEntries.length,
-      centralDirectorySize,
-      centralDirectoryOffset,
-    ),
+    zipEndOfCentralDirectory(preparedEntries.length, centralDirectorySize, centralDirectoryOffset),
   );
 
   return new Blob(parts, { type: "application/zip" });
@@ -140,17 +134,9 @@ function crc32(bytes: Uint8Array) {
 }
 
 function dosTime(date = new Date()) {
-  return (
-    (date.getHours() << 11) |
-    (date.getMinutes() << 5) |
-    Math.floor(date.getSeconds() / 2)
-  );
+  return (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2);
 }
 
 function dosDate(date = new Date()) {
-  return (
-    ((date.getFullYear() - 1980) << 9) |
-    ((date.getMonth() + 1) << 5) |
-    date.getDate()
-  );
+  return ((date.getFullYear() - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate();
 }

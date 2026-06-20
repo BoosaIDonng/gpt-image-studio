@@ -1,9 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  computeBackoffDelay,
-  isNetworkError,
-  withNetworkRetry,
-} from "./networkRetry";
+import { computeBackoffDelay, isNetworkError, withNetworkRetry } from "./networkRetry";
 import { NetworkError, SERVER_DISCONNECTED_MESSAGE } from "../shared/apiErrors";
 
 beforeEach(() => {
@@ -78,9 +74,7 @@ describe("withNetworkRetry", () => {
     const fn = vi.fn().mockRejectedValue(new TypeError("fetch failed"));
     const onRetry = vi.fn();
 
-    await expect(
-      withNetworkRetry(fn, () => false, onRetry),
-    ).rejects.toThrow("fetch failed");
+    await expect(withNetworkRetry(fn, () => false, onRetry)).rejects.toThrow("fetch failed");
 
     expect(fn).toHaveBeenCalledTimes(1);
     expect(onRetry).not.toHaveBeenCalled();
@@ -133,9 +127,7 @@ describe("withNetworkRetry", () => {
     const fn = vi.fn().mockRejectedValue(new Error("请求失败：HTTP 400"));
     const onRetry = vi.fn();
 
-    await expect(
-      withNetworkRetry(fn, () => true, onRetry),
-    ).rejects.toThrow("请求失败：HTTP 400");
+    await expect(withNetworkRetry(fn, () => true, onRetry)).rejects.toThrow("请求失败：HTTP 400");
 
     expect(fn).toHaveBeenCalledTimes(1);
     expect(onRetry).not.toHaveBeenCalled();

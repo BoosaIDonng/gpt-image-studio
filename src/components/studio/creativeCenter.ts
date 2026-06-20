@@ -84,9 +84,7 @@ export const creativeTemplates: CreativeTemplate[] = [
   },
 ];
 
-export function buildCreativeCenterStatus(
-  input: CreativeCenterInput,
-): CreativeCenterStatus {
+export function buildCreativeCenterStatus(input: CreativeCenterInput): CreativeCenterStatus {
   const isConnected =
     input.connectionMode === "localCompanion"
       ? input.companionPaired
@@ -117,14 +115,10 @@ function connectionLabel(connectionMode: ConnectionMode, isConnected: boolean) {
 
 function connectionDetail(connectionMode: ConnectionMode, isConnected: boolean) {
   if (connectionMode === "localCompanion") {
-    return isConnected
-      ? "API 凭据保存在本机 Companion 中"
-      : "需要在设置中完成本地 Companion 配对";
+    return isConnected ? "API 凭据保存在本机 Companion 中" : "需要在设置中完成本地 Companion 配对";
   }
 
-  return isConnected
-    ? "将从浏览器直接请求当前 API"
-    : "先在设置中填写 API key 和 Base URL";
+  return isConnected ? "将从浏览器直接请求当前 API" : "先在设置中填写 API key 和 Base URL";
 }
 
 function activityLabel(pendingJobCount: number, failedMessageCount: number) {
