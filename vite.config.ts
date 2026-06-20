@@ -15,4 +15,22 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' && vueDevTools(),
     tailwindcss(),
   ].filter(Boolean),
+  build: {
+    rollupOptions: {
+      output: {
+        // Vue / Pinia 等框架代码单独成 chunk，长期不变可强缓存
+        manualChunks(id: string) {
+          if (id.includes('node_modules/vue') || id.includes('node_modules/pinia')) {
+            return 'vendor-vue';
+          }
+          if (id.includes('node_modules/dexie')) {
+            return 'vendor-db';
+          }
+          if (id.includes('node_modules/marked')) {
+            return 'vendor-marked';
+          }
+        },
+      },
+    },
+  },
 }))

@@ -1,15 +1,19 @@
 <script setup lang="ts">
+import { defineAsyncComponent } from "vue";
 import ChatWorkspace from "./components/studio/ChatWorkspace.vue";
 import ConversationSidebar from "./components/studio/ConversationSidebar.vue";
 import ImageLibrary from "./components/studio/ImageLibrary.vue";
-import ImagePreviewModal from "./components/studio/ImagePreviewModal.vue";
-import SettingsModal from "./components/studio/SettingsModal.vue";
 import ConfirmDialog from "./components/ui/ConfirmDialog.vue";
-import ExpandPreviewModal from "./components/ui/ExpandPreviewModal.vue";
 import FloatingChat from "./components/studio/FloatingChat.vue";
 import NoticeToast from "./components/ui/NoticeToast.vue";
 import RenameDialog from "./components/ui/RenameDialog.vue";
 import { useStudioViewModel } from "./app/studio";
+
+// 模态框懒加载：这些组件只在用户主动操作时才需要，
+// 用 defineAsyncComponent 拆成独立 chunk，减少首屏加载体积。
+const SettingsModal = defineAsyncComponent(() => import("./components/studio/SettingsModal.vue"));
+const ImagePreviewModal = defineAsyncComponent(() => import("./components/studio/ImagePreviewModal.vue"));
+const ExpandPreviewModal = defineAsyncComponent(() => import("./components/ui/ExpandPreviewModal.vue"));
 
 const studio = useStudioViewModel();
 </script>
