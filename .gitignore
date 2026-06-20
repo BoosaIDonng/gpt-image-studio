@@ -21,6 +21,16 @@ private-folder-alias.json
 docs/superpowers
 .superpowers/
 vite-dev.pid
+embed-test.html
+
+# Windows junk
+nul
+desktop.ini
+thumbs.db
+Thumbs.db
+*.bak
+*.tmp
+*.tsbuildinfo
 
 # Editor directories and files
 .vscode/*
