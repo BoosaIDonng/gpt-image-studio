@@ -13,6 +13,7 @@ import { isoTimestamp } from "../shared/dateTime";
 import { formatError } from "../shared/errors";
 import { createId } from "../shared/id";
 import { createObjectUrl, revokeObjectUrls } from "../shared/objectUrls";
+import { toPlainImageAsset } from "./generationStoreUtils";
 import { useFeedbackStore } from "./feedbackStore";
 import type { ImageAsset, Message } from "../types/studio";
 import type { Ref } from "vue";
@@ -322,33 +323,6 @@ export const useImagesStore = defineStore("images", () => {
     setImageTagColor,
   };
 });
-
-function toPlainImageAsset(imageAsset: ImageAsset): ImageAsset {
-  return {
-    id: imageAsset.id,
-    blobKey: imageAsset.blobKey,
-    name: imageAsset.name,
-    source: imageAsset.source,
-    tagColor: imageAsset.tagColor,
-    mimeType: imageAsset.mimeType,
-    width: imageAsset.width,
-    height: imageAsset.height,
-    sizeBytes: imageAsset.sizeBytes,
-    conversationId: imageAsset.conversationId,
-    messageId: imageAsset.messageId,
-    prompt: imageAsset.prompt,
-    requestPrompt: imageAsset.requestPrompt,
-    revisedPrompt: imageAsset.revisedPrompt,
-    referencedImageIds: imageAsset.referencedImageIds
-      ? [...imageAsset.referencedImageIds]
-      : undefined,
-    editSourceImageId: imageAsset.editSourceImageId,
-    generationDurationMs: imageAsset.generationDurationMs,
-    isEditMask: imageAsset.isEditMask,
-    createdAt: imageAsset.createdAt,
-    updatedAt: imageAsset.updatedAt,
-  };
-}
 
 function revokeRemovedPreviewUrls(
   previousImages: ImageAsset[] | undefined,

@@ -28,6 +28,11 @@ import { saveSettings } from "../services/settings";
 import { GROK_SUPPORTED_RATIOS, GROK_SUPPORTED_RESOLUTIONS } from "../services/grokImagesApi";
 import { isoTimestamp } from "../shared/dateTime";
 import { createId } from "../shared/id";
+import {
+  MAX_CUSTOM_DIMENSION,
+  MAX_CUSTOM_PIXELS,
+  SIZE_STEP,
+} from "../shared/imageConstraints";
 import { readJsonStorage, readStorage, writeStorage } from "../shared/localStorage";
 import {
   FIXED_IMAGE_MODEL,
@@ -78,9 +83,6 @@ const SIZE_RESOLUTION_OPTIONS = [
   { value: "2k", label: "2K", targetPixels: 2048 * 2048 },
   { value: "4k", label: "4K", targetPixels: 3840 * 2160 },
 ] as const;
-const MAX_CUSTOM_DIMENSION = 3840;
-const MAX_CUSTOM_PIXELS = 8294400;
-const SIZE_STEP = 16;
 const MAX_PROMPT_REWRITE_GUARD_HISTORY = 20;
 const IMAGE_COUNT_PRESETS = [1, 2, 3, 4, 6, 8, 10, 12] as const;
 type ImageCountMode = "preset" | "custom";

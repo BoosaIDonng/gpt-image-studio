@@ -1,7 +1,7 @@
 import type { ApiMode, ApiProvider } from "../../../types/studio";
 import { editGeminiImage, generateGeminiImage } from "../../../services/geminiImagesApi";
 import { editGrokImage, generateGrokImage, generateGrokImages } from "../../../services/grokImagesApi";
-import { buildFinalRequestPrompt } from "../../../services/promptRequest";
+import { buildPromptRequest } from "../../../services/promptRequest";
 import {
   editImage,
   generateImage,
@@ -43,16 +43,7 @@ export function createDirectImagesClient(config: DirectClientConfig): ImageClien
           apiBaseUrlMode: config.getApiBaseUrlMode(),
           apiKey,
           model,
-          prompt: buildFinalRequestPrompt({
-            prompt: input.prompt,
-            promptMode: input.promptRequestSettings.promptMode,
-            promptWordbanks: input.promptRequestSettings.promptWordbanks,
-            promptRewriteGuardEnabled:
-              input.promptRequestSettings.promptRewriteGuardEnabled,
-            promptRewriteGuardText:
-              input.promptRequestSettings.promptRewriteGuardText,
-            ragContext: input.promptRequestSettings.ragContext,
-          }),
+          prompt: buildPromptRequest(input),
           params: input.params,
         });
       }
@@ -63,16 +54,7 @@ export function createDirectImagesClient(config: DirectClientConfig): ImageClien
           apiBaseUrlMode: config.getApiBaseUrlMode(),
           apiKey,
           model,
-          prompt: buildFinalRequestPrompt({
-            prompt: input.prompt,
-            promptMode: input.promptRequestSettings.promptMode,
-            promptWordbanks: input.promptRequestSettings.promptWordbanks,
-            promptRewriteGuardEnabled:
-              input.promptRequestSettings.promptRewriteGuardEnabled,
-            promptRewriteGuardText:
-              input.promptRequestSettings.promptRewriteGuardText,
-            ragContext: input.promptRequestSettings.ragContext,
-          }),
+          prompt: buildPromptRequest(input),
           params: input.params,
         });
       }
@@ -119,16 +101,7 @@ export function createDirectImagesClient(config: DirectClientConfig): ImageClien
         apiBaseUrlMode: config.getApiBaseUrlMode(),
         apiKey,
         model,
-        prompt: buildFinalRequestPrompt({
-          prompt: input.prompt,
-          promptMode: input.promptRequestSettings.promptMode,
-          promptWordbanks: input.promptRequestSettings.promptWordbanks,
-          promptRewriteGuardEnabled:
-            input.promptRequestSettings.promptRewriteGuardEnabled,
-          promptRewriteGuardText:
-            input.promptRequestSettings.promptRewriteGuardText,
-          ragContext: input.promptRequestSettings.ragContext,
-        }),
+        prompt: buildPromptRequest(input),
         params: input.params,
         count: input.count,
       });
@@ -152,16 +125,7 @@ export function createDirectImagesClient(config: DirectClientConfig): ImageClien
           apiBaseUrlMode: config.getApiBaseUrlMode(),
           apiKey,
           model,
-          prompt: buildFinalRequestPrompt({
-            prompt: input.prompt,
-            promptMode: input.promptRequestSettings.promptMode,
-            promptWordbanks: input.promptRequestSettings.promptWordbanks,
-            promptRewriteGuardEnabled:
-              input.promptRequestSettings.promptRewriteGuardEnabled,
-            promptRewriteGuardText:
-              input.promptRequestSettings.promptRewriteGuardText,
-            ragContext: input.promptRequestSettings.ragContext,
-          }),
+          prompt: buildPromptRequest(input),
           params: input.params,
           images: input.images,
           mask: input.mask,
@@ -174,16 +138,7 @@ export function createDirectImagesClient(config: DirectClientConfig): ImageClien
           apiBaseUrlMode: config.getApiBaseUrlMode(),
           apiKey,
           model,
-          prompt: buildFinalRequestPrompt({
-            prompt: input.prompt,
-            promptMode: input.promptRequestSettings.promptMode,
-            promptWordbanks: input.promptRequestSettings.promptWordbanks,
-            promptRewriteGuardEnabled:
-              input.promptRequestSettings.promptRewriteGuardEnabled,
-            promptRewriteGuardText:
-              input.promptRequestSettings.promptRewriteGuardText,
-            ragContext: input.promptRequestSettings.ragContext,
-          }),
+          prompt: buildPromptRequest(input),
           params: input.params,
           images: input.images,
           mask: input.mask,

@@ -1,5 +1,13 @@
 import type { ApiMode, GenerationParams } from "../types/studio";
 import { isGptImageModel } from "../shared/models";
+import {
+  MAX_CUSTOM_ASPECT_RATIO,
+  MAX_CUSTOM_DIMENSION,
+  MAX_CUSTOM_PIXELS,
+  MIN_CUSTOM_DIMENSION,
+  MIN_CUSTOM_PIXELS,
+  SIZE_STEP,
+} from "../shared/imageConstraints";
 
 export function normalizeApiBaseUrl(
   url: string,
@@ -99,25 +107,25 @@ export function getCustomSizeError(width: number, height: number) {
   }
 
   if (
-    normalizedWidth < 16 ||
-    normalizedHeight < 16 ||
-    normalizedWidth > 3840 ||
-    normalizedHeight > 3840 ||
-    normalizedWidth % 16 !== 0 ||
-    normalizedHeight % 16 !== 0
+    normalizedWidth < MIN_CUSTOM_DIMENSION ||
+    normalizedHeight < MIN_CUSTOM_DIMENSION ||
+    normalizedWidth > MAX_CUSTOM_DIMENSION ||
+    normalizedHeight > MAX_CUSTOM_DIMENSION ||
+    normalizedWidth % SIZE_STEP !== 0 ||
+    normalizedHeight % SIZE_STEP !== 0
   ) {
-    return "自定义尺寸的宽高必须是 16 到 3840 之间的 16 的倍数。";
+    return `自定义尺寸的宽高必须是 ${MIN_CUSTOM_DIMENSION} 到 ${MAX_CUSTOM_DIMENSION} 之间的 ${SIZE_STEP} 的倍数。`;
   }
 
   const pixels = normalizedWidth * normalizedHeight;
-  if (pixels < 655360 || pixels > 8294400) {
-    return "自定义尺寸的总像素必须在 655,360 到 8,294,400 之间。";
+  if (pixels < MIN_CUSTOM_PIXELS || pixels > MAX_CUSTOM_PIXELS) {
+    return `自定义尺寸的总像素必须在 ${MIN_CUSTOM_PIXELS.toLocaleString("en-US")} 到 ${MAX_CUSTOM_PIXELS.toLocaleString("en-US")} 之间。`;
   }
 
   const longSide = Math.max(normalizedWidth, normalizedHeight);
   const shortSide = Math.min(normalizedWidth, normalizedHeight);
-  if (longSide / shortSide > 3) {
-    return "自定义尺寸的长边与短边比例不能超过 3:1。";
+  if (longSide / shortSide > MAX_CUSTOM_ASPECT_RATIO) {
+    return `自定义尺寸的长边与短边比例不能超过 ${MAX_CUSTOM_ASPECT_RATIO}:1。`;
   }
 
   return "";

@@ -1,5 +1,5 @@
 import type { ApiProvider, GenerationParams } from "../../../types/studio";
-import { buildFinalRequestPrompt } from "../../../services/promptRequest";
+import { buildPromptRequest } from "../../../services/promptRequest";
 import { isGptImageModel } from "../../../shared/models";
 import { blobToBase64, blobToDataUrl } from "../../../shared/blobUtils";
 import { isSizeRatio, normalizeImageCount } from "../../../services/generationParams";
@@ -29,16 +29,7 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
     async generate(input) {
       const url = `${config.getCompanionUrl()}/images/generations`;
       const model = config.getModel();
-      const prompt = buildFinalRequestPrompt({
-        prompt: input.prompt,
-        promptMode: input.promptRequestSettings.promptMode,
-        promptWordbanks: input.promptRequestSettings.promptWordbanks,
-        promptRewriteGuardEnabled:
-          input.promptRequestSettings.promptRewriteGuardEnabled,
-        promptRewriteGuardText:
-          input.promptRequestSettings.promptRewriteGuardText,
-        ragContext: input.promptRequestSettings.ragContext,
-      });
+      const prompt = buildPromptRequest(input);
 
       if (config.getApiProvider() === "grok") {
         const response = await fetch(url, {
@@ -95,16 +86,7 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
 
       const url = `${config.getCompanionUrl()}/images/generations`;
       const model = config.getModel();
-      const prompt = buildFinalRequestPrompt({
-        prompt: input.prompt,
-        promptMode: input.promptRequestSettings.promptMode,
-        promptWordbanks: input.promptRequestSettings.promptWordbanks,
-        promptRewriteGuardEnabled:
-          input.promptRequestSettings.promptRewriteGuardEnabled,
-        promptRewriteGuardText:
-          input.promptRequestSettings.promptRewriteGuardText,
-        ragContext: input.promptRequestSettings.ragContext,
-      });
+      const prompt = buildPromptRequest(input);
       const count = normalizeImageCount(input.count);
       const results: ImageClientResult[] = [];
 
@@ -131,16 +113,7 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
     async edit(input) {
       const url = `${config.getCompanionUrl()}/images/edits`;
       const model = config.getModel();
-      const prompt = buildFinalRequestPrompt({
-        prompt: input.prompt,
-        promptMode: input.promptRequestSettings.promptMode,
-        promptWordbanks: input.promptRequestSettings.promptWordbanks,
-        promptRewriteGuardEnabled:
-          input.promptRequestSettings.promptRewriteGuardEnabled,
-        promptRewriteGuardText:
-          input.promptRequestSettings.promptRewriteGuardText,
-        ragContext: input.promptRequestSettings.ragContext,
-      });
+      const prompt = buildPromptRequest(input);
 
       if (config.getApiProvider() === "grok") {
         if (input.mask) {

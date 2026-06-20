@@ -1,4 +1,4 @@
-import type { PromptMode, PromptWordbanks } from "../types/studio";
+import type { PromptMode, PromptRequestSettings, PromptWordbanks } from "../types/studio";
 import { buildImagePrompt } from "./promptBuilder";
 
 export type BuildFinalRequestPromptInput = {
@@ -51,4 +51,26 @@ export function buildFinalRequestPrompt(input: BuildFinalRequestPromptInput) {
     input.promptRewriteGuardEnabled ?? false,
     input.promptRewriteGuardText,
   );
+}
+
+/**
+ * 基于「用户输入 + 提示词请求设置」一次性构造最终请求 prompt。
+ *
+ * 之前该 7 字段解构在 Grok/Gemini/companion 等多个客户端的
+ * generate/edit/generateBatch 路径里逐字复制了 12 遍，现收敛到此处。
+ */
+export function buildPromptRequest(input: {
+  prompt: string;
+  promptRequestSettings: PromptRequestSettings;
+}) {
+  return buildFinalRequestPrompt({
+    prompt: input.prompt,
+    promptMode: input.promptRequestSettings.promptMode,
+    promptWordbanks: input.promptRequestSettings.promptWordbanks,
+    promptRewriteGuardEnabled:
+      input.promptRequestSettings.promptRewriteGuardEnabled,
+    promptRewriteGuardText:
+      input.promptRequestSettings.promptRewriteGuardText,
+    ragContext: input.promptRequestSettings.ragContext,
+  });
 }

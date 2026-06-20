@@ -57,11 +57,11 @@ export async function expandPrompt(
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");
-    throw new Error(`Prompt expand failed (${response.status}): ${text}`);
+    throw new Error(`提示词扩展失败：HTTP ${response.status}：${text}`);
   }
 
   const data = await response.json();
   const expanded = data?.choices?.[0]?.message?.content?.trim();
-  if (!expanded) throw new Error("Prompt expand returned empty response");
+  if (!expanded) throw new Error("提示词扩展返回了空响应");
   return expanded;
 }

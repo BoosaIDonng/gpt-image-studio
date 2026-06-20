@@ -33,11 +33,11 @@ export async function streamChatReply(
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");
-    throw new Error(`Chat failed (${response.status}): ${text}`);
+    throw new Error(`聊天请求失败：HTTP ${response.status}：${text}`);
   }
 
   const reader = response.body?.getReader();
-  if (!reader) throw new Error("No response body");
+  if (!reader) throw new Error("响应没有可读的内容流");
 
   const decoder = new TextDecoder();
   let buffer = "";
@@ -66,6 +66,6 @@ export async function streamChatReply(
     }
   }
 
-  if (!result.trim()) throw new Error("Empty response");
+  if (!result.trim()) throw new Error("响应内容为空");
   return result;
 }
