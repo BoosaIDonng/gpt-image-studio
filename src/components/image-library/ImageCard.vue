@@ -53,13 +53,13 @@ const titleStyle = computed(() => {
   <article
     :class="[
       'mb-2 flex cursor-pointer items-center gap-3 rounded-xl border p-2 transition-colors',
-      isSelected ? '' : 'border-gray-200 hover:bg-gray-50',
+      isSelected ? '' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800',
     ]"
     :style="[cardStyle, selectedBorderStyle]"
     @click="emit('selectImage', image.id)"
   >
     <div
-      class="group relative flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-xs text-gray-400"
+      class="group relative flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 text-xs text-gray-400 dark:text-gray-500"
       @click.stop="image.previewUrl && emit('previewImage', image.id)"
     >
       <img
@@ -81,17 +81,17 @@ const titleStyle = computed(() => {
       </button>
     </div>
     <div class="min-w-0 flex-1">
-      <div class="truncate text-sm font-medium text-gray-800" :style="titleStyle">
+      <div class="truncate text-sm font-medium text-gray-800 dark:text-gray-200" :style="titleStyle">
         {{ image.name }}
       </div>
-      <div class="truncate text-xs text-gray-500">
+      <div class="truncate text-xs text-gray-500 dark:text-gray-400">
         {{ sourceLabel(image) }} · {{ createdAtLabel }}
       </div>
     </div>
     <div class="flex shrink-0 items-center gap-1">
       <a
         v-if="image.previewUrl"
-        class="rounded-lg px-2 py-1 text-xs text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+        class="rounded-lg px-2 py-1 text-xs text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
         :download="imageDownloadName(image)"
         :href="image.previewUrl"
         @click.stop
@@ -102,8 +102,8 @@ const titleStyle = computed(() => {
         :class="[
           'cursor-pointer rounded-lg px-2 py-1 text-xs transition-colors',
           isAttached
-            ? 'bg-gray-100 text-gray-400'
-            : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700',
+            ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500'
+            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300',
         ]"
         type="button"
         @click.stop="emit('attachImage', image.id)"

@@ -153,31 +153,31 @@ function setImageTagColor(
   ></div>
   <aside
     :class="[
-      'flex w-[320px] shrink-0 flex-col border-l border-gray-200 bg-white max-lg:fixed max-lg:inset-y-0 max-lg:right-0 max-lg:z-20 max-lg:transition-transform max-lg:duration-200 max-lg:ease-out',
+      'flex w-[320px] shrink-0 flex-col border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 max-lg:fixed max-lg:inset-y-0 max-lg:right-0 max-lg:z-20 max-lg:transition-transform max-lg:duration-200 max-lg:ease-out',
       composer.isLibraryOpen
         ? 'max-lg:translate-x-0'
         : 'max-lg:translate-x-full',
     ]"
     aria-label="图片库"
   >
-    <div class="border-b border-gray-200 px-4 py-3">
+    <div class="border-b border-gray-200 dark:border-gray-700 px-4 py-3">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <span class="text-base font-semibold text-gray-800">图片库</span>
-          <span class="text-sm text-gray-500"
+          <span class="text-base font-semibold text-gray-800 dark:text-gray-100">图片库</span>
+          <span class="text-sm text-gray-500 dark:text-gray-400"
             >{{ libraryImages.length }} 张图片</span
           >
         </div>
         <div class="flex items-center gap-1">
           <button
-            class="cursor-pointer rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900"
+            class="cursor-pointer rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
             type="button"
             @click="emit('openBatchOperations')"
           >
             批量下载
           </button>
           <button
-            class="cursor-pointer rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 lg:hidden"
+            class="cursor-pointer rounded-lg p-1.5 text-gray-400 dark:text-gray-500 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300 lg:hidden"
             aria-label="关闭图片库"
             type="button"
             @click="composer.setLibraryOpen(false)"
@@ -200,13 +200,13 @@ function setImageTagColor(
         :storage-usage="images.storageUsage"
       />
 
-      <div class="mt-3 grid grid-cols-2 rounded-lg bg-gray-100 p-1 text-sm">
+      <div class="mt-3 grid grid-cols-2 rounded-lg bg-gray-100 dark:bg-gray-800 p-1 text-sm">
         <button
           :class="[
             'cursor-pointer rounded-md px-2 py-1 transition-colors',
             activeFilter === 'current'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-500 hover:text-gray-800',
+              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200',
           ]"
           type="button"
           @click="activeFilter = 'current'"
@@ -217,8 +217,8 @@ function setImageTagColor(
           :class="[
             'cursor-pointer rounded-md px-2 py-1 transition-colors',
             activeFilter === 'all'
-              ? 'bg-white text-gray-900 shadow-sm'
-              : 'text-gray-500 hover:text-gray-800',
+              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200',
           ]"
           type="button"
           @click="activeFilter = 'all'"
@@ -226,14 +226,14 @@ function setImageTagColor(
           全部图片
         </button>
       </div>
-      <div class="mt-2 flex items-center gap-2 rounded-lg bg-gray-50 px-2 py-2">
+      <div class="mt-2 flex items-center gap-2 rounded-lg bg-gray-50 dark:bg-gray-800 px-2 py-2">
         <button
           aria-label="不过滤颜色"
           :class="[
             'h-3 w-3 cursor-pointer rounded-full border transition-transform hover:scale-105',
             activeColorFilter === 'all'
-              ? 'border-gray-700 ring-2 ring-gray-400/60'
-              : 'border-gray-300',
+              ? 'border-gray-700 dark:border-gray-300 ring-2 ring-gray-400/60 dark:ring-gray-500/60'
+              : 'border-gray-300 dark:border-gray-600',
           ]"
           style="background-color: #ffffff"
           type="button"
@@ -246,8 +246,8 @@ function setImageTagColor(
           :class="[
             'h-3 w-3 cursor-pointer rounded-full border transition-transform hover:scale-105',
             activeColorFilter === color
-              ? 'border-gray-700 ring-2 ring-gray-400/60'
-              : 'border-gray-300',
+              ? 'border-gray-700 dark:border-gray-300 ring-2 ring-gray-400/60 dark:ring-gray-500/60'
+              : 'border-gray-300 dark:border-gray-600',
           ]"
           :style="{ backgroundColor: imageTagDotColor(color) }"
           type="button"

@@ -204,19 +204,19 @@ function buildProjectContext() {
   <!-- 展开面板（跟随气泡位置） -->
   <div
     v-if="chat.isOpen"
-    class="flex flex-col rounded-2xl border border-gray-200 bg-white shadow-2xl"
+    class="flex flex-col rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-2xl"
     :style="panelStyle"
   >
     <!-- 头部 -->
-    <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+    <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-4 py-3">
       <div>
-        <h3 class="text-sm font-semibold text-gray-900">AI 助手</h3>
-        <p class="text-xs text-gray-400">改写 prompt、提问、聊天</p>
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">AI 助手</h3>
+        <p class="text-xs text-gray-400 dark:text-gray-500">改写 prompt、提问、聊天</p>
       </div>
       <div class="flex items-center gap-1">
         <button
           v-if="chat.messages.length"
-          class="cursor-pointer rounded p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+          class="cursor-pointer rounded p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
           type="button"
           title="清空对话"
           @click="chat.clear"
@@ -226,7 +226,7 @@ function buildProjectContext() {
           </svg>
         </button>
         <button
-          class="cursor-pointer rounded p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+          class="cursor-pointer rounded p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
           type="button"
           title="关闭"
           @click="chat.close"
@@ -240,7 +240,7 @@ function buildProjectContext() {
 
     <!-- 消息列表 -->
     <div ref="listRef" class="flex-1 overflow-y-auto px-4 py-3 space-y-3">
-      <div v-if="!chat.messages.length" class="text-center text-xs text-gray-400 py-8">
+      <div v-if="!chat.messages.length" class="text-center text-xs text-gray-400 dark:text-gray-500 py-8">
         发一句试试。例如「帮我把这个 prompt 改写得更有电影感：一个女孩在咖啡馆」
       </div>
       <div
@@ -251,13 +251,13 @@ function buildProjectContext() {
         <div
           :class="[
             'max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words',
-            msg.role === 'user' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-800',
+            msg.role === 'user' ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200',
           ]"
         >
           {{ msg.content || (chat.isStreaming && i === chat.messages.length - 1 ? '...' : '') }}
           <button
             v-if="msg.role === 'assistant' && msg.content && !(chat.isStreaming && i === chat.messages.length - 1)"
-            class="mt-2 block text-xs text-blue-600 hover:underline cursor-pointer"
+            class="mt-2 block text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
             type="button"
             @click="insertToComposer(msg.content)"
           >
@@ -265,22 +265,22 @@ function buildProjectContext() {
           </button>
         </div>
       </div>
-      <div v-if="chat.error" class="text-xs text-red-500 px-2">{{ chat.error }}</div>
+      <div v-if="chat.error" class="text-xs text-red-500 dark:text-red-400 px-2">{{ chat.error }}</div>
     </div>
 
     <!-- 输入区 -->
-    <div class="border-t border-gray-100 p-3">
+    <div class="border-t border-gray-100 dark:border-gray-700 p-3">
       <div class="flex gap-2">
         <textarea
           v-model="chat.input"
           rows="2"
-          class="flex-1 resize-none rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-500"
+          class="flex-1 resize-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-gray-500 dark:focus:border-gray-400"
           placeholder="输入消息，Enter 发送，Shift+Enter 换行"
           :disabled="chat.isStreaming"
           @keydown="handleKeydown"
         />
         <button
-          class="self-end cursor-pointer rounded-lg bg-gray-900 px-3 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+          class="self-end cursor-pointer rounded-lg bg-gray-900 dark:bg-gray-100 px-3 py-2 text-sm font-medium text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
           type="button"
           :disabled="!chat.input.trim() || chat.isStreaming"
           @click="sendWithProjectContext"

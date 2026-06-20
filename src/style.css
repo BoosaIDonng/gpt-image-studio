@@ -3,12 +3,22 @@
 /* 暗色模式：使用 class 策略，根元素添加 .dark 类即可切换 */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* 全局主题过渡：背景色和文字色切换时平滑过渡 */
+html {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
 /* 暗色模式下的滚动条配色 */
 .dark * {
   scrollbar-color: rgba(100, 100, 100, 0.4) transparent;
 }
 .dark *:hover {
   scrollbar-color: rgba(140, 140, 140, 0.5) transparent;
+}
+
+/* 暗色模式下的图片：略微降低亮度，减少白色背景图片的刺眼感 */
+.dark img:not([data-no-dark-filter]) {
+  filter: brightness(0.92);
 }
 
 * {
