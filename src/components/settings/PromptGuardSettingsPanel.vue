@@ -1,51 +1,50 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { PROMPT_REWRITE_GUARD_PREFIX } from "../../services/imagesApi";
+import { useSettingsModalContext } from "./settingsModalContext";
+
 import type { PromptRewriteGuardHistoryItem } from "../../types/studio";
 
-const props = defineProps<{
-  enabled: boolean;
-  text: string;
-  history: PromptRewriteGuardHistoryItem[];
-}>();
+const ctx = useSettingsModalContext();
+const {
+  promptRewriteGuardEnabled: enabled, promptRewriteGuardText: text,
+  promptRewriteGuardHistory: history,
+  updatePromptRewriteGuardEnabled: updateEnabled,
+  savePromptRewriteGuardText: saveText,
+  restoreDefaultPromptRewriteGuardText: ctxRestoreDefault,
+  restorePromptRewriteGuardHistoryItem: ctxRestoreHistory,
+  deletePromptRewriteGuardHistoryItem: deleteHistory,
+} = ctx;
 
-const emit = defineEmits<{
-  "update:enabled": [value: boolean];
-  saveText: [value: string];
-  restoreDefault: [];
-  restoreHistory: [id: string];
-  deleteHistory: [id: string];
-}>();
-
-const draftText = ref(props.text);
+const draftText = ref(text.value);
 const copiedId = ref("");
-const hasChanges = computed(() => draftText.value !== props.text);
+const hasChanges = computed(() => draftText.value !== text.value);
 const sortedHistory = computed(() =>
-  [...props.history].sort(
+  [...history.value].sort(
     (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
   ),
 );
 
 watch(
-  () => props.text,
+  () => text.value,
   (text) => {
     draftText.value = text;
   },
 );
 
 function saveDraft() {
-  emit("saveText", draftText.value);
+  saveText(draftText.value);
 }
 
 function restoreDefault() {
   draftText.value = PROMPT_REWRITE_GUARD_PREFIX;
-  emit("restoreDefault");
+  ctxRestoreDefault();
 }
 
 function restoreHistory(id: string) {
-  const item = props.history.find((entry) => entry.id === id);
+  const item = history.value.find((entry) => entry.id === id);
   if (item) draftText.value = item.text;
-  emit("restoreHistory", id);
+  ctxRestoreHistory(id);
 }
 
 async function copyHistory(item: PromptRewriteGuardHistoryItem) {
@@ -102,7 +101,7 @@ function isDefaultHistoryItem(item: PromptRewriteGuardHistoryItem) {
             'relative mt-0.5 inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors',
             enabled ? 'bg-gray-900' : 'bg-gray-300',
           ]"
-          @click="emit('update:enabled', !enabled)"
+          @click="updateEnabled(!enabled)"
         >
           <span
             :class="[
@@ -189,7 +188,7 @@ function isDefaultHistoryItem(item: PromptRewriteGuardHistoryItem) {
                 <button
                   class="cursor-pointer rounded-md px-2 py-1 text-xs text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600"
                   type="button"
-                  @click="emit('deleteHistory', item.id)"
+                  @click="deleteHistory(item.id)"
                 >
                   删除
                 </button>

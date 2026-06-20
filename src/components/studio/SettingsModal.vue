@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, toRef, watch } from "vue";
 import { FocusTrap } from "focus-trap-vue";
 import type {
   ApiMode,
@@ -14,6 +14,7 @@ import type {
   PromptWordbanks,
   PromptRewriteGuardHistoryItem,
 } from "../../types/studio";
+import { provideSettingsModalContext } from "../settings/settingsModalContext";
 import ApiSettingsPanel from "../settings/ApiSettingsPanel.vue";
 import BackupPanel from "../settings/BackupPanel.vue";
 import BatchOperationsPanel from "../settings/BatchOperationsPanel.vue";
@@ -109,6 +110,73 @@ const emit = defineEmits<{
   setPromptRewriteGuardEnabled: [value: boolean];
 }>();
 
+// 通过 provide/inject 向子面板共享数据，消除层层 props 传递
+provideSettingsModalContext({
+  connectionMode: toRef(props, "connectionMode"),
+  apiProvider: toRef(props, "apiProvider"),
+  apiBaseUrl: toRef(props, "apiBaseUrl"),
+  apiBaseUrlMode: toRef(props, "apiBaseUrlMode"),
+  apiMode: toRef(props, "apiMode"),
+  apiKey: toRef(props, "apiKey"),
+  model: toRef(props, "model"),
+  streamImages: toRef(props, "streamImages"),
+  streamPartialImages: toRef(props, "streamPartialImages"),
+  companionUrl: toRef(props, "companionUrl"),
+  companionSessionToken: toRef(props, "companionSessionToken"),
+  companionPaired: toRef(props, "companionPaired"),
+  updateConnectionMode: (v) => emit("update:connectionMode", v),
+  updateApiProvider: (v) => emit("update:apiProvider", v),
+  updateApiBaseUrl: (v) => emit("update:apiBaseUrl", v),
+  updateApiBaseUrlMode: (v) => emit("update:apiBaseUrlMode", v),
+  updateApiMode: (v) => emit("update:apiMode", v),
+  updateApiKey: (v) => emit("update:apiKey", v),
+  updateModel: (v) => emit("update:model", v),
+  updateStreamImages: (v) => emit("update:streamImages", v),
+  updateStreamPartialImages: (v) => emit("update:streamPartialImages", v),
+  updateCompanionSessionToken: (v) => emit("update:companionSessionToken", v),
+  autoRetryOnNetworkError: toRef(props, "autoRetryOnNetworkError"),
+  promptExpandEnabled: toRef(props, "promptExpandEnabled"),
+  chatApiKey: toRef(props, "chatApiKey"),
+  chatApiBaseUrl: toRef(props, "chatApiBaseUrl"),
+  chatModel: toRef(props, "chatModel"),
+  chatSystemPrompt: toRef(props, "chatSystemPrompt"),
+  updateAutoRetryOnNetworkError: (v) => emit("update:autoRetryOnNetworkError", v),
+  updatePromptExpandEnabled: (v) => emit("update:promptExpandEnabled", v),
+  updateChatApiKey: (v) => emit("update:chatApiKey", v),
+  updateChatApiBaseUrl: (v) => emit("update:chatApiBaseUrl", v),
+  updateChatModel: (v) => emit("update:chatModel", v),
+  updateChatSystemPrompt: (v) => emit("update:chatSystemPrompt", v),
+  promptMode: toRef(props, "promptMode"),
+  promptWordbanks: toRef(props, "promptWordbanks"),
+  ragEnabled: toRef(props, "ragEnabled"),
+  ragTopK: toRef(props, "ragTopK"),
+  updatePromptMode: (v) => emit("update:promptMode", v),
+  updateRagEnabled: (v) => emit("update:ragEnabled", v),
+  updateRagTopK: (v) => emit("update:ragTopK", v),
+  saveWordbank: (s, t) => emit("savePromptWordbank", s, t),
+  restoreDefaultWordbank: (s) => emit("restoreDefaultPromptWordbank", s),
+  promptRewriteGuardEnabled: toRef(props, "promptRewriteGuardEnabled"),
+  promptRewriteGuardText: toRef(props, "promptRewriteGuardText"),
+  promptRewriteGuardHistory: toRef(props, "promptRewriteGuardHistory"),
+  updatePromptRewriteGuardEnabled: (v) => emit("update:promptRewriteGuardEnabled", v),
+  savePromptRewriteGuardText: (v) => emit("savePromptRewriteGuardText", v),
+  restoreDefaultPromptRewriteGuardText: () => emit("restoreDefaultPromptRewriteGuardText"),
+  restorePromptRewriteGuardHistoryItem: (id) => emit("restorePromptRewriteGuardHistoryItem", id),
+  deletePromptRewriteGuardHistoryItem: (id) => emit("deletePromptRewriteGuardHistoryItem", id),
+  favoritePrompts: toRef(props, "favoritePrompts"),
+  addFavoritePrompt: (v) => emit("addFavoritePrompt", v),
+  updateFavoritePrompt: (id, v) => emit("updateFavoritePrompt", id, v),
+  deleteFavoritePrompt: (id) => emit("deleteFavoritePrompt", id),
+  conversations: toRef(props, "conversations"),
+  images: toRef(props, "images"),
+  messages: toRef(props, "messages"),
+  deleteConversations: (ids) => emit("deleteConversations", ids),
+  deleteImages: (ids) => emit("deleteImages", ids),
+  previewImage: (id) => emit("previewImage", id),
+  exportBackup: () => emit("exportBackup"),
+  importBackupRequest: requestBackupImport,
+});
+
 const activeTab = ref<SettingsTab>("general");
 const pendingBackupFile = ref<File | null>(null);
 const isRestoreConfirmOpen = ref(false);
@@ -153,12 +221,8 @@ function confirmPendingAction() {
   pendingBackupFile.value = null;
 }
 
-function forwardSavePromptWordbank(
-  section: PromptWordbankSectionKey,
-  terms: string[],
-) {
-  emit("savePromptWordbank", section, terms);
-}
+// 注意：BackupPanel 的 importBackupRequest 已通过 context 调用 requestBackupImport，
+// 无需再从 emit 转发。此处保留 emit("importBackup") 用于确认后的最终导入。
 </script>
 
 <template>
@@ -228,107 +292,26 @@ function forwardSavePromptWordbank(
             class="flex min-h-0 flex-1 flex-col p-5"
             :class="activeTab === 'favoritePrompts' ? 'overflow-hidden' : 'overflow-y-auto'"
           >
-            <GeneralSettingsPanel
-              v-if="activeTab === 'general'"
-              :auto-retry-on-network-error="autoRetryOnNetworkError"
-              :prompt-expand-enabled="promptExpandEnabled"
-              :chat-api-key="chatApiKey"
-              :chat-api-base-url="chatApiBaseUrl"
-              :chat-model="chatModel"
-              :chat-system-prompt="chatSystemPrompt"
-              @update:auto-retry-on-network-error="emit('update:autoRetryOnNetworkError', $event)"
-              @update:prompt-expand-enabled="emit('update:promptExpandEnabled', $event)"
-              @update:chat-api-key="emit('update:chatApiKey', $event)"
-              @update:chat-api-base-url="emit('update:chatApiBaseUrl', $event)"
-              @update:chat-model="emit('update:chatModel', $event)"
-              @update:chat-system-prompt="emit('update:chatSystemPrompt', $event)"
-            />
+            <GeneralSettingsPanel v-if="activeTab === 'general'" />
 
-            <TutorialSettingsPanel
-              v-else-if="activeTab === 'tutorial'"
-              :api-key="apiKey"
-              :companion-paired="companionPaired"
-              :connection-mode="connectionMode"
-              :image-count="images.length"
-              :message-count="messages.length"
-            />
+            <TutorialSettingsPanel v-else-if="activeTab === 'tutorial'" />
 
-            <ApiSettingsPanel
-              v-else-if="activeTab === 'api'"
-              :connection-mode="connectionMode"
-              :api-provider="apiProvider"
-              :api-base-url="apiBaseUrl"
-              :api-base-url-mode="apiBaseUrlMode"
-              :api-mode="apiMode"
-              :api-key="apiKey"
-              :model="model"
-              :stream-images="streamImages"
-              :stream-partial-images="streamPartialImages"
-              :companion-url="companionUrl"
-              :companion-session-token="companionSessionToken"
-              :companion-paired="companionPaired"
-              @update:connection-mode="emit('update:connectionMode', $event)"
-              @update:api-provider="emit('update:apiProvider', $event)"
-              @update:api-base-url="emit('update:apiBaseUrl', $event)"
-              @update:api-base-url-mode="emit('update:apiBaseUrlMode', $event)"
-              @update:api-mode="emit('update:apiMode', $event)"
-              @update:api-key="emit('update:apiKey', $event)"
-              @update:model="emit('update:model', $event)"
-              @update:stream-images="emit('update:streamImages', $event)"
-              @update:stream-partial-images="emit('update:streamPartialImages', $event)"
-              @update:companion-session-token="emit('update:companionSessionToken', $event)"
-            />
+            <ApiSettingsPanel v-else-if="activeTab === 'api'" />
 
-            <PromptModeSettingsPanel
-              v-else-if="activeTab === 'promptMode'"
-              :model-value="promptMode"
-              :rag-enabled="ragEnabled"
-              :rag-top-k="ragTopK"
-              :wordbanks="promptWordbanks"
-              @restore-default-wordbank="emit('restoreDefaultPromptWordbank', $event)"
-              @save-wordbank="forwardSavePromptWordbank"
-              @update:model-value="emit('update:promptMode', $event)"
-              @update:rag-enabled="emit('update:ragEnabled', $event)"
-              @update:rag-top-k="emit('update:ragTopK', $event)"
-            />
+            <PromptModeSettingsPanel v-else-if="activeTab === 'promptMode'" />
 
-            <FavoritePromptsPanel
-              v-else-if="activeTab === 'favoritePrompts'"
-              :prompts="favoritePrompts"
-              @add-prompt="emit('addFavoritePrompt', $event)"
-              @delete-prompt="emit('deleteFavoritePrompt', $event)"
-              @update-prompt="(id, value) => emit('updateFavoritePrompt', id, value)"
-            />
+            <FavoritePromptsPanel v-else-if="activeTab === 'favoritePrompts'" />
 
             <div v-else-if="activeTab === 'prompt'" class="space-y-8">
-              <PromptGuardSettingsPanel
-                :enabled="promptRewriteGuardEnabled"
-                :history="promptRewriteGuardHistory"
-                :text="promptRewriteGuardText"
-                @delete-history="emit('deletePromptRewriteGuardHistoryItem', $event)"
-                @restore-default="emit('restoreDefaultPromptRewriteGuardText')"
-                @restore-history="emit('restorePromptRewriteGuardHistoryItem', $event)"
-                @save-text="emit('savePromptRewriteGuardText', $event)"
-                @update:enabled="emit('setPromptRewriteGuardEnabled', $event)"
-              />
+              <PromptGuardSettingsPanel />
             </div>
 
-            <BackupPanel
-              v-else-if="activeTab === 'backup'"
-              @export-backup="emit('exportBackup')"
-              @import-backup-request="requestBackupImport"
-            />
+            <BackupPanel v-else-if="activeTab === 'backup'" />
 
             <BatchOperationsPanel
               v-else
-              :conversations="conversations"
-              :images="images"
               :initial-batch-panel="initialBatchPanel"
               :is-open="isOpen"
-              :messages="messages"
-              @delete-conversations="emit('deleteConversations', $event)"
-              @delete-images="emit('deleteImages', $event)"
-              @preview-image="emit('previewImage', $event)"
             />
           </div>
         </div>

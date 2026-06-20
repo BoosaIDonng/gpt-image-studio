@@ -7,6 +7,7 @@ import type { Conversation, ImageAsset, Message } from "../../types/studio";
 import ConfirmInputModal from "../ui/ConfirmInputModal.vue";
 import BatchConversationsPanel from "./BatchConversationsPanel.vue";
 import BatchImagesPanel from "./BatchImagesPanel.vue";
+import { useSettingsModalContext } from "./settingsModalContext";
 
 type BatchPanel = "images" | "conversations";
 type ConfirmAction = "deleteImages" | "deleteConversations";
@@ -14,18 +15,14 @@ type SortDirection = "asc" | "desc";
 type ImageSortKey = "name" | "size" | "time";
 type ConversationSortKey = "name" | "time";
 
+const ctx = useSettingsModalContext();
+const { conversations, images, messages, deleteConversations, deleteImages, previewImage } = ctx;
+
+// BatchOperationsPanel 还需要 initialBatchPanel 和 isOpen，这两个来自 SettingsModal 的本地状态
+// 通过 props 保留（不是设置数据，不适合放 context）
 const props = defineProps<{
-  conversations: Conversation[];
-  images: ImageAsset[];
   initialBatchPanel?: BatchPanel;
   isOpen: boolean;
-  messages: Message[];
-}>();
-
-const emit = defineEmits<{
-  deleteConversations: [ids: string[]];
-  deleteImages: [ids: string[]];
-  previewImage: [id: string];
 }>();
 
 const activeBatchPanel = ref<BatchPanel>("images");
@@ -54,13 +51,13 @@ const conversationSortOptions: { key: ConversationSortKey; label: string }[] = [
 
 const normalizedSearchText = computed(() => searchText.value.trim().toLowerCase());
 const filteredImages = computed(() => {
-  const images = normalizedSearchText.value
-    ? props.images.filter((image) =>
+  const list = normalizedSearchText.value
+    ? images.value.filter((image) =>
         image.name.toLowerCase().includes(normalizedSearchText.value),
       )
-    : props.images;
+    : images.value;
 
-  return [...images].sort(compareImages);
+  return [...list].sort(compareImages);
 });
 const selectedImages = computed(() =>
   filteredImages.value.filter(
@@ -72,7 +69,7 @@ const downloadableImages = computed(() =>
 );
 const messagesByConversationId = computed(() => {
   const grouped = new Map<string, Message[]>();
-  props.messages.forEach((message) => {
+  messages.value.forEach((message) => {
     const messages = grouped.get(message.conversationId) ?? [];
     messages.push(message);
     grouped.set(message.conversationId, messages);
@@ -80,8 +77,8 @@ const messagesByConversationId = computed(() => {
   return grouped;
 });
 const filteredConversations = computed(() => {
-  const conversations = normalizedSearchText.value
-    ? props.conversations.filter((conversation) => {
+  const list = normalizedSearchText.value
+    ? conversations.value.filter((conversation) => {
         const conversationText = [
           conversation.title,
           conversation.summary,
@@ -94,9 +91,9 @@ const filteredConversations = computed(() => {
 
         return conversationText.includes(normalizedSearchText.value);
       })
-    : props.conversations;
+    : conversations.value;
 
-  return [...conversations].sort(compareConversations);
+  return [...list].sort(compareConversations);
 });
 const selectedConversations = computed(() =>
   filteredConversations.value.filter((conversation) =>
@@ -139,22 +136,22 @@ watch(activeBatchPanel, () => {
 });
 
 watch(
-  () => props.images,
+  () => images.value,
   () => {
     selectedImageIds.value = new Set(
       [...selectedImageIds.value].filter((id) =>
-        props.images.some((image) => image.id === id),
+        images.value.some((image) => image.id === id),
       ),
     );
   },
 );
 
 watch(
-  () => props.conversations,
+  () => conversations.value,
   () => {
     selectedConversationIds.value = new Set(
       [...selectedConversationIds.value].filter((id) =>
-        props.conversations.some((conversation) => conversation.id === id),
+        conversations.value.some((conversation) => conversation.id === id),
       ),
     );
   },
@@ -262,16 +259,14 @@ function cancelConfirm() {
 
 function confirmPendingAction() {
   if (confirmAction.value === "deleteImages") {
-    emit(
-      "deleteImages",
+    deleteImages(
       selectedImages.value.map((image) => image.id),
     );
     selectedImageIds.value = new Set();
   }
 
   if (confirmAction.value === "deleteConversations") {
-    emit(
-      "deleteConversations",
+    deleteConversations(
       selectedConversations.value.map((conversation) => conversation.id),
     );
     selectedConversationIds.value = new Set();
@@ -415,7 +410,7 @@ function uniqueZipEntryName(filename: string, index: number) {
       @clear-selection="selectedImageIds = new Set()"
       @delete-selected="requestImageDelete"
       @download-selected="downloadSelectedImages"
-      @preview-image="emit('previewImage', $event)"
+      @preview-image="previewImage($event)"
       @select-all="selectAllImages"
       @set-sort="setImageSort"
       @toggle-selection="toggleImageSelection"

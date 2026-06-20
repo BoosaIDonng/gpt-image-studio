@@ -5,21 +5,12 @@ import type {
   PromptWordbankSectionKey,
   PromptWordbanks,
 } from "../../types/studio";
+import { useSettingsModalContext } from "./settingsModalContext";
 
-const props = defineProps<{
-  modelValue: PromptMode;
-  wordbanks: PromptWordbanks;
-  ragEnabled: boolean;
-  ragTopK: number;
-}>();
-
-const emit = defineEmits<{
-  "update:modelValue": [value: PromptMode];
-  "update:ragEnabled": [value: boolean];
-  "update:ragTopK": [value: number];
-  saveWordbank: [section: PromptWordbankSectionKey, terms: string[]];
-  restoreDefaultWordbank: [section: PromptWordbankSectionKey];
-}>();
+const ctx = useSettingsModalContext();
+const { promptMode: modelValue, promptWordbanks: wordbanks, ragEnabled, ragTopK,
+  updatePromptMode: updateModelValue, updateRagEnabled, updateRagTopK: ctxUpdateRagTopK,
+  saveWordbank, restoreDefaultWordbank } = ctx;
 
 const options: Array<{
   value: PromptMode;
@@ -85,7 +76,7 @@ const activeSectionMeta = computed(
     wordbankSections[0],
 );
 const activeTerms = computed(() =>
-  getWordbankTerms(props.wordbanks, activeSection.value),
+  getWordbankTerms(wordbanks.value, activeSection.value),
 );
 const parsedDraftTerms = computed(() => parseTerms(draftText.value));
 const hasChanges = computed(
@@ -98,7 +89,7 @@ const filteredTerms = computed(() => {
 });
 
 watch(
-  [() => props.wordbanks, activeSection],
+  [wordbanks, activeSection],
   () => {
     draftText.value = activeTerms.value.join("\n");
     searchText.value = "";
@@ -107,17 +98,17 @@ watch(
 );
 
 function saveDraft() {
-  emit("saveWordbank", activeSection.value, parsedDraftTerms.value);
+  saveWordbank(activeSection.value, parsedDraftTerms.value);
 }
 
 function restoreDefault() {
-  emit("restoreDefaultWordbank", activeSection.value);
+  restoreDefaultWordbank(activeSection.value);
 }
 
-function updateRagTopK(value: string) {
+function handleRagTopKChange(value: string) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return;
-  emit("update:ragTopK", Math.min(12, Math.max(1, Math.trunc(numeric))));
+  ctxUpdateRagTopK(Math.min(12, Math.max(1, Math.trunc(numeric))));
 }
 
 function parseTerms(text: string) {
@@ -167,7 +158,7 @@ function getWordbankTerms(wordbanks: PromptWordbanks, section: PromptWordbankSec
             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-400'
         "
         type="button"
-        @click="emit('update:modelValue', option.value)"
+        @click="updateModelValue(option.value)"
       >
         <span class="block text-sm font-semibold">
           {{ option.label }}
@@ -193,7 +184,7 @@ function getWordbankTerms(wordbanks: PromptWordbanks, section: PromptWordbankSec
           class="cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors"
           :class="ragEnabled ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'"
           type="button"
-          @click="emit('update:ragEnabled', !ragEnabled)"
+          @click="updateRagEnabled(!ragEnabled)"
         >
           {{ ragEnabled ? "已开启" : "已关闭" }}
         </button>
@@ -208,7 +199,7 @@ function getWordbankTerms(wordbanks: PromptWordbanks, section: PromptWordbankSec
           min="1"
           type="number"
           :value="ragTopK"
-          @change="updateRagTopK(($event.target as HTMLInputElement).value)"
+          @change="handleRagTopKChange(($event.target as HTMLInputElement).value)"
         >
       </label>
     </div>

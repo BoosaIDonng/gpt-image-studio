@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch } from "vue";
-import type { ApiMode, ApiProvider, ConnectionMode } from "../../types/studio";
+import type { ApiMode, ApiProvider } from "../../types/studio";
 import { GEMINI_IMAGE_MODEL, GROK_IMAGE_MODEL, OPENAI_IMAGE_MODEL } from "../../shared/models";
 import ApiKeyField from "./ApiKeyField.vue";
 import {
@@ -12,34 +12,19 @@ import {
   unpairCompanion,
 } from "../../services/companionApi";
 import type { CompanionAuthStatus, CompanionHealthResponse } from "../../types/companion";
+import { useSettingsModalContext } from "./settingsModalContext";
 
-const props = defineProps<{
-  connectionMode: ConnectionMode;
-  apiProvider: ApiProvider;
-  apiBaseUrl: string;
-  apiBaseUrlMode: "origin" | "full";
-  apiMode: ApiMode;
-  apiKey: string;
-  model: string;
-  streamImages: boolean;
-  streamPartialImages: 0 | 1 | 2 | 3;
-  companionUrl: string;
-  companionSessionToken: string;
-  companionPaired: boolean;
-}>();
+const ctx = useSettingsModalContext();
 
-const emit = defineEmits<{
-  "update:connectionMode": [value: ConnectionMode];
-  "update:apiProvider": [value: ApiProvider];
-  "update:apiBaseUrl": [value: string];
-  "update:apiBaseUrlMode": [value: "origin" | "full"];
-  "update:apiMode": [value: ApiMode];
-  "update:apiKey": [value: string];
-  "update:model": [value: string];
-  "update:streamImages": [value: boolean];
-  "update:streamPartialImages": [value: 0 | 1 | 2 | 3];
-  "update:companionSessionToken": [value: string];
-}>();
+// 解构为顶层变量，模板中可直接使用（Vue 自动解包 ref）
+const {
+  connectionMode, apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode,
+  apiKey, model, streamImages, streamPartialImages,
+  companionUrl, companionSessionToken, companionPaired,
+  updateConnectionMode, updateApiProvider, updateApiBaseUrl,
+  updateApiBaseUrlMode, updateApiMode, updateApiKey, updateModel,
+  updateStreamImages, updateStreamPartialImages, updateCompanionSessionToken,
+} = ctx;
 
 const companionOnline = ref(false);
 const companionHealth = ref<CompanionHealthResponse | null>(null);
@@ -60,51 +45,51 @@ const apiModeOptions: Array<{ value: ApiMode; label: string; description: string
 ];
 const partialImageOptions = [0, 1, 2, 3] as const;
 const apiBaseUrlHint = computed(() =>
-  props.apiProvider === "gemini"
-    ? props.apiBaseUrlMode === "full"
+  apiProvider.value === "gemini"
+    ? apiBaseUrlMode.value === "full"
       ? "https://generativelanguage.googleapis.com/v1"
       : "https://generativelanguage.googleapis.com"
-    : props.apiProvider === "grok"
-    ? props.apiBaseUrlMode === "full"
+    : apiProvider.value === "grok"
+    ? apiBaseUrlMode.value === "full"
       ? "https://api.x.ai/v1"
       : "https://api.x.ai"
     :
-  props.apiBaseUrlMode === "full"
-    ? props.apiMode === "responses"
+  apiBaseUrlMode.value === "full"
+    ? apiMode.value === "responses"
       ? "https://api.example.com/v1"
       : "https://api.example.com/v1/images"
     : "https://api.example.com",
 );
 const apiSuffixLabel = computed(() =>
-  props.apiProvider === "gemini"
+  apiProvider.value === "gemini"
     ? "/v1"
-    : props.apiProvider === "grok" || props.apiMode === "images"
+    : apiProvider.value === "grok" || apiMode.value === "images"
       ? "/v1/images"
       : "/v1",
 );
 const apiKeyLabel = computed(() => {
-  if (props.apiProvider === "grok") return "xAI API key";
-  if (props.apiProvider === "gemini") return "Google AI API key";
+  if (apiProvider.value === "grok") return "xAI API key";
+  if (apiProvider.value === "gemini") return "Google AI API key";
   return "OpenAI API key";
 });
 const modelHint = computed(() => {
-  if (props.apiProvider === "grok") return GROK_IMAGE_MODEL;
-  if (props.apiProvider === "gemini") return GEMINI_IMAGE_MODEL;
+  if (apiProvider.value === "grok") return GROK_IMAGE_MODEL;
+  if (apiProvider.value === "gemini") return GEMINI_IMAGE_MODEL;
   return OPENAI_IMAGE_MODEL;
 });
 
 async function checkStatus() {
-  const health = await checkCompanionHealth(props.companionUrl);
+  const health = await checkCompanionHealth(companionUrl.value);
   companionHealth.value = health;
   companionOnline.value = health !== null;
 
-  if (!health || !props.companionSessionToken) {
+  if (!health || !companionSessionToken.value) {
     companionAuthStatus.value = null;
     return;
   }
 
   if (!health.paired) {
-    emit("update:companionSessionToken", "");
+    ctx.updateCompanionSessionToken("");
     companionAuthStatus.value = null;
     pairingInProgress.value = false;
     pairingCodeInput.value = "";
@@ -113,8 +98,8 @@ async function checkStatus() {
   }
 
   const authResult = await getCompanionAuthStatusResult(
-    props.companionUrl,
-    props.companionSessionToken,
+    companionUrl.value,
+    companionSessionToken.value,
   );
 
   if (authResult.ok) {
@@ -124,7 +109,7 @@ async function checkStatus() {
 
   companionAuthStatus.value = null;
   if (authResult.invalidToken) {
-    emit("update:companionSessionToken", "");
+    ctx.updateCompanionSessionToken("");
     pairingInProgress.value = false;
     pairingCodeInput.value = "";
     pairingError.value = "检测到本地 Companion 拒绝了旧 token，已清除浏览器会话，请重新配对。";
@@ -135,7 +120,7 @@ async function handleStartPairing() {
   pairingError.value = "";
   pairingCodeInput.value = "";
   try {
-    await startPairing(props.companionUrl);
+    await startPairing(companionUrl.value);
     pairingInProgress.value = true;
   } catch (error) {
     pairingError.value = error instanceof Error
@@ -147,10 +132,10 @@ async function handleStartPairing() {
 async function handleConfirmPairing() {
   pairingError.value = "";
   try {
-    const result = await confirmPairing(props.companionUrl, pairingCodeInput.value);
-    emit("update:companionSessionToken", result.sessionToken);
+    const result = await confirmPairing(companionUrl.value, pairingCodeInput.value);
+    ctx.updateCompanionSessionToken(result.sessionToken);
     pairingInProgress.value = false;
-    companionAuthStatus.value = await getCompanionAuthStatus(props.companionUrl, result.sessionToken);
+    companionAuthStatus.value = await getCompanionAuthStatus(companionUrl.value, result.sessionToken);
   } catch {
     pairingError.value = "配对码无效或已过期";
   }
@@ -158,7 +143,7 @@ async function handleConfirmPairing() {
 
 async function handleDisconnect() {
   pairingError.value = "";
-  const health = await checkCompanionHealth(props.companionUrl);
+  const health = await checkCompanionHealth(companionUrl.value);
   companionHealth.value = health;
   companionOnline.value = health !== null;
   if (!health) {
@@ -167,13 +152,13 @@ async function handleDisconnect() {
   }
 
   try {
-    await unpairCompanion(props.companionUrl, props.companionSessionToken);
+    await unpairCompanion(companionUrl.value, companionSessionToken.value);
   } catch {
     pairingError.value = "断开失败，Companion 未确认清除本地 session。";
     return;
   }
 
-  emit("update:companionSessionToken", "");
+  ctx.updateCompanionSessionToken("");
   companionAuthStatus.value = null;
   await checkStatus();
 }
@@ -189,26 +174,26 @@ function normalizeApiBaseUrlInput(value: string) {
 }
 
 function selectProvider(provider: ApiProvider) {
-  emit("update:apiProvider", provider);
+  ctx.updateApiProvider(provider);
 }
 
 onMounted(() => {
-  if (props.connectionMode === "localCompanion") {
+  if (connectionMode.value === "localCompanion") {
     checkStatus();
   }
 });
 
 watch(
-  () => props.connectionMode,
+  () => connectionMode.value,
   (mode) => {
     if (mode === "localCompanion") checkStatus();
   },
 );
 
 watch(
-  () => props.companionSessionToken,
+  () => companionSessionToken.value,
   () => {
-    if (props.connectionMode === "localCompanion") checkStatus();
+    if (connectionMode.value === "localCompanion") checkStatus();
   },
 );
 </script>
@@ -234,7 +219,7 @@ watch(
                 : 'text-gray-500 hover:text-gray-800'
             "
             type="button"
-            @click="emit('update:connectionMode', 'direct')"
+            @click="ctx.updateConnectionMode('direct')"
           >
             浏览器直连
           </button>
@@ -246,7 +231,7 @@ watch(
                 : 'text-gray-500 hover:text-gray-800'
             "
             type="button"
-            @click="emit('update:connectionMode', 'localCompanion')"
+            @click="ctx.updateConnectionMode('localCompanion')"
           >
             本地 Companion
           </button>
@@ -298,7 +283,7 @@ watch(
                   : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
               "
               type="button"
-              @click="emit('update:apiMode', option.value)"
+              @click="ctx.updateApiMode(option.value)"
             >
               <div class="text-sm font-semibold">{{ option.label }}</div>
               <div
@@ -314,7 +299,7 @@ watch(
         <ApiKeyField
           :api-key="apiKey"
           :label="apiKeyLabel"
-          @update:api-key="emit('update:apiKey', $event)"
+          @update:api-key="ctx.updateApiKey($event)"
         />
 
         <div>
@@ -353,8 +338,7 @@ watch(
                 type="checkbox"
                 :checked="apiBaseUrlMode === 'full'"
                 @change="
-                  emit(
-                    'update:apiBaseUrlMode',
+                  ctx.updateApiBaseUrlMode(
                     ($event.target as HTMLInputElement).checked ? 'full' : 'origin',
                   )
                 "
@@ -370,14 +354,12 @@ watch(
               :placeholder="apiBaseUrlHint"
               type="url"
               @input="
-                emit(
-                  'update:apiBaseUrl',
+                ctx.updateApiBaseUrl(
                   ($event.target as HTMLInputElement).value,
                 )
               "
               @blur="
-                emit(
-                  'update:apiBaseUrl',
+                ctx.updateApiBaseUrl(
                   normalizeApiBaseUrlInput(($event.target as HTMLInputElement).value),
                 )
               "
@@ -407,8 +389,7 @@ watch(
               :checked="streamImages && apiProvider === 'openai'"
               :disabled="apiProvider !== 'openai'"
               @change="
-                emit(
-                  'update:streamImages',
+                ctx.updateStreamImages(
                   ($event.target as HTMLInputElement).checked,
                 )
               "
@@ -439,8 +420,7 @@ watch(
               class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
               :disabled="!streamImages || apiProvider !== 'openai'"
               @change="
-                emit(
-                  'update:streamPartialImages',
+                ctx.updateStreamPartialImages(
                   Number(($event.target as HTMLSelectElement).value) as 0 | 1 | 2 | 3,
                 )
               "

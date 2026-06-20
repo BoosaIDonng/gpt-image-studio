@@ -1,27 +1,21 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import type { ConnectionMode } from "../../types/studio";
+import { useSettingsModalContext } from "./settingsModalContext";
 import { buildTutorialSteps } from "./tutorial";
 
-const props = defineProps<{
-  connectionMode: ConnectionMode;
-  apiKey: string;
-  companionPaired: boolean;
-  messageCount: number;
-  imageCount: number;
-}>();
+const ctx = useSettingsModalContext();
 
 const isConnected = computed(() =>
-  props.connectionMode === "localCompanion"
-    ? props.companionPaired
-    : Boolean(props.apiKey.trim()),
+  ctx.connectionMode.value === "localCompanion"
+    ? ctx.companionPaired.value
+    : Boolean(ctx.apiKey.value.trim()),
 );
 
 const tutorialSteps = computed(() =>
   buildTutorialSteps({
     isConnected: isConnected.value,
-    hasPrompted: props.messageCount > 0,
-    hasCreated: props.imageCount > 0,
+    hasPrompted: ctx.messages.value.length > 0,
+    hasCreated: ctx.images.value.length > 0,
   }),
 );
 </script>

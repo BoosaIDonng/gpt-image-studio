@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useSettingsModalContext } from "./settingsModalContext";
 
-const emit = defineEmits<{
-  exportBackup: [];
-  importBackupRequest: [file: File];
-}>();
+const ctx = useSettingsModalContext();
+const { exportBackup, importBackupRequest } = ctx;
 
 const backupInputRef = ref<HTMLInputElement | null>(null);
 
@@ -16,7 +15,7 @@ function importBackupFromInput(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (file) {
-    emit("importBackupRequest", file);
+    importBackupRequest(file);
   }
   input.value = "";
 }
@@ -39,7 +38,7 @@ function importBackupFromInput(event: Event) {
       <button
         class="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
         type="button"
-        @click="emit('exportBackup')"
+        @click="exportBackup()"
       >
         导出备份
       </button>

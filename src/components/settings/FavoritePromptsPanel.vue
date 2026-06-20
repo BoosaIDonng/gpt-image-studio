@@ -1,23 +1,18 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import type { FavoritePrompt } from "../../types/studio";
+import { useSettingsModalContext } from "./settingsModalContext";
 
-const props = defineProps<{
-  prompts: FavoritePrompt[];
-}>();
-
-const emit = defineEmits<{
-  addPrompt: [value: { title: string; text: string }];
-  updatePrompt: [id: string, value: { title: string; text: string }];
-  deletePrompt: [id: string];
-}>();
+const ctx = useSettingsModalContext();
+const { favoritePrompts: prompts, addFavoritePrompt: addPrompt,
+  updateFavoritePrompt: updatePrompt, deleteFavoritePrompt: deletePrompt } = ctx;
 
 const editingId = ref<string | null>(null);
 const draftTitle = ref("");
 const draftText = ref("");
 
 const sortedPrompts = computed(() =>
-  [...props.prompts].sort(
+  [...prompts.value].sort(
     (a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt),
   ),
 );
@@ -25,10 +20,10 @@ const isEditingExisting = computed(() => Boolean(editingId.value));
 const canSave = computed(() => draftText.value.trim().length > 0);
 
 watch(
-  () => props.prompts,
-  (prompts) => {
+  prompts,
+  (items) => {
     if (!editingId.value) return;
-    if (prompts.some((item) => item.id === editingId.value)) return;
+    if (items.some((item: FavoritePrompt) => item.id === editingId.value)) return;
     resetDraft();
   },
 );
@@ -54,9 +49,9 @@ function saveDraft() {
   };
 
   if (editingId.value) {
-    emit("updatePrompt", editingId.value, value);
+    updatePrompt(editingId.value, value);
   } else {
-    emit("addPrompt", value);
+    addPrompt(value);
   }
   resetDraft();
 }
@@ -139,7 +134,7 @@ function formatUpdatedAt(dateString: string) {
               <button
                 class="cursor-pointer rounded-md px-2 py-1 text-xs text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600"
                 type="button"
-                @click="emit('deletePrompt', prompt.id)"
+                @click="deletePrompt(prompt.id)"
               >
                 删除
               </button>
