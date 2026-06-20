@@ -14,88 +14,114 @@ type StoreName = (typeof STORE_NAMES)[keyof typeof STORE_NAMES];
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
+/**
+ * 打开 IndexedDB 数据库。
+ * 如果打开失败（数据库损坏、版本冲突等），自动删除后重建。
+ * 重建后数据会丢失，但用户可以通过备份恢复。
+ */
 export function getStudioDb() {
   if (!dbPromise) {
-    dbPromise = new Promise((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-      request.onupgradeneeded = (event) => {
-        const db = request.result;
-        const transaction = request.transaction;
-
-        if (!db.objectStoreNames.contains(STORE_NAMES.conversations)) {
-          const store = db.createObjectStore(STORE_NAMES.conversations, {
-            keyPath: "id",
-          });
-          store.createIndex("updatedAt", "updatedAt");
-        }
-
-        if (!db.objectStoreNames.contains(STORE_NAMES.messages)) {
-          const store = db.createObjectStore(STORE_NAMES.messages, {
-            keyPath: "id",
-          });
-          store.createIndex("conversationId", "conversationId");
-          store.createIndex("createdAt", "createdAt");
-        }
-
-        if (!db.objectStoreNames.contains(STORE_NAMES.imageAssets)) {
-          const store = db.createObjectStore(STORE_NAMES.imageAssets, {
-            keyPath: "id",
-          });
-          store.createIndex("createdAt", "createdAt");
-          store.createIndex("conversationId", "conversationId");
-        }
-
-        if (!db.objectStoreNames.contains(STORE_NAMES.imageBlobs)) {
-          db.createObjectStore(STORE_NAMES.imageBlobs, {
-            keyPath: "key",
-          });
-        }
-
-        if (!db.objectStoreNames.contains(STORE_NAMES.settings)) {
-          db.createObjectStore(STORE_NAMES.settings, {
-            keyPath: "key",
-          });
-        }
-
-        if (!db.objectStoreNames.contains(STORE_NAMES.conversationDrafts)) {
-          const store = db.createObjectStore(STORE_NAMES.conversationDrafts, {
-            keyPath: "conversationId",
-          });
-          store.createIndex("updatedAtMs", "updatedAtMs");
-        }
-
-        if (event.oldVersion < 2) {
-          replaceIndex(
-            transaction,
-            db,
-            STORE_NAMES.conversations,
-            "updatedAtMs",
-            "updatedAt",
-          );
-          replaceIndex(
-            transaction,
-            db,
-            STORE_NAMES.messages,
-            "createdAtMs",
-            "createdAt",
-          );
-          replaceIndex(
-            transaction,
-            db,
-            STORE_NAMES.imageAssets,
-            "createdAtMs",
-            "createdAt",
-          );
-        }
-      };
-
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+    dbPromise = openDb().catch(async (error) => {
+      console.error("[db] 数据库打开失败，尝试重建...", error);
+      dbPromise = null;
+      await deleteDb();
+      return openDb();
     });
   }
 
   return dbPromise;
+}
+
+function openDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onupgradeneeded = (event) => {
+      const db = request.result;
+      const transaction = request.transaction;
+
+      if (!db.objectStoreNames.contains(STORE_NAMES.conversations)) {
+        const store = db.createObjectStore(STORE_NAMES.conversations, {
+          keyPath: "id",
+        });
+        store.createIndex("updatedAt", "updatedAt");
+      }
+
+      if (!db.objectStoreNames.contains(STORE_NAMES.messages)) {
+        const store = db.createObjectStore(STORE_NAMES.messages, {
+          keyPath: "id",
+        });
+        store.createIndex("conversationId", "conversationId");
+        store.createIndex("createdAt", "createdAt");
+      }
+
+      if (!db.objectStoreNames.contains(STORE_NAMES.imageAssets)) {
+        const store = db.createObjectStore(STORE_NAMES.imageAssets, {
+          keyPath: "id",
+        });
+        store.createIndex("createdAt", "createdAt");
+        store.createIndex("conversationId", "conversationId");
+      }
+
+      if (!db.objectStoreNames.contains(STORE_NAMES.imageBlobs)) {
+        db.createObjectStore(STORE_NAMES.imageBlobs, {
+          keyPath: "key",
+        });
+      }
+
+      if (!db.objectStoreNames.contains(STORE_NAMES.settings)) {
+        db.createObjectStore(STORE_NAMES.settings, {
+          keyPath: "key",
+        });
+      }
+
+      if (!db.objectStoreNames.contains(STORE_NAMES.conversationDrafts)) {
+        const store = db.createObjectStore(STORE_NAMES.conversationDrafts, {
+          keyPath: "conversationId",
+        });
+        store.createIndex("updatedAtMs", "updatedAtMs");
+      }
+
+      if (event.oldVersion < 2) {
+        replaceIndex(
+          transaction,
+          db,
+          STORE_NAMES.conversations,
+          "updatedAtMs",
+          "updatedAt",
+        );
+        replaceIndex(
+          transaction,
+          db,
+          STORE_NAMES.messages,
+          "createdAtMs",
+          "createdAt",
+        );
+        replaceIndex(
+          transaction,
+          db,
+          STORE_NAMES.imageAssets,
+          "createdAtMs",
+          "createdAt",
+        );
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function deleteDb(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(DB_NAME);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => {
+      console.warn("[db] 数据库删除被阻塞，其他标签页可能仍在使用");
+      resolve(); // 继续尝试重建
+    };
+  });
 }
 
 function replaceIndex(

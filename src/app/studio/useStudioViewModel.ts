@@ -852,6 +852,7 @@ export function useStudioViewModel() {
     promptRewriteGuardHistory: settings.promptRewriteGuardHistory,
     promptRewriteGuardText: settings.promptRewriteGuardText,
     close: closeSettings,
+    open: openSettingsDefault,
     conversations: conversations.conversations,
     deleteConversations: deleteConversationsWithDraft,
     deleteImages: images.deleteImages,
@@ -933,7 +934,9 @@ export function useStudioViewModel() {
 }
 
 function reportStorageError(error: unknown) {
-  console.error("Failed to access local studio storage.", error);
+  // 注意：此函数在 useStudioViewModel 外部定义，无法直接访问 feedback store。
+  // 调用方（useStudioViewModel 内部）应通过 feedback.notifyError 向用户展示通知。
+  console.error("[storage] 本地存储访问失败", error);
 }
 
 /** 兼容旧浏览器的文本复制（execCommand 已废弃，仅作为 Clipboard API 不可用时的回退）。 */

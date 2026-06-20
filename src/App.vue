@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineAsyncComponent } from "vue";
+import { defineAsyncComponent, onMounted, onUnmounted } from "vue";
 import ChatWorkspace from "./components/studio/ChatWorkspace.vue";
 import ConversationSidebar from "./components/studio/ConversationSidebar.vue";
 import ImageLibrary from "./components/studio/ImageLibrary.vue";
@@ -18,6 +18,30 @@ const ExpandPreviewModal = defineAsyncComponent(() => import("./components/ui/Ex
 
 const studio = useStudioViewModel();
 const { theme, toggleTheme } = useDarkMode();
+
+// 全局快捷键
+function handleGlobalKeydown(e: KeyboardEvent) {
+  // Ctrl+K / Cmd+K → 打开设置
+  if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+    e.preventDefault();
+    studio.settingsModal.isOpen
+      ? studio.settingsModal.close()
+      : studio.settingsModal.open();
+  }
+  // Escape → 关闭当前最上层模态框
+  if (e.key === "Escape") {
+    if (studio.settingsModal.isOpen) {
+      studio.settingsModal.close();
+    } else if (studio.preview.image) {
+      studio.preview.close();
+    } else if (studio.expandPreview.value) {
+      // expandPreview 没有直接 close，忽略
+    }
+  }
+}
+
+onMounted(() => document.addEventListener("keydown", handleGlobalKeydown));
+onUnmounted(() => document.removeEventListener("keydown", handleGlobalKeydown));
 </script>
 
 <template>
