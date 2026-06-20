@@ -14,6 +14,11 @@ type StoreName = (typeof STORE_NAMES)[keyof typeof STORE_NAMES];
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
+/** 重置内部缓存的数据库连接 Promise（仅供测试使用）。 */
+export function resetDbCache() {
+  dbPromise = null;
+}
+
 /**
  * 打开 IndexedDB 数据库。
  * 如果打开失败（数据库损坏、版本冲突等），自动删除后重建。
