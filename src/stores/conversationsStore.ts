@@ -136,12 +136,19 @@ export const useConversationsStore = defineStore("conversations", () => {
   }
 
   async function createConversation() {
-    const conversation = await createConversationRecord({
-      title: "新的图片创作",
-      summary: "尚未开始",
-      updatedAt: isoTimestamp(),
-    });
-    activeConversationId.value = conversation.id;
+    try {
+      const conversation = await createConversationRecord({
+        title: "新的图片创作",
+        summary: "尚未开始",
+        updatedAt: isoTimestamp(),
+      });
+      activeConversationId.value = conversation.id;
+    } catch (error) {
+      const input = getContext();
+      const feedback = useFeedbackStore();
+      feedback.notifyError(`保存对话失败：${formatError(error)}`);
+      input.onStorageError(error);
+    }
   }
 
   async function createConversationRecord(inputValue: CreateConversationInput) {

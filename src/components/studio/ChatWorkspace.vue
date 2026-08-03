@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref } from "vue";
+import { computed, nextTick, ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useComposerStore } from "../../stores/composerStore";
 import { useGenerationStore } from "../../stores/generationStore";
@@ -23,6 +23,7 @@ type ChatWorkspaceMessages = {
 type ChatWorkspaceActions = {
   applyEditSelection: (sourceImageId: string, maskImageId: string) => void;
   closeAllEditors: () => void;
+  cancelMessageGeneration: (messageId: string) => void;
   copyText: (text: string) => void;
   deleteMessage: (id: string) => void;
   generateAnother: (message: Message) => void;
@@ -141,14 +142,14 @@ function imageFilesFromTransfer(
     .filter((file): file is File => Boolean(file));
 }
 
-function failedMessageCount() {
-  return messages.activeMessages.filter((message) => message.status === "error").length;
-}
+const failedMessageCount = computed(() =>
+  messages.activeMessages.filter((message) => message.status === "error").length
+)
 </script>
 
 <template>
   <section
-    class="relative flex min-w-0 flex-1 flex-col"
+    class="cupertino-workspace relative flex min-w-0 flex-1 flex-col"
     aria-label="聊天工作区"
     @dragenter.prevent="handleDragEnter"
     @dragleave.prevent="handleDragLeave"
@@ -170,11 +171,11 @@ function failedMessageCount() {
     </div>
 
     <header
-      class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-4 py-3"
+      class="cupertino-navbar flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-4 py-3"
     >
       <div class="flex min-w-0 items-center gap-2">
         <button
-          class="cursor-pointer rounded-lg px-2.5 py-1.5 text-sm text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 md:hidden"
+          class="cursor-pointer rounded-lg px-2.5 py-1.5 text-sm text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 2xl:hidden"
           type="button"
           @click="actions.openConversations"
         >
@@ -211,7 +212,7 @@ function failedMessageCount() {
           </svg>
         </a>
         <button
-          class="cursor-pointer rounded-lg p-1.5 text-sm text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 md:hidden"
+          class="cursor-pointer rounded-lg p-1.5 text-sm text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 2xl:hidden"
           aria-label="打开设置"
           type="button"
           @click="actions.openSettings"
@@ -233,7 +234,7 @@ function failedMessageCount() {
           </svg>
         </button>
         <button
-          class="cursor-pointer rounded-lg px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 md:hidden"
+          class="cursor-pointer rounded-lg px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 2xl:hidden"
           type="button"
           @click="actions.setLibraryOpen(!header.isLibraryOpen)"
         >
@@ -243,7 +244,7 @@ function failedMessageCount() {
     </header>
 
     <CreativeCenterBanner
-      :failed-message-count="failedMessageCount()"
+      :failed-message-count="failedMessageCount"
       :message-count="messages.activeMessages.length"
       @open-api-settings="actions.openApiSettings"
       @open-library="actions.openImageLibrary('all')"
@@ -256,6 +257,7 @@ function failedMessageCount() {
       @attach-image="images.attachImage"
       @continue-edit="continueEdit"
       @copy-text="actions.copyText"
+      @cancel-message-generation="actions.cancelMessageGeneration"
       @delete-message="actions.deleteMessage"
       @generate-another="actions.generateAnother"
       @load-message-config="actions.loadMessageConfig"

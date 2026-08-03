@@ -1,4 +1,5 @@
 import type { PromptMode, PromptWordbanks } from "../types/studio";
+import { hashString } from "../shared/hash";
 import { promptWordbanks as defaultPromptWordbanks } from "./promptWordbanks";
 
 type PromptWordbankMatchMode = Exclude<PromptMode, "default">;
@@ -204,7 +205,6 @@ export function matchPromptWordbankTerms(
     },
   };
 }
-
 function candidatesForMode(mode: PromptWordbankMatchMode, wordbanks: PromptWordbanks) {
   if (mode === "safe") return uniqueTerms(wordbanks.pose.safe);
   if (mode === "creative") {
@@ -281,12 +281,4 @@ function pickDeterministic(items: readonly string[], count: number, seed: string
 
 function normalizeForMatch(value: string) {
   return value.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
-}
-
-function hashString(value: string) {
-  let hash = 5381;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 33) ^ value.charCodeAt(index);
-  }
-  return hash >>> 0;
 }

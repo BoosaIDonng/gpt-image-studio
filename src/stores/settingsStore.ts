@@ -31,7 +31,7 @@ import { normalizeRagTopK } from "../shared/normalizers";
 import { createId } from "../shared/id";
 import { MAX_CUSTOM_DIMENSION, MAX_CUSTOM_PIXELS, SIZE_STEP } from "../shared/imageConstraints";
 import { readJsonStorage, readStorage, writeStorage } from "../shared/localStorage";
-import { FIXED_IMAGE_MODEL, defaultModelForProvider } from "../shared/models";
+import { imageCapabilities } from "../services/imageCapabilities";
 import type {
   ApiMode,
   ApiProvider,
@@ -52,7 +52,13 @@ const SETTINGS_STORAGE_KEYS = {
   apiBaseUrl: "gpt-image-studio:api-base-url",
   companionUrl: "gpt-image-studio:companion-url",
   companionSessionToken: "gpt-image-studio:companion-session-token",
+  modelSelectionMigration: "gpt-image-studio:model-selection-v2",
 } as const;
+const LEGACY_DEFAULT_MODELS = new Set([
+  "gpt-image-2",
+  "grok-imagine-image-quality",
+  "gemini-3.1-flash-image-preview",
+]);
 
 type ProviderApiSettings = {
   apiKey: string;
@@ -84,13 +90,16 @@ type ImageCountMode = "preset" | "custom";
 export const useSettingsStore = defineStore("settings", () => {
   const connectionMode = ref<ConnectionMode>("direct");
   const apiProvider = ref<ApiProvider>("openai");
+  const needsModelSelectionMigration = ref(
+    readStorage(SETTINGS_STORAGE_KEYS.modelSelectionMigration, "") !== "1",
+  );
   const initialApiSettings = readProviderApiSettings("openai", {
     ...defaultProviderApiSettings("openai"),
     apiKey: readStorage(SETTINGS_STORAGE_KEYS.apiKey, ""),
     apiBaseUrl: readStorage(SETTINGS_STORAGE_KEYS.apiBaseUrl, ""),
   });
   const apiMode = ref<ApiMode>(initialApiSettings.apiMode);
-  const model = ref(initialApiSettings.model);
+  const model = ref(migrateLegacyDefaultModel(initialApiSettings.model));
   const apiKey = ref(initialApiSettings.apiKey);
   const apiBaseUrl = ref(initialApiSettings.apiBaseUrl);
   const apiBaseUrlMode = ref<AppSettings["apiBaseUrlMode"]>(initialApiSettings.apiBaseUrlMode);
@@ -145,7 +154,12 @@ export const useSettingsStore = defineStore("settings", () => {
       : SIZE_RESOLUTION_OPTIONS
     ).map(({ value, label }) => ({ value, label })),
   );
-  const grokCustomSizeDisabled = computed(() => apiProvider.value === "grok");
+  const imageCapabilitiesForCurrentProvider = computed(() =>
+    imageCapabilities(apiProvider.value, apiMode.value, model.value),
+  );
+  const grokCustomSizeDisabled = computed(
+    () => !imageCapabilitiesForCurrentProvider.value.customSize,
+  );
   const quality = ref<GenerationParams["quality"]>("auto");
   const background = ref<GenerationParams["background"]>("auto");
   const outputFormat = ref<GenerationParams["outputFormat"]>("png");
@@ -165,7 +179,7 @@ export const useSettingsStore = defineStore("settings", () => {
     { value: "webp", label: "WebP" },
     { value: "jpeg", label: "JPEG" },
   ] as const;
-  let skipNextProviderRestore = false;
+  const skipProviderRestoreForValue = ref<string | null>(null);
   const sizeLabel = computed(() => {
     if (activeSizePreset.value === "auto") return "自动";
     if (activeSizePreset.value === "custom") return `${imageWidth.value} x ${imageHeight.value}`;
@@ -183,10 +197,7 @@ export const useSettingsStore = defineStore("settings", () => {
     () => backgroundOptions.find((o) => o.value === background.value)?.label ?? background.value,
   );
   const transparentDisabled = computed(
-    () =>
-      apiProvider.value === "grok" ||
-      apiProvider.value === "gemini" ||
-      model.value === FIXED_IMAGE_MODEL,
+    () => !imageCapabilitiesForCurrentProvider.value.transparentBackground,
   );
   const formatLabel = computed(
     () => formatOptions.find((o) => o.value === outputFormat.value)?.label ?? outputFormat.value,
@@ -219,7 +230,8 @@ export const useSettingsStore = defineStore("settings", () => {
 
   function applySettings(settings: AppSettings) {
     const defaults = normalizeGenerationParams(settings.defaults);
-    skipNextProviderRestore = settings.apiProvider !== apiProvider.value;
+    skipProviderRestoreForValue.value =
+      settings.apiProvider !== apiProvider.value ? settings.apiProvider : null;
     connectionMode.value = settings.connectionMode;
     apiProvider.value = settings.apiProvider;
     apiKey.value = settings.apiKey;
@@ -228,7 +240,7 @@ export const useSettingsStore = defineStore("settings", () => {
     apiMode.value = settings.apiMode;
     streamImages.value = settings.streamImages;
     streamPartialImages.value = settings.streamPartialImages;
-    model.value = settings.model || defaultModelForProvider(settings.apiProvider);
+    model.value = migrateLegacyDefaultModel(settings.model);
     promptMode.value = settings.promptMode;
     promptWordbanks.value = normalizePromptWordbanks(settings.promptWordbanks);
     promptRewriteGuardEnabled.value = settings.promptRewriteGuardEnabled;
@@ -262,6 +274,7 @@ export const useSettingsStore = defineStore("settings", () => {
     background.value = normalizeBackground(defaults.background);
     outputFormat.value = defaults.outputFormat;
     saveProviderApiSettings(settings.apiProvider);
+    completeModelSelectionMigration();
   }
 
   function currentSettings(): AppSettings {
@@ -274,7 +287,7 @@ export const useSettingsStore = defineStore("settings", () => {
       apiMode: apiMode.value,
       streamImages: streamImages.value,
       streamPartialImages: streamPartialImages.value,
-      model: model.value || defaultModelForProvider(apiProvider.value),
+      model: model.value.trim(),
       promptMode: promptMode.value,
       promptWordbanks: clonePromptWordbanks(promptWordbanks.value),
       promptRewriteGuardEnabled: promptRewriteGuardEnabled.value,
@@ -309,6 +322,23 @@ export const useSettingsStore = defineStore("settings", () => {
     };
   }
 
+  function currentGenerationRecipe() {
+    return {
+      connectionMode: connectionMode.value,
+      apiProvider: apiProvider.value,
+      apiBaseUrl: apiBaseUrl.value.trim(),
+      apiBaseUrlMode: apiBaseUrlMode.value,
+      apiMode: apiMode.value,
+      model: model.value.trim(),
+      params: currentGenerationParams(),
+    };
+  }
+
+  function apiKeyForProvider(provider: ApiProvider) {
+    if (provider === apiProvider.value) return apiKey.value.trim();
+    return readProviderApiSettings(provider, defaultProviderApiSettings(provider)).apiKey.trim();
+  }
+
   function applyImageCountMode(mode: ImageCountMode) {
     imageCountMode.value = mode;
     if (
@@ -340,10 +370,19 @@ export const useSettingsStore = defineStore("settings", () => {
   }
 
   function applyProviderConstraints(provider: ApiProvider) {
+    if (provider !== "openai") {
+      if (apiMode.value === "responses") apiMode.value = "images";
+      if (streamImages.value) streamImages.value = false;
+    }
+    const capabilities = imageCapabilities(provider, apiMode.value, model.value);
+    if (!capabilities.background) background.value = "auto";
+    if (!capabilities.outputFormat) outputFormat.value = "png";
+    if (!capabilities.quality) quality.value = "auto";
+    if (!capabilities.transparentBackground && background.value === "transparent") {
+      background.value = "auto";
+    }
+    if (!capabilities.customSize && activeSizePreset.value === "custom") applySizePreset("1:1");
     if (provider === "openai") return;
-    if (apiMode.value === "responses") apiMode.value = "images";
-    if (streamImages.value) streamImages.value = false;
-    if (background.value === "transparent") background.value = "auto";
     if (provider === "grok") {
       if (
         activeSizePreset.value === "custom" ||
@@ -362,14 +401,18 @@ export const useSettingsStore = defineStore("settings", () => {
         applySizeResolution("1k");
       }
     }
-    if (
-      !model.value ||
-      model.value === FIXED_IMAGE_MODEL ||
-      model.value === defaultModelForProvider("openai") ||
-      (provider === "gemini" && model.value === "gemini-3.1-flash-image")
-    ) {
-      model.value = defaultModelForProvider(provider);
-    }
+  }
+
+  function migrateLegacyDefaultModel(value: string) {
+    return needsModelSelectionMigration.value && LEGACY_DEFAULT_MODELS.has(value.trim())
+      ? ""
+      : value;
+  }
+
+  function completeModelSelectionMigration() {
+    if (!needsModelSelectionMigration.value) return;
+    needsModelSelectionMigration.value = false;
+    writeStorage(SETTINGS_STORAGE_KEYS.modelSelectionMigration, "1");
   }
 
   function savePromptRewriteGuardText(text: string) {
@@ -449,8 +492,8 @@ export const useSettingsStore = defineStore("settings", () => {
     { flush: "sync" },
   );
   watch(apiProvider, (provider, previousProvider) => {
-    if (skipNextProviderRestore) {
-      skipNextProviderRestore = false;
+    if (skipProviderRestoreForValue.value === provider) {
+      skipProviderRestoreForValue.value = null;
       saveProviderApiSettings(provider);
       applyProviderConstraints(provider);
       return;
@@ -468,7 +511,6 @@ export const useSettingsStore = defineStore("settings", () => {
     model.value = next.model;
     applyProviderConstraints(provider);
   });
-
   return {
     activeSizePreset,
     apiProvider,
@@ -476,6 +518,7 @@ export const useSettingsStore = defineStore("settings", () => {
     apiBaseUrl,
     apiBaseUrlMode,
     apiKey,
+    apiKeyForProvider,
     autoRetryOnNetworkError,
     companionPaired,
     companionSessionToken,
@@ -489,8 +532,10 @@ export const useSettingsStore = defineStore("settings", () => {
     background,
     backgroundLabel,
     backgroundOptions,
+    imageCapabilities: imageCapabilitiesForCurrentProvider,
     transparentDisabled,
     currentGenerationParams,
+    currentGenerationRecipe,
     currentSettings,
     customSizeError,
     formatLabel,
@@ -583,21 +628,18 @@ function normalizeProviderApiSettings(
   };
 }
 
-function normalizeProviderModel(provider: ApiProvider, value: string | undefined) {
+function normalizeProviderModel(_provider: ApiProvider, value: string | undefined) {
   const trimmed = value?.trim();
-  if (provider === "gemini" && trimmed === "gemini-3.1-flash-image") {
-    return defaultModelForProvider("gemini");
-  }
-  return trimmed || defaultModelForProvider(provider);
+  return trimmed ?? "";
 }
 
-function defaultProviderApiSettings(provider: ApiProvider): ProviderApiSettings {
+function defaultProviderApiSettings(_provider: ApiProvider): ProviderApiSettings {
   return {
     apiKey: "",
     apiBaseUrl: "",
     apiBaseUrlMode: "origin",
     apiMode: "images",
-    model: defaultModelForProvider(provider),
+    model: "",
   };
 }
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { FocusTrap } from "focus-trap-vue";
 import { buildFloatingChatProjectContext } from "../../services/floatingChatContext";
 import { useFloatingChatStore } from "../../stores/floatingChatStore";
 import { useComposerStore } from "../../stores/composerStore";
@@ -14,6 +15,10 @@ const images = useImagesStore();
 const settings = useSettingsStore();
 const listRef = ref<HTMLDivElement | null>(null);
 
+// ── 视口尺寸（响应式） ──
+const viewportWidth = ref(window.innerWidth);
+const isMobile = computed(() => viewportWidth.value < 768);
+
 // ── 拖拽状态 ──
 const STORAGE_KEY = "floating-chat-position";
 const BUTTON_SIZE = 48; // h-12 w-12 = 48px
@@ -23,7 +28,7 @@ const EDGE_MARGIN = 24; // 距视口边缘最小距离 (6 * 4 = 24px)
 const CLICK_THRESHOLD = 5;
 
 const posRight = ref(EDGE_MARGIN);
-const posBottom = ref(EDGE_MARGIN);
+const posBottom = ref(minimumBottomMargin());
 const isDragging = ref(false);
 let startX = 0;
 let startY = 0;
@@ -33,6 +38,17 @@ let movedDistance = 0;
 
 /** 面板展开方向：气泡在右侧时面板向左展开，在左侧时向右展开 */
 const panelStyle = computed(() => {
+  if (isMobile.value) {
+    return {
+      position: "fixed",
+      zIndex: "50",
+      width: "calc(100vw - 24px)",
+      height: "min(62dvh, 32rem)",
+      left: "12px",
+      bottom: "12px",
+    };
+  }
+
   const style: Record<string, string> = {
     position: "fixed",
     zIndex: "40",
@@ -40,14 +56,13 @@ const panelStyle = computed(() => {
     height: `${PANEL_H}px`,
   };
   // 水平：如果气泡靠右（right > 视口宽度一半），面板在气泡左侧；否则在右侧
-  const viewportW = window.innerWidth;
-  const bubbleLeft = viewportW - posRight.value - BUTTON_SIZE;
-  if (bubbleLeft > viewportW / 2) {
+  const bubbleLeft = viewportWidth.value - posRight.value - BUTTON_SIZE;
+  if (bubbleLeft > viewportWidth.value / 2) {
     // 气泡偏右 → 面板在气泡左边
     style.right = `${posRight.value}px`;
   } else {
     // 气泡偏左 → 面板在气泡右边
-    style.left = `${viewportW - posRight.value}px`;
+    style.left = `${viewportWidth.value - posRight.value}px`;
   }
   // 垂直：面板底部对齐气泡底部
   style.bottom = `${posBottom.value}px`;
@@ -88,7 +103,15 @@ function clampRight(value: number) {
 }
 
 function clampBottom(value: number) {
-  return Math.max(0, Math.min(window.innerHeight - BUTTON_SIZE, value));
+  return Math.max(minimumBottomMargin(), Math.min(window.innerHeight - BUTTON_SIZE, value));
+}
+
+function minimumBottomMargin() {
+  return window.innerWidth < 768 ? 148 : EDGE_MARGIN;
+}
+
+function updateViewport() {
+  viewportWidth.value = window.innerWidth;
 }
 
 function onPointerDown(e: PointerEvent) {
@@ -127,15 +150,24 @@ function onBubbleClick() {
   }
 }
 
-onMounted(restorePosition);
+onMounted(() => {
+  restorePosition();
+  window.addEventListener("resize", updateViewport);
+});
 
 onUnmounted(() => {
+  window.removeEventListener("resize", updateViewport);
   document.removeEventListener("pointermove", onPointerMove);
   document.removeEventListener("pointerup", onPointerUp);
 });
 
 watch(
-  () => chat.messages.map((m) => m.content).join("|"),
+  () => {
+    const msgs = chat.messages;
+    if (msgs.length === 0) return "";
+    const last = msgs[msgs.length - 1];
+    return `${msgs.length}:${last.content.length}:${last.role}`;
+  },
   () => {
     nextTick(() => {
       if (listRef.value) listRef.value.scrollTop = listRef.value.scrollHeight;
@@ -196,7 +228,7 @@ function buildProjectContext() {
   <button
     v-if="!chat.isOpen"
     class="z-40 flex h-12 w-12 touch-none select-none items-center justify-center rounded-full bg-gray-900 text-white shadow-lg"
-    :class="isDragging ? 'cursor-grabbing' : 'cursor-grab hover:scale-105'"
+    :class="isDragging ? 'cursor-grabbing' : 'cursor-grab floating-chat-trigger'"
     :style="{
       position: 'fixed',
       right: posRight + 'px',
@@ -223,9 +255,17 @@ function buildProjectContext() {
 
   <!-- 展开面板（跟随气泡位置） -->
   <div
-    v-if="chat.isOpen"
+    v-if="chat.isOpen && isMobile"
+    class="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
+    @click="chat.close"
+  />
+  <FocusTrap v-if="chat.isOpen" :active="isMobile" :initial-focus="() => false">
+  <div
     class="flex flex-col rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-2xl"
     :style="panelStyle"
+    role="dialog"
+    aria-modal="true"
+    aria-label="AI assistant"
   >
     <!-- 头部 -->
     <div
@@ -342,4 +382,13 @@ function buildProjectContext() {
       </div>
     </div>
   </div>
+  </FocusTrap>
 </template>
+
+<style scoped>
+@media (hover: hover) and (pointer: fine) {
+  .floating-chat-trigger:hover {
+    transform: scale(1.05);
+  }
+}
+</style>

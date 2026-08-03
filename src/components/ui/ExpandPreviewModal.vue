@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onBeforeUnmount, ref } from "vue";
 
 const props = defineProps<{
   originalPrompt: string;
@@ -12,16 +12,22 @@ const emit = defineEmits<{
 
 const editableText = ref(props.expandedPrompt);
 const copied = ref(false);
+const copyTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 
 async function copyText() {
   try {
     await navigator.clipboard.writeText(editableText.value);
     copied.value = true;
-    setTimeout(() => {
+    if (copyTimer.value) clearTimeout(copyTimer.value);
+    copyTimer.value = setTimeout(() => {
       copied.value = false;
     }, 1500);
   } catch {}
 }
+
+onBeforeUnmount(() => {
+  if (copyTimer.value) clearTimeout(copyTimer.value);
+})
 
 function sendEdited() {
   const text = editableText.value.trim();
@@ -30,8 +36,8 @@ function sendEdited() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-    <div class="w-full max-w-xl rounded-2xl bg-white shadow-xl">
+  <div class="cupertino-dialog-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="cupertino-dialog w-full max-w-xl rounded-2xl shadow-xl">
       <div class="p-5 pb-4">
         <h3 class="text-sm font-semibold text-gray-900">Prompt 扩写预览</h3>
 

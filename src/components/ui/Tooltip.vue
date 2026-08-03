@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref } from "vue";
 
 const props = withDefaults(
   defineProps<{
@@ -112,6 +112,11 @@ function hideTooltip() {
 
   isVisible.value = false;
 }
+
+onBeforeUnmount(() => {
+  if (delayTimer) { clearTimeout(delayTimer); delayTimer = null }
+  if (hideTimer) { clearTimeout(hideTimer); hideTimer = null }
+})
 </script>
 
 <template>

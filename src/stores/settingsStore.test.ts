@@ -85,4 +85,21 @@ describe("settings store provider API cache", () => {
       ragTopK: 6,
     });
   });
+
+  it("clears the legacy fixed model once before users select an upstream model", () => {
+    storage.set(
+      "gpt-image-studio:provider-api:openai",
+      JSON.stringify({
+        apiKey: "",
+        apiBaseUrl: "",
+        apiBaseUrlMode: "origin",
+        apiMode: "images",
+        model: "gpt-image-2",
+      }),
+    );
+
+    const settings = useSettingsStore();
+
+    expect(settings.model).toBe("");
+  });
 });

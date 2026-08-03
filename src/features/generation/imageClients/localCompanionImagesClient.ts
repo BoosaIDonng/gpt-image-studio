@@ -4,6 +4,7 @@ import { isGptImageModel } from "../../../shared/models";
 import { blobToBase64, blobToDataUrl } from "../../../shared/blobUtils";
 import { isSizeRatio, normalizeImageCount } from "../../../services/generationParams";
 import { buildGrokEditImagePayload } from "../../../services/grokImagesApi";
+import { validateImageParams } from "../../../services/imageCapabilities";
 import type { ImageClient, ImageClientResult } from "./imageClient";
 
 type CompanionClientConfig = {
@@ -23,17 +24,20 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
   }
 
   return {
-    canGenerateBatch() {
-      return config.getApiProvider() === "grok";
+    canGenerateBatch(input) {
+      return (input?.recipe?.apiProvider ?? config.getApiProvider()) === "grok";
     },
     async generate(input) {
       const url = `${config.getCompanionUrl()}/images/generations`;
-      const model = config.getModel();
+      const provider = input.recipe?.apiProvider ?? config.getApiProvider();
+      const model = input.recipe?.model ?? config.getModel();
+      validateImageParams(provider, input.recipe?.apiMode ?? "images", model, input.params);
       const prompt = buildPromptRequest(input);
 
-      if (config.getApiProvider() === "grok") {
+      if (provider === "grok") {
         const response = await fetch(url, {
           method: "POST",
+          signal: input.signal,
           headers: { ...headers(), "Content-Type": "application/json" },
           body: JSON.stringify({
             model,
@@ -49,9 +53,10 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
         };
       }
 
-      if (config.getApiProvider() === "gemini") {
+      if (provider === "gemini") {
         const response = await fetch(url, {
           method: "POST",
+          signal: input.signal,
           headers: { ...headers(), "Content-Type": "application/json" },
           body: JSON.stringify({
             model,
@@ -69,6 +74,7 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
 
       const response = await fetch(url, {
         method: "POST",
+        signal: input.signal,
         headers: { ...headers(), "Content-Type": "application/json" },
         body: JSON.stringify({ model, prompt, ...buildParams(model, input.params) }),
       });
@@ -80,12 +86,14 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
     },
 
     async generateBatch(input) {
-      if (config.getApiProvider() !== "grok") {
+      const provider = input.recipe?.apiProvider ?? config.getApiProvider();
+      if (provider !== "grok") {
         throw new Error("当前供应商不支持批量单请求生成。");
       }
 
       const url = `${config.getCompanionUrl()}/images/generations`;
-      const model = config.getModel();
+      const model = input.recipe?.model ?? config.getModel();
+      validateImageParams(provider, input.recipe?.apiMode ?? "images", model, input.params);
       const prompt = buildPromptRequest(input);
       const count = normalizeImageCount(input.count);
       const results: ImageClientResult[] = [];
@@ -93,6 +101,7 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
       for (let remaining = count; remaining > 0; remaining -= 10) {
         const response = await fetch(url, {
           method: "POST",
+          signal: input.signal,
           headers: { ...headers(), "Content-Type": "application/json" },
           body: JSON.stringify({
             model,
@@ -114,10 +123,12 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
 
     async edit(input) {
       const url = `${config.getCompanionUrl()}/images/edits`;
-      const model = config.getModel();
+      const provider = input.recipe?.apiProvider ?? config.getApiProvider();
+      const model = input.recipe?.model ?? config.getModel();
+      validateImageParams(provider, input.recipe?.apiMode ?? "images", model, input.params);
       const prompt = buildPromptRequest(input);
 
-      if (config.getApiProvider() === "grok") {
+      if (provider === "grok") {
         if (input.mask) {
           throw new Error("Grok 图片接口当前不支持本应用的局部遮罩编辑。");
         }
@@ -127,6 +138,7 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
         const imagePayload = buildGrokEditImagePayload(imageDataUrls);
         const response = await fetch(url, {
           method: "POST",
+          signal: input.signal,
           headers: { ...headers(), "Content-Type": "application/json" },
           body: JSON.stringify({
             model,
@@ -143,7 +155,7 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
         };
       }
 
-      if (config.getApiProvider() === "gemini") {
+      if (provider === "gemini") {
         if (input.mask) {
           throw new Error("Gemini 图片接口当前不支持本应用的局部遮罩编辑。");
         }
@@ -157,6 +169,7 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
         );
         const response = await fetch(url, {
           method: "POST",
+          signal: input.signal,
           headers: { ...headers(), "Content-Type": "application/json" },
           body: JSON.stringify({
             model,
@@ -189,6 +202,7 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
 
       const response = await fetch(url, {
         method: "POST",
+        signal: input.signal,
         headers: headers(),
         body,
       });

@@ -5,6 +5,16 @@ export type ImageTagColor = "red" | "orange" | "yellow" | "green" | "cyan" | "bl
 export type ApiMode = "images" | "responses";
 export type ApiProvider = "openai" | "grok" | "gemini";
 
+export type GenerationRecipe = {
+  connectionMode: ConnectionMode;
+  apiProvider: ApiProvider;
+  apiBaseUrl: string;
+  apiBaseUrlMode: ApiBaseUrlMode;
+  apiMode: ApiMode;
+  model: string;
+  params: GenerationParams;
+};
+
 export type Conversation = {
   id: string;
   title: string;
@@ -26,6 +36,7 @@ export type Message = {
   createdAt: string;
   generationStartedAt?: string;
   generationParams?: GenerationParams;
+  generationRecipe?: GenerationRecipe;
   promptRequestSettings?: PromptRequestSettings;
   networkRetryAttempt?: number;
   errorMessage?: string;
@@ -51,6 +62,7 @@ export type ImageAsset = {
   referencedImageIds?: string[];
   editSourceImageId?: string;
   generationDurationMs?: number;
+  generationRecipe?: GenerationRecipe;
   isEditMask?: boolean;
   isTransientMask?: boolean;
   transientBlob?: Blob;
@@ -141,7 +153,7 @@ export type AppSettings = {
   storageMode: "indexeddb";
 };
 
-export type EditorKey = "size" | "count" | "background" | "format";
+export type EditorKey = "size" | "count" | "quality" | "background" | "format";
 
 export type ConversationDraft = {
   conversationId: string;

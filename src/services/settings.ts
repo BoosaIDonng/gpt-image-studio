@@ -2,7 +2,6 @@ import { normalizeGenerationParams, type StoredGenerationParams } from "./genera
 import { PROMPT_REWRITE_GUARD_PREFIX, normalizePromptRewriteGuardText } from "./imagesApi";
 import { normalizeFavoritePrompts } from "./favoritePrompts";
 import { normalizePromptWordbanks } from "./promptWordbanks";
-import { GEMINI_IMAGE_MODEL, defaultModelForProvider } from "../shared/models";
 import { normalizeRagTopK } from "../shared/normalizers";
 import type {
   ApiMode,
@@ -125,12 +124,9 @@ function normalizeApiProvider(provider: ApiProvider | undefined): ApiProvider {
   return "openai";
 }
 
-function normalizeModel(provider: ApiProvider, model: string | undefined) {
+function normalizeModel(_provider: ApiProvider, model: string | undefined) {
   const trimmed = model?.trim();
-  if (provider === "gemini" && trimmed === "gemini-3.1-flash-image") {
-    return GEMINI_IMAGE_MODEL;
-  }
-  return trimmed || defaultModelForProvider(provider);
+  return trimmed ?? "";
 }
 
 function normalizeStreamPartialImages(value: unknown): 0 | 1 | 2 | 3 {

@@ -4,6 +4,10 @@ defineProps<{
   previewUrl?: string;
   retryAttempt?: number;
 }>();
+
+defineEmits<{
+  cancel: [];
+}>();
 </script>
 
 <template>
@@ -56,6 +60,13 @@ defineProps<{
           <div class="generation-skeleton-line h-6 w-6 rounded-md"></div>
         </div>
       </div>
+      <button
+        class="mt-3 cursor-pointer text-xs text-gray-500 transition-colors hover:text-gray-900"
+        type="button"
+        @click="$emit('cancel')"
+      >
+        停止生成
+      </button>
     </figcaption>
   </figure>
 </template>

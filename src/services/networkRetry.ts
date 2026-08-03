@@ -7,6 +7,7 @@ export async function withNetworkRetry<T>(
   fn: () => Promise<T>,
   shouldRetry: () => boolean,
   onRetry?: (retryAttempt: number) => void,
+  signal?: AbortSignal,
 ): Promise<T> {
   const maxAttempts = shouldRetry() ? MAX_RETRIES : 1;
 
@@ -20,7 +21,7 @@ export async function withNetworkRetry<T>(
       const delay = computeBackoffDelay(attempt);
       onRetry?.(attempt + 1);
       console.info(`[networkRetry] attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
-      await sleep(delay);
+      await sleep(delay, signal);
     }
   }
 
@@ -53,6 +54,13 @@ export function isNetworkError(error: unknown): boolean {
   );
 }
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) { reject(signal.reason); return; }
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener("abort", () => {
+      clearTimeout(timer);
+      reject(signal.reason);
+    }, { once: true });
+  });
 }

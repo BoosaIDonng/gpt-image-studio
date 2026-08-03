@@ -15,6 +15,7 @@ export async function streamChatReply(
   onDelta: (delta: string) => void,
   projectContext?: ChatMessage,
   options: StreamChatReplyOptions = {},
+  signal?: AbortSignal,
 ): Promise<string> {
   const outgoingMessages = projectContext ? [projectContext, ...messages] : messages;
   const useBuiltinPersona = options.useBuiltinPersona ?? true;
@@ -27,6 +28,7 @@ export async function streamChatReply(
       use_builtin_persona: useBuiltinPersona,
       messages: outgoingMessages,
     }),
+    signal,
   });
 
   if (!response.ok) {

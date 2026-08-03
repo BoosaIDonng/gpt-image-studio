@@ -63,6 +63,9 @@ export function toPlainMessage(message: Message): Message {
     createdAt: message.createdAt,
     generationStartedAt: message.generationStartedAt,
     generationParams: message.generationParams ? { ...message.generationParams } : undefined,
+    generationRecipe: message.generationRecipe
+      ? { ...message.generationRecipe, params: { ...message.generationRecipe.params } }
+      : undefined,
     promptRequestSettings: message.promptRequestSettings
       ? {
           promptMode: message.promptRequestSettings.promptMode,
@@ -100,6 +103,9 @@ export function toPlainImageAsset(imageAsset: ImageAsset): ImageAsset {
       : undefined,
     editSourceImageId: imageAsset.editSourceImageId,
     generationDurationMs: imageAsset.generationDurationMs,
+    generationRecipe: imageAsset.generationRecipe
+      ? { ...imageAsset.generationRecipe, params: { ...imageAsset.generationRecipe.params } }
+      : undefined,
     isEditMask: imageAsset.isEditMask,
     createdAt: imageAsset.createdAt,
     updatedAt: imageAsset.updatedAt,

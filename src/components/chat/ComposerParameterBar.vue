@@ -95,7 +95,7 @@ function ragWeightedScoreLabel(score: number) {
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-wrap items-center gap-1.5">
+  <div class="flex min-w-0 flex-nowrap items-center gap-1.5 overflow-x-auto touch-pan-x [&>*]:shrink-0 md:flex-wrap md:overflow-visible">
     <span class="cursor-not-allowed rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-400">
       供应商: {{ providerLabel }}
     </span>
@@ -153,7 +153,21 @@ function ragWeightedScoreLabel(score: number) {
         :active-editor="composer.activeEditor"
       />
     </span>
-    <span class="relative inline-flex">
+    <span v-if="settings.imageCapabilities.quality" class="relative inline-flex">
+      <button
+        class="cursor-pointer rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500 transition-colors hover:bg-gray-200"
+        :class="composer.activeEditor === 'quality' ? 'bg-gray-200 text-gray-800' : ''"
+        type="button"
+        @click="composer.toggleEditor('quality')"
+      >
+        质量: {{ settings.qualityLabel }}
+      </button>
+      <ComposerEditorPanel
+        v-if="composer.activeEditor === 'quality'"
+        :active-editor="composer.activeEditor"
+      />
+    </span>
+    <span v-if="settings.imageCapabilities.background" class="relative inline-flex">
       <button
         class="cursor-pointer rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500 transition-colors hover:bg-gray-200"
         :class="composer.activeEditor === 'background' ? 'bg-gray-200 text-gray-800' : ''"
@@ -167,7 +181,7 @@ function ragWeightedScoreLabel(score: number) {
         :active-editor="composer.activeEditor"
       />
     </span>
-    <span class="relative inline-flex">
+    <span v-if="settings.imageCapabilities.outputFormat" class="relative inline-flex">
       <button
         class="cursor-pointer rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500 transition-colors hover:bg-gray-200"
         :class="composer.activeEditor === 'format' ? 'bg-gray-200 text-gray-800' : ''"

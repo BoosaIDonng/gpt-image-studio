@@ -1,26 +1,100 @@
 @import "tailwindcss";
 
-/* 暗色模式：使用 class 策略，根元素添加 .dark 类即可切换 */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* 全局主题过渡：背景色和文字色切换时平滑过渡 */
-html {
+:root {
+  color: #1c1c1e;
+  background: #f2f2f7;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC",
+    "Helvetica Neue", Arial, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --cupertino-blue: #007aff;
+  --cupertino-blue-pressed: #006ee6;
+  --cupertino-red: #ff3b30;
+  --cupertino-green: #34c759;
+  --cupertino-orange: #ff9500;
+  --cupertino-label: #1c1c1e;
+  --cupertino-secondary-label: #6c6c70;
+  --cupertino-tertiary-label: #8e8e93;
+  --cupertino-fill: rgba(120, 120, 128, 0.12);
+  --cupertino-secondary-fill: rgba(120, 120, 128, 0.08);
+  --cupertino-separator: rgba(60, 60, 67, 0.18);
+  --cupertino-background: #f2f2f7;
+  --cupertino-grouped-background: #ffffff;
+  --cupertino-bar: rgba(249, 249, 249, 0.82);
+  --cupertino-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.dark {
+  color: #f5f5f7;
+  background: #000000;
+  --cupertino-label: #f5f5f7;
+  --cupertino-secondary-label: #aeaeb2;
+  --cupertino-tertiary-label: #8e8e93;
+  --cupertino-fill: rgba(120, 120, 128, 0.28);
+  --cupertino-secondary-fill: rgba(120, 120, 128, 0.2);
+  --cupertino-separator: rgba(84, 84, 88, 0.65);
+  --cupertino-background: #000000;
+  --cupertino-grouped-background: #1c1c1e;
+  --cupertino-bar: rgba(28, 28, 30, 0.8);
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  color: var(--cupertino-label);
+  background: var(--cupertino-background);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+a,
+label[for] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
   transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease,
+    transform 130ms var(--cupertino-ease-out);
 }
 
-/* 暗色模式下的滚动条配色 */
-.dark * {
-  scrollbar-color: rgba(100, 100, 100, 0.4) transparent;
-}
-.dark *:hover {
-  scrollbar-color: rgba(140, 140, 140, 0.5) transparent;
+button:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
-/* 暗色模式下的图片：略微降低亮度，减少白色背景图片的刺眼感 */
-.dark img:not([data-no-dark-filter]) {
-  filter: brightness(0.92);
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--cupertino-blue) 28%, transparent);
+  outline-offset: 2px;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--cupertino-blue);
 }
 
 * {
@@ -29,7 +103,7 @@ html {
 }
 
 *:hover {
-  scrollbar-color: rgba(155, 155, 155, 0.4) transparent;
+  scrollbar-color: rgba(120, 120, 128, 0.42) transparent;
 }
 
 *::-webkit-scrollbar {
@@ -37,38 +111,263 @@ html {
   height: 5px;
 }
 
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-*::-webkit-scrollbar-thumb {
-  background-color: transparent;
-  border-radius: 9999px;
-  transition: background-color 0.2s;
-}
-
-*:hover::-webkit-scrollbar-thumb {
-  background-color: rgba(155, 155, 155, 0.4);
-}
-
-*::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(120, 120, 120, 0.6);
-}
-
+*::-webkit-scrollbar-track,
 *::-webkit-scrollbar-corner {
   background: transparent;
 }
 
-.overflow-y-auto,
-.overflow-x-auto,
-.overflow-auto {
-  overflow: overlay;
+*::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: transparent;
 }
 
-.overflow-y-auto {
-  overflow-y: overlay;
+*:hover::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 128, 0.42);
 }
 
-.overflow-x-auto {
-  overflow-x: overlay;
+/* App shell */
+.cupertino-app {
+  position: relative;
+  overflow: hidden;
+  color: var(--cupertino-label) !important;
+  background: var(--cupertino-background) !important;
+}
+
+.dark .cupertino-app {
+  background: var(--cupertino-background) !important;
+}
+
+.cupertino-sidebar {
+  width: 17.5rem !important;
+  color: var(--cupertino-label) !important;
+  background: color-mix(in srgb, var(--cupertino-bar) 94%, transparent) !important;
+  border-right: 1px solid var(--cupertino-separator);
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+}
+
+.cupertino-workspace {
+  background: var(--cupertino-background);
+}
+
+.cupertino-navbar {
+  min-height: 3.25rem;
+  color: var(--cupertino-label);
+  background: color-mix(in srgb, var(--cupertino-bar) 92%, transparent);
+  border-color: var(--cupertino-separator) !important;
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+.cupertino-library {
+  color: var(--cupertino-label) !important;
+  background: color-mix(in srgb, var(--cupertino-bar) 94%, transparent) !important;
+  border-color: var(--cupertino-separator) !important;
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+}
+
+/* Surfaces and controls shared by the existing functional panels. */
+.cupertino-app :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select),
+.cupertino-sheet :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select),
+.cupertino-dialog :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
+  color: var(--cupertino-label) !important;
+  background: var(--cupertino-secondary-fill) !important;
+  border: 1px solid transparent !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+.cupertino-app :is(input, textarea, select):focus,
+.cupertino-sheet :is(input, textarea, select):focus,
+.cupertino-dialog :is(input, textarea, select):focus {
+  background: var(--cupertino-grouped-background) !important;
+  border-color: color-mix(in srgb, var(--cupertino-blue) 55%, transparent) !important;
+}
+
+.cupertino-app input::placeholder,
+.cupertino-app textarea::placeholder,
+.cupertino-sheet input::placeholder,
+.cupertino-sheet textarea::placeholder {
+  color: var(--cupertino-tertiary-label) !important;
+}
+
+.cupertino-app .border-gray-200,
+.cupertino-app .border-gray-300,
+.cupertino-app .border-gray-100,
+.cupertino-sheet .border-gray-200,
+.cupertino-sheet .border-gray-300,
+.cupertino-sheet .border-gray-100,
+.cupertino-dialog .border-gray-200,
+.cupertino-dialog .border-gray-300 {
+  border-color: var(--cupertino-separator) !important;
+}
+
+.cupertino-app .bg-white,
+.cupertino-sheet .bg-white,
+.cupertino-dialog .bg-white {
+  background-color: var(--cupertino-grouped-background) !important;
+}
+
+.cupertino-app .bg-gray-50,
+.cupertino-app .bg-gray-100,
+.cupertino-sheet .bg-gray-50,
+.cupertino-sheet .bg-gray-100,
+.cupertino-dialog .bg-gray-50 {
+  background-color: var(--cupertino-secondary-fill) !important;
+}
+
+.dark .cupertino-app .dark\:bg-gray-900,
+.dark .cupertino-sheet .dark\:bg-gray-900,
+.dark .cupertino-dialog .dark\:bg-gray-900 {
+  background-color: var(--cupertino-grouped-background) !important;
+}
+
+.cupertino-app .text-gray-900,
+.cupertino-app .text-gray-800,
+.cupertino-sheet .text-gray-900,
+.cupertino-sheet .text-gray-800,
+.cupertino-dialog .text-gray-900 {
+  color: var(--cupertino-label) !important;
+}
+
+.cupertino-app .text-gray-500,
+.cupertino-app .text-gray-400,
+.cupertino-sheet .text-gray-500,
+.cupertino-sheet .text-gray-400,
+.cupertino-dialog .text-gray-500 {
+  color: var(--cupertino-secondary-label) !important;
+}
+
+.cupertino-app .bg-black,
+.cupertino-app .bg-gray-900,
+.cupertino-sheet .bg-black,
+.cupertino-sheet .bg-gray-900,
+.cupertino-dialog .bg-black {
+  background-color: var(--cupertino-blue) !important;
+}
+
+.cupertino-app .hover\:bg-gray-800:hover,
+.cupertino-app .hover\:bg-gray-900:hover,
+.cupertino-sheet .hover\:bg-gray-800:hover,
+.cupertino-dialog .hover\:bg-gray-800:hover {
+  background-color: var(--cupertino-blue-pressed) !important;
+}
+
+.cupertino-app .rounded-lg,
+.cupertino-sheet .rounded-lg,
+.cupertino-dialog .rounded-lg {
+  border-radius: 12px !important;
+}
+
+.cupertino-app .rounded-xl,
+.cupertino-sheet .rounded-xl,
+.cupertino-dialog .rounded-xl {
+  border-radius: 16px !important;
+}
+
+.cupertino-app .rounded-2xl,
+.cupertino-sheet .rounded-2xl,
+.cupertino-dialog .rounded-2xl {
+  border-radius: 20px !important;
+}
+
+/* The send field is an iOS message composer, not a floating dashboard card. */
+.cupertino-composer-surface {
+  border-color: var(--cupertino-separator) !important;
+  background: color-mix(in srgb, var(--cupertino-bar) 92%, transparent) !important;
+  backdrop-filter: saturate(180%) blur(18px);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+}
+
+.cupertino-composer-card {
+  border: 1px solid var(--cupertino-separator) !important;
+  border-radius: 18px !important;
+  background: var(--cupertino-grouped-background) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06) !important;
+}
+
+.dark .cupertino-composer-card {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.32) !important;
+}
+
+/* Settings and alerts use Cupertino's translucent sheet language. */
+.cupertino-sheet-backdrop,
+.cupertino-dialog-backdrop {
+  background: rgba(0, 0, 0, 0.32) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.cupertino-sheet,
+.cupertino-dialog {
+  color: var(--cupertino-label) !important;
+  background: color-mix(in srgb, var(--cupertino-grouped-background) 88%, transparent) !important;
+  border: 1px solid color-mix(in srgb, var(--cupertino-separator) 72%, transparent);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.22) !important;
+  backdrop-filter: saturate(180%) blur(28px);
+  -webkit-backdrop-filter: saturate(180%) blur(28px);
+}
+
+.cupertino-sheet {
+  border-radius: 20px !important;
+}
+
+.cupertino-tabs {
+  background: var(--cupertino-secondary-fill) !important;
+  border-color: var(--cupertino-separator) !important;
+}
+
+.cupertino-tabs button {
+  color: var(--cupertino-secondary-label) !important;
+}
+
+.cupertino-tabs button[aria-current="page"],
+.cupertino-tabs button.cupertino-tab-active {
+  color: var(--cupertino-label) !important;
+  background: var(--cupertino-grouped-background) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.cupertino-toast {
+  color: var(--cupertino-label) !important;
+  background: color-mix(in srgb, var(--cupertino-grouped-background) 86%, transparent) !important;
+  border-color: var(--cupertino-separator) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18) !important;
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+}
+
+@media (max-width: 767px) {
+  .cupertino-sidebar,
+  .cupertino-library {
+    width: min(88vw, 22rem) !important;
+  }
+
+  .cupertino-sheet {
+    align-self: end;
+    width: 100% !important;
+    height: min(92vh, 48rem) !important;
+    border-radius: 20px 20px 0 0 !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+
+  button:active:not(:disabled),
+  .hover\:scale-105:hover {
+    transform: none !important;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .hover\:scale-105:hover {
+    transform: none;
+  }
 }

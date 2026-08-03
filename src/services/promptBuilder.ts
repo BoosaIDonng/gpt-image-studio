@@ -1,4 +1,5 @@
 import type { PromptMode, PromptWordbanks } from "../types/studio";
+import { hashString } from "../shared/hash";
 import { promptWordbanks as defaultPromptWordbanks } from "./promptWordbanks";
 import { matchPromptWordbankTerms } from "./promptWordbankMatcher";
 
@@ -48,7 +49,6 @@ export function buildImagePrompt(input: BuildPromptInput) {
     input.prompt,
   ].join("\n");
 }
-
 export function selectInspirationTerms(
   mode: Exclude<PromptMode, "default">,
   seed: string,
@@ -82,12 +82,4 @@ function pickDeterministic(items: readonly string[], count: number, seed: string
     .sort((a, b) => a.score - b.score)
     .slice(0, Math.min(count, items.length))
     .map(({ item }) => item);
-}
-
-function hashString(value: string) {
-  let hash = 5381;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 33) ^ value.charCodeAt(index);
-  }
-  return hash >>> 0;
 }

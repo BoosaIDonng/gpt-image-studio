@@ -16,7 +16,7 @@ const emit = defineEmits<{
 <template>
   <div
     v-if="notice"
-    class="fixed bottom-4 right-4 z-70 max-w-sm rounded-lg border bg-white dark:bg-gray-800 px-4 py-3 text-sm shadow-xl"
+    class="cupertino-toast fixed bottom-4 right-4 z-70 max-w-sm rounded-lg border px-4 py-3 text-sm shadow-xl"
     :class="
       notice.type === 'error'
         ? 'border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'

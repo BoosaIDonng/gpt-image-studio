@@ -49,7 +49,7 @@ describe("images API requests", () => {
     expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.example.test/v1/images/generations");
     // gpt-image 系列不支持 response_format 参数，传了会报 HTTP 400。
     expect(requestBody.response_format).toBeUndefined();
-    expect(requestBody.quality).toBeUndefined();
+    expect(requestBody.quality).toBe("auto");
   });
 
   it("sends response_format for dall-e models", async () => {
@@ -260,7 +260,7 @@ describe("images API requests", () => {
     expect(requestBody).toBeInstanceOf(FormData);
     // gpt-image 系列不支持 response_format 参数，传了会报 HTTP 400。
     expect((requestBody as FormData).has("response_format")).toBe(false);
-    expect((requestBody as FormData).has("quality")).toBe(false);
+    expect((requestBody as FormData).get("quality")).toBe("auto");
   });
 
   it("calls the Responses API with the image_generation tool", async () => {

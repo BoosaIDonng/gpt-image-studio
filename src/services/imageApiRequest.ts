@@ -50,6 +50,7 @@ export function imageApiParams(
 
   return {
     size: apiSize(params),
+    ...(isGptImageModel(model) ? { quality: params.quality } : {}),
     background: params.background,
     output_format: params.outputFormat,
     // gpt-image 系列不支持 response_format，会报 HTTP 400；dall-e 系列需要它。

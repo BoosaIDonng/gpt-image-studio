@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch } from "vue";
 import type { ApiMode, ApiProvider } from "../../types/studio";
-import { GEMINI_IMAGE_MODEL, GROK_IMAGE_MODEL, OPENAI_IMAGE_MODEL } from "../../shared/models";
 import ApiKeyField from "./ApiKeyField.vue";
 import {
   checkCompanionHealth,
@@ -12,6 +11,7 @@ import {
   unpairCompanion,
 } from "../../services/companionApi";
 import type { CompanionAuthStatus, CompanionHealthResponse } from "../../types/companion";
+import { fetchImageModels } from "../../services/imageModelDiscovery";
 import { useSettingsModalContext } from "./settingsModalContext";
 
 const ctx = useSettingsModalContext();
@@ -38,6 +38,10 @@ const companionAuthStatus = ref<CompanionAuthStatus | null>(null);
 const pairingInProgress = ref(false);
 const pairingError = ref("");
 const pairingCodeInput = ref("");
+const availableModels = ref<string[]>([]);
+const fetchingModels = ref(false);
+const modelDiscoveryMessage = ref("");
+const modelDiscoveryError = ref("");
 
 const isManagedCompanion = computed(() => companionHealth.value?.runMode !== "serve");
 const providerOptions: Array<{ value: ApiProvider; label: string; description: string }> = [
@@ -84,11 +88,6 @@ const apiKeyLabel = computed(() => {
   if (apiProvider.value === "grok") return "xAI API key";
   if (apiProvider.value === "gemini") return "Google AI API key";
   return "OpenAI API key";
-});
-const modelHint = computed(() => {
-  if (apiProvider.value === "grok") return GROK_IMAGE_MODEL;
-  if (apiProvider.value === "gemini") return GEMINI_IMAGE_MODEL;
-  return OPENAI_IMAGE_MODEL;
 });
 
 async function checkStatus() {
@@ -191,6 +190,31 @@ function selectProvider(provider: ApiProvider) {
   ctx.updateApiProvider(provider);
 }
 
+async function discoverModels() {
+  fetchingModels.value = true;
+  modelDiscoveryMessage.value = "";
+  modelDiscoveryError.value = "";
+  try {
+    availableModels.value = await fetchImageModels({
+      apiProvider: apiProvider.value,
+      apiBaseUrl: apiBaseUrl.value,
+      apiBaseUrlMode: apiBaseUrlMode.value,
+      apiMode: apiMode.value,
+      apiKey: apiKey.value,
+    });
+    if (model.value && !availableModels.value.includes(model.value)) {
+      ctx.updateModel("");
+    }
+    modelDiscoveryMessage.value = availableModels.value.length
+      ? `连接成功，发现 ${availableModels.value.length} 个模型。`
+      : "连接成功，但上游没有返回模型列表。";
+  } catch (error) {
+    modelDiscoveryError.value = error instanceof Error ? error.message : "连接失败。";
+  } finally {
+    fetchingModels.value = false;
+  }
+}
+
 onMounted(() => {
   if (connectionMode.value === "localCompanion") {
     checkStatus();
@@ -210,6 +234,12 @@ watch(
     if (connectionMode.value === "localCompanion") checkStatus();
   },
 );
+
+watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
+  availableModels.value = [];
+  modelDiscoveryMessage.value = "";
+  modelDiscoveryError.value = "";
+});
 </script>
 
 <template>
@@ -313,20 +343,53 @@ watch(
         />
 
         <div>
-          <label class="mb-1 block text-sm font-medium text-gray-700" for="apiModel"> 模型 </label>
-          <input
+          <div class="mb-1 flex items-center justify-between gap-3">
+            <label class="block text-sm font-medium text-gray-700" for="apiModel"> 模型 </label>
+            <div class="flex items-center gap-3">
+              <button
+                class="cursor-pointer text-xs text-gray-500 transition-colors hover:text-gray-800 disabled:cursor-not-allowed disabled:text-gray-300"
+                type="button"
+                :disabled="fetchingModels || !apiKey || !apiBaseUrl"
+                @click="discoverModels"
+              >
+                {{ fetchingModels ? "获取中..." : "获取模型" }}
+              </button>
+              <button
+                class="cursor-pointer text-xs text-gray-500 transition-colors hover:text-gray-800 disabled:cursor-not-allowed disabled:text-gray-300"
+                type="button"
+                :disabled="fetchingModels || !apiKey || !apiBaseUrl"
+                @click="discoverModels"
+              >
+                测试连接
+              </button>
+            </div>
+          </div>
+          <select
+            v-if="availableModels.length"
             id="apiModel"
             :value="model"
-            class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-500 outline-none"
-            :placeholder="modelHint"
-            disabled
-            readonly
+            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-500"
+            @change="ctx.updateModel(($event.target as HTMLSelectElement).value)"
+          >
+            <option value="" disabled>请选择上游模型</option>
+            <option v-if="!availableModels.includes(model)" :value="model">{{ model }}</option>
+            <option v-for="item in availableModels" :key="item" :value="item">{{ item }}</option>
+          </select>
+          <input
+            v-else
+            id="apiModel"
+            :value="model"
+            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-500"
+            placeholder="先获取模型，或输入上游模型 ID"
             spellcheck="false"
             type="text"
+            @input="ctx.updateModel(($event.target as HTMLInputElement).value)"
           />
-          <p class="mt-1.5 text-xs text-gray-500">
-            当前使用 <span class="font-mono">{{ modelHint }}</span
-            >。切换供应商时会自动切换默认模型。
+          <p v-if="modelDiscoveryMessage" class="mt-1.5 text-xs text-green-700">
+            {{ modelDiscoveryMessage }}
+          </p>
+          <p v-if="modelDiscoveryError" class="mt-1.5 text-xs text-red-500">
+            {{ modelDiscoveryError }}
           </p>
         </div>
 

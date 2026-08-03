@@ -17,8 +17,12 @@ export function saveImageAsset(imageAsset: ImageAsset) {
   return putInStore(STORE_NAMES.imageAssets, imageAsset);
 }
 
-export function deleteImageAsset(id: string) {
-  return deleteFromStore(STORE_NAMES.imageAssets, id);
+export async function deleteImageAsset(id: string): Promise<void> {
+  const asset = await getFromStore<ImageAsset>(STORE_NAMES.imageAssets, id);
+  if (asset?.blobKey) {
+    await deleteFromStore(STORE_NAMES.imageBlobs, asset.blobKey);
+  }
+  await deleteFromStore(STORE_NAMES.imageAssets, id);
 }
 
 export function saveImageBlob(key: string, blob: Blob) {

@@ -70,7 +70,7 @@ const titleStyle = computed(() => {
       <span v-else>img</span>
       <button
         v-if="image.previewUrl"
-        class="absolute inset-0 flex cursor-pointer items-center justify-center rounded-lg bg-black/45 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100"
+        class="image-preview-overlay absolute inset-0 flex cursor-pointer items-center justify-center rounded-lg bg-black/45 text-[11px] font-medium text-white opacity-0 transition-opacity"
         type="button"
         @click.stop="emit('previewImage', image.id)"
       >
@@ -113,3 +113,11 @@ const titleStyle = computed(() => {
     </div>
   </article>
 </template>
+
+<style scoped>
+@media (hover: hover) and (pointer: fine) {
+  .group:hover .image-preview-overlay {
+    opacity: 1;
+  }
+}
+</style>

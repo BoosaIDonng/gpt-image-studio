@@ -62,45 +62,42 @@ watch(
 
 function onPanelEnter(el: Element, done: () => void) {
   const htmlEl = el as HTMLElement;
-  const height = htmlEl.scrollHeight;
-  htmlEl.style.overflow = "hidden";
-  htmlEl.style.maxHeight = "0px";
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    done();
+    return;
+  }
+
   htmlEl.animate(
     [
-      { maxHeight: "0px", transform: "translateY(8px)" },
-      { maxHeight: `${height}px`, transform: "translateY(0)" },
+      { opacity: 0, transform: "translateY(8px)" },
+      { opacity: 1, transform: "translateY(0)" },
     ],
     {
-      duration: 250,
-      easing: "cubic-bezier(0.4, 0, 0.2, 1)",
-      fill: "forwards",
+      duration: 200,
+      easing: "cubic-bezier(0.23, 1, 0.32, 1)",
+      fill: "both",
     },
-  ).onfinish = () => {
-    htmlEl.style.overflow = "";
-    htmlEl.style.maxHeight = "";
-    done();
-  };
+  ).onfinish = done;
 }
 
 function onPanelLeave(el: Element, done: () => void) {
   const htmlEl = el as HTMLElement;
-  const height = htmlEl.scrollHeight;
-  htmlEl.style.overflow = "hidden";
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    done();
+    return;
+  }
+
   htmlEl.animate(
     [
-      { maxHeight: `${height}px`, transform: "translateY(0)" },
-      { maxHeight: "0px", transform: "translateY(8px)" },
+      { opacity: 1, transform: "translateY(0)" },
+      { opacity: 0, transform: "translateY(8px)" },
     ],
     {
-      duration: 200,
-      easing: "cubic-bezier(0.4, 0, 0.2, 1)",
-      fill: "forwards",
+      duration: 160,
+      easing: "cubic-bezier(0.23, 1, 0.32, 1)",
+      fill: "both",
     },
-  ).onfinish = () => {
-    htmlEl.style.overflow = "";
-    htmlEl.style.maxHeight = "";
-    done();
-  };
+  ).onfinish = done;
 }
 
 function selectImage(id: string) {
@@ -123,14 +120,14 @@ function setImageTagColor(id: string, color: ImageAsset["tagColor"] | undefined)
 <template>
   <div
     v-if="composer.isLibraryOpen"
-    class="fixed inset-0 z-10 bg-black/25 lg:hidden"
+    class="fixed inset-0 z-10 bg-black/25 2xl:hidden"
     role="presentation"
     @click="composer.setLibraryOpen(false)"
   ></div>
   <aside
     :class="[
-      'flex w-[320px] shrink-0 flex-col border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 max-lg:fixed max-lg:inset-y-0 max-lg:right-0 max-lg:z-20 max-lg:transition-transform max-lg:duration-200 max-lg:ease-out',
-      composer.isLibraryOpen ? 'max-lg:translate-x-0' : 'max-lg:translate-x-full',
+      'cupertino-library flex w-[320px] shrink-0 flex-col border-l border-gray-200 dark:border-gray-700 max-2xl:fixed max-2xl:inset-y-0 max-2xl:right-0 max-2xl:z-20 max-2xl:transition-transform max-2xl:duration-200 max-2xl:ease-out',
+      composer.isLibraryOpen ? 'max-2xl:translate-x-0' : 'max-2xl:translate-x-full',
     ]"
     aria-label="图片库"
   >
@@ -151,7 +148,7 @@ function setImageTagColor(id: string, color: ImageAsset["tagColor"] | undefined)
             批量下载
           </button>
           <button
-            class="cursor-pointer rounded-lg p-1.5 text-gray-400 dark:text-gray-500 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300 lg:hidden"
+            class="cursor-pointer rounded-lg p-1.5 text-gray-400 dark:text-gray-500 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300 2xl:hidden"
             aria-label="关闭图片库"
             type="button"
             @click="composer.setLibraryOpen(false)"

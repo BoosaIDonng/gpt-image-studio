@@ -45,7 +45,6 @@ function imageDownloadName(image: ImageAsset) {
 }
 
 function handleWheel(event: WheelEvent) {
-  event.preventDefault();
   const delta = event.deltaY > 0 ? -0.12 : 0.12;
   zoom.value = clampZoom(zoom.value + delta);
 }
@@ -112,7 +111,7 @@ function handleEdit() {
         class="absolute inset-0 flex items-center justify-center"
         :class="isDragging ? 'cursor-grabbing' : 'cursor-grab'"
         @click="handleBackdropClick"
-        @wheel="handleWheel"
+        @wheel.prevent="handleWheel"
         @pointerdown="onPointerDown"
         @pointermove="onPointerMove"
         @pointerup="onPointerUp"
@@ -162,7 +161,7 @@ function handleEdit() {
         class="pointer-events-none absolute right-0 bottom-0 left-0 z-10 flex justify-center pb-6"
       >
         <div
-          class="pointer-events-auto flex items-center gap-1 rounded-xl bg-white/10 p-1.5 backdrop-blur-sm"
+          class="pointer-events-auto flex items-center gap-1 rounded-xl bg-white/15 p-1.5 backdrop-blur-xl"
         >
           <button
             class="cursor-pointer rounded-lg px-3 py-1.5 text-sm transition-colors hover:bg-white/15"

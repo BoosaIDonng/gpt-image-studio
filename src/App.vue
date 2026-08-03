@@ -53,7 +53,7 @@ onUnmounted(() => document.removeEventListener("keydown", handleGlobalKeydown));
 
 <template>
   <main
-    class="flex h-screen bg-white text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100"
+    class="cupertino-app flex h-screen text-gray-900 antialiased dark:text-gray-100"
   >
     <ConversationSidebar
       @create-conversation="studio.sidebar.createConversation"

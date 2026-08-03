@@ -1,6 +1,6 @@
-import type { GenerationParams, PromptRequestSettings } from "../../types/studio";
+import type { GenerationParams, GenerationRecipe, PromptRequestSettings } from "../../types/studio";
 
-export type GenerationJobStatus = "pending" | "success" | "error";
+export type GenerationJobStatus = "pending" | "success" | "error" | "cancelled";
 
 export type GenerationJob = {
   id: string;
@@ -12,6 +12,7 @@ export type GenerationJob = {
   editSourceImageId?: string;
   editMaskImageId?: string;
   generationParams: GenerationParams;
+  generationRecipe: GenerationRecipe;
   promptRequestSettings: PromptRequestSettings;
   batchImageCount?: number;
   status: GenerationJobStatus;

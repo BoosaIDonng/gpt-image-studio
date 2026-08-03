@@ -10,6 +10,7 @@ type GeminiImageInput = {
   model: string;
   prompt: string;
   params: GenerationParams;
+  signal?: AbortSignal;
 };
 
 type GeminiEditInput = GeminiImageInput & {
@@ -92,6 +93,7 @@ async function requestGeminiImage(input: GeminiImageInput, parts: Array<Record<s
   try {
     return await fetch(buildGeminiEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, input.model), {
       method: "POST",
+      signal: input.signal,
       headers: {
         "x-goog-api-key": input.apiKey,
         "Content-Type": "application/json",

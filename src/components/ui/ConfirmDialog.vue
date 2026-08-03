@@ -22,7 +22,7 @@ const emit = defineEmits<{
   <Teleport to="body">
     <div
       v-if="dialog"
-      class="fixed inset-0 z-60 flex items-center justify-center bg-black/50 px-4"
+      class="cupertino-dialog-backdrop fixed inset-0 z-60 flex items-center justify-center px-4"
       role="presentation"
       @mousedown.self="emit('cancel')"
     >
@@ -30,7 +30,7 @@ const emit = defineEmits<{
         <section
           aria-labelledby="confirmDialogTitle"
           aria-modal="true"
-          class="w-full max-w-md rounded-lg bg-white dark:bg-gray-900 p-5 shadow-xl"
+          class="cupertino-dialog w-full max-w-md rounded-lg p-5 shadow-xl"
           role="dialog"
         >
           <div class="mb-5">

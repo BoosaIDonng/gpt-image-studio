@@ -1,4 +1,8 @@
-import type { GenerationParams, PromptRequestSettings } from "../../../types/studio";
+import type {
+  GenerationParams,
+  GenerationRecipe,
+  PromptRequestSettings,
+} from "../../../types/studio";
 
 export type ImageEditSource = {
   blob: Blob;
@@ -12,6 +16,8 @@ export type GenerateImageInput = {
   onNetworkRetry?: (retryAttempt: number) => void;
   onPartialImage?: (event: PartialImageEvent) => void;
   onStatusText?: (text: string) => void;
+  recipe?: GenerationRecipe;
+  signal?: AbortSignal;
 };
 
 export type GenerateImageBatchInput = GenerateImageInput & {
@@ -38,6 +44,6 @@ export type PartialImageEvent = {
 export type ImageClient = {
   generate(input: GenerateImageInput): Promise<ImageClientResult>;
   generateBatch?(input: GenerateImageBatchInput): Promise<ImageClientResult[]>;
-  canGenerateBatch?(): boolean;
+  canGenerateBatch?(input?: GenerateImageInput): boolean;
   edit(input: EditImageInput): Promise<ImageClientResult>;
 };

@@ -5,6 +5,7 @@ describe("isApiConfigurationError", () => {
   it("detects missing local API settings", () => {
     expect(isApiConfigurationError(new Error("请先在设置里填写 OpenAI API key。"))).toBe(true);
     expect(isApiConfigurationError(new Error("请先在设置里填写 API Base URL。"))).toBe(true);
+    expect(isApiConfigurationError(new Error("请先获取并选择图片模型。"))).toBe(true);
   });
 
   it("detects common authentication failures", () => {
@@ -15,5 +16,8 @@ describe("isApiConfigurationError", () => {
 
   it("ignores unrelated generation errors", () => {
     expect(isApiConfigurationError(new Error("gpt-image-2 当前不支持透明背景。"))).toBe(false);
+    expect(isApiConfigurationError(new Error("请求失败：HTTP 403：额度不足"))).toBe(false);
+    expect(isApiConfigurationError(new Error("HTTP 403: forbidden by content policy"))).toBe(false);
+    expect(isApiConfigurationError(new Error("API key lacks image-generation permission"))).toBe(false);
   });
 });

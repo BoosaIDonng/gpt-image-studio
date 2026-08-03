@@ -28,7 +28,8 @@ export function getStudioDb() {
   if (!dbPromise) {
     dbPromise = openDb().catch(async (error) => {
       console.error("[db] 数据库打开失败，尝试重建...", error);
-      dbPromise = null;
+      // 不要将 dbPromise 设为 null，否则并发调用会各自启动独立的 openDb()。
+      // 直接返回重建 Promise，让所有等待者共享同一个重建流程。
       await deleteDb();
       return openDb();
     });

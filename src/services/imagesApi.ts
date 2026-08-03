@@ -36,6 +36,7 @@ type GenerateImageInput = {
   streamImages?: boolean;
   streamPartialImages?: number;
   onPartialImage?: (event: PartialImageEvent) => void;
+  signal?: AbortSignal;
   params: GenerationParams;
 };
 
@@ -150,6 +151,7 @@ async function generateImageViaImagesApi(
       buildApiEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "images", "generations"),
       {
         method: "POST",
+        signal: input.signal,
         headers: {
           Authorization: `Bearer ${input.apiKey}`,
           "Content-Type": "application/json",
@@ -224,6 +226,7 @@ async function editImageViaImagesApi(
       buildApiEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "images", "edits"),
       {
         method: "POST",
+        signal: input.signal,
         headers: {
           Authorization: `Bearer ${input.apiKey}`,
         },
@@ -261,6 +264,7 @@ async function generateImageViaResponses(input: GenerateImageInput & { prompt: s
       buildApiEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "responses", "responses"),
       {
         method: "POST",
+        signal: input.signal,
         headers: {
           Authorization: `Bearer ${input.apiKey}`,
           "Content-Type": "application/json",
@@ -309,6 +313,7 @@ async function editImageViaResponses(input: EditImageInput & { prompt: string })
       buildApiEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "responses", "responses"),
       {
         method: "POST",
+        signal: input.signal,
         headers: {
           Authorization: `Bearer ${input.apiKey}`,
           "Content-Type": "application/json",

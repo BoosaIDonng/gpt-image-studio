@@ -229,7 +229,7 @@ function confirmPendingAction() {
   <Teleport to="body">
     <div
       v-if="isOpen"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-3"
+      class="cupertino-sheet-backdrop fixed inset-0 z-50 flex items-center justify-center px-3"
       role="presentation"
       @mousedown.self="emit('close')"
     >
@@ -237,7 +237,7 @@ function confirmPendingAction() {
         <section
           aria-labelledby="settingsTitle"
           aria-modal="true"
-          class="flex h-[min(88vh,44rem)] w-full max-w-4xl flex-col overflow-hidden rounded-lg bg-white dark:bg-gray-900 shadow-xl"
+          class="cupertino-sheet flex h-[min(88vh,44rem)] w-full max-w-4xl flex-col overflow-hidden rounded-lg shadow-xl"
           role="dialog"
         >
           <div
@@ -264,7 +264,7 @@ function confirmPendingAction() {
 
           <div class="flex min-h-0 flex-1 flex-col md:flex-row">
             <nav
-              class="flex shrink-0 gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-2 md:w-44 md:flex-col md:border-r md:border-b-0"
+              class="cupertino-tabs flex shrink-0 gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-700 p-2 md:w-44 md:flex-col md:border-r md:border-b-0"
               aria-label="设置分类"
             >
               <button
@@ -273,7 +273,7 @@ function confirmPendingAction() {
                 class="shrink-0 cursor-pointer rounded-lg px-3 py-2 text-left text-sm font-medium transition-colors"
                 :class="
                   activeTab === tab.key
-                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                    ? 'cupertino-tab-active bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
                     : 'text-gray-500 dark:text-gray-400 hover:bg-white dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200'
                 "
                 type="button"

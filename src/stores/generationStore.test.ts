@@ -99,6 +99,11 @@ describe("generation store", () => {
     expect(messages.value[1]?.promptRequestSettings?.ragContext).toBe(
       messages.value[0]?.promptRequestSettings?.ragContext,
     );
+    expect(messages.value[1]?.generationRecipe).toMatchObject({
+      apiProvider: "openai",
+      model: "",
+      params: generationParams,
+    });
     expect(mocks.saveMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         promptRequestSettings: expect.objectContaining({
@@ -314,6 +319,65 @@ describe("generation store", () => {
       await Promise.all([firstSubmit, secondSubmit]);
     }
     expect(imageClient.generate).toHaveBeenCalledTimes(1);
+  });
+
+  it("aborts every pending request for a stopped generation", async () => {
+    const store = useGenerationStore();
+    const conversation: Conversation = {
+      id: "c1",
+      title: "Stop generation",
+      summary: "Image generation",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    };
+    const messages = ref<Message[]>([]);
+    const signal = vi.fn();
+
+    store.configureGenerationStore({
+      activeConversationId: ref(conversation.id),
+      activeConversation: computed(() => conversation),
+      attachedImages: ref([]),
+      activeEditMaskImageId: ref(""),
+      activeEditSourceImageId: ref(""),
+      composerText: ref("stop this image"),
+      createConversationRecord: vi.fn(),
+      currentGenerationParams: () => generationParams,
+      currentPromptRequestSettings: () => ({
+        promptMode: "default",
+        promptWordbanks: defaultPromptWordbanks,
+        promptRewriteGuardEnabled: false,
+        promptRewriteGuardText: PROMPT_REWRITE_GUARD_PREFIX,
+      }),
+      customSizeError: computed(() => ""),
+      imageAssets: ref([]),
+      imageById: () => undefined,
+      imageClient: {
+        generate: vi.fn(({ signal: abortSignal }) => {
+          signal(abortSignal);
+          return new Promise<never>((_, reject) => {
+            abortSignal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+          });
+        }),
+        edit: vi.fn(),
+      },
+      promptExpandEnabled: ref(false),
+      chatApiKey: ref(""),
+      chatApiBaseUrl: ref(""),
+      chatModel: ref(""),
+      chatSystemPrompt: ref(""),
+      messages,
+      onStorageError: vi.fn(),
+      conversationExists: () => true,
+      persistConversation: vi.fn(),
+      refreshStorageUsage: vi.fn(),
+      updateConversationSummary: vi.fn(() => conversation),
+    });
+
+    await store.submitMessage();
+    await vi.waitFor(() => expect(signal).toHaveBeenCalled());
+    store.cancelMessageGeneration(messages.value[1]!.id);
+
+    expect(signal.mock.calls[0]?.[0]?.aborted).toBe(true);
+    expect(messages.value[1]).toMatchObject({ status: "error", errorMessage: "已停止生成，可重新尝试。" });
   });
 });
 

@@ -330,7 +330,7 @@ defineExpose({ focusComposer });
 <template>
   <div
     :class="[
-      'relative rounded-2xl border bg-white px-3 py-2 shadow-sm transition-all focus-within:border-gray-400 focus-within:shadow-md',
+      'cupertino-composer-card relative rounded-2xl border px-3 py-2 focus-within:border-gray-400 focus-within:shadow-md',
       isDragActive ? 'border-gray-500 ring-2 ring-gray-200' : 'border-gray-300',
     ]"
   >

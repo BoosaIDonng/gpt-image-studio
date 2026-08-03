@@ -35,6 +35,7 @@ import {
 import type {
   Conversation,
   GenerationParams,
+  GenerationRecipe,
   ImageAsset,
   Message,
   PromptRequestSettings,
@@ -55,6 +56,7 @@ type GenerationStoreContext = {
   composerText: Ref<string>;
   createConversationRecord: (input: CreateConversationRecordInput) => Promise<Conversation>;
   currentGenerationParams: () => GenerationParams;
+  currentGenerationRecipe?: () => GenerationRecipe;
   currentPromptRequestSettings: (prompt?: string) => PromptRequestSettings;
   customSizeError: ComputedRef<string>;
   imageAssets: Ref<ImageAsset[]>;
@@ -84,6 +86,7 @@ export const useGenerationStore = defineStore("generation", () => {
   const partialPreviewUrls = ref<Record<string, string>>({});
   let context: GenerationStoreContext | null = null;
   const messageSaveQueues = new Map<string, Promise<unknown>>();
+  const requestControllers = new Map<string, AbortController>();
 
   type ExpandPreview = {
     originalPrompt: string;
@@ -218,6 +221,7 @@ export const useGenerationStore = defineStore("generation", () => {
     const references = input.value.attachedImages.value.filter((id) => id !== editMaskImageId);
     const editSourceImageId = input.value.activeEditSourceImageId.value || undefined;
     const generationParams = input.value.currentGenerationParams();
+    const generationRecipe = currentGenerationRecipe();
     const imageCount = normalizeImageCount(generationParams.imageCount);
     const promptRequestSettings = input.value.currentPromptRequestSettings(text);
     const userMessage: Message = {
@@ -230,6 +234,7 @@ export const useGenerationStore = defineStore("generation", () => {
       status: "success",
       createdAt,
       generationParams,
+      generationRecipe,
       promptRequestSettings,
     };
     const assistantMessage: Message = {
@@ -243,6 +248,7 @@ export const useGenerationStore = defineStore("generation", () => {
       createdAt: isoTimestamp(now + 1),
       generationStartedAt: createdAt,
       generationParams,
+      generationRecipe,
       promptRequestSettings,
       editSourceImageId,
       editMaskImageId,
@@ -272,8 +278,10 @@ export const useGenerationStore = defineStore("generation", () => {
       {
         assistantMessageId: assistantMessage.id,
         conversationId,
-        generationParams:
-          assistantMessage.generationParams ?? input.value.currentGenerationParams(),
+          generationParams:
+            assistantMessage.generationParams ?? input.value.currentGenerationParams(),
+          generationRecipe:
+            assistantMessage.generationRecipe ?? currentGenerationRecipe(),
         promptRequestSettings:
           assistantMessage.promptRequestSettings ?? input.value.currentPromptRequestSettings(text),
         prompt: text,
@@ -289,6 +297,7 @@ export const useGenerationStore = defineStore("generation", () => {
 
   async function retryMessage(message: Message, promptOverride?: string) {
     const generationParams = message.generationParams ?? input.value.currentGenerationParams();
+    const generationRecipe = message.generationRecipe ?? currentGenerationRecipe();
     const imageCount = normalizeImageCount(generationParams.imageCount);
     message.status = "pending";
     message.generationStartedAt = isoTimestamp();
@@ -306,12 +315,13 @@ export const useGenerationStore = defineStore("generation", () => {
         : (message.promptRequestSettings ??
           input.value.currentPromptRequestSettings(userMessage.content));
 
-      await Promise.all(
+      await runImageRequests(
         createJobs(
           {
             assistantMessageId: message.id,
             conversationId: message.conversationId,
             generationParams,
+            generationRecipe,
             promptRequestSettings,
             prompt,
             referencedImageIds: message.referencedImageIds,
@@ -320,7 +330,7 @@ export const useGenerationStore = defineStore("generation", () => {
             userMessageId: userMessage.id,
           },
           imageCount,
-        ).map(runImageRequest),
+        ),
       );
     }
   }
@@ -358,6 +368,7 @@ export const useGenerationStore = defineStore("generation", () => {
     if (!userMessage) return;
 
     const generationParams = message.generationParams ?? input.value.currentGenerationParams();
+    const generationRecipe = message.generationRecipe ?? currentGenerationRecipe();
     const imageCount = options.replaceImageId
       ? 1
       : normalizeImageCount(options.imageCount ?? generationParams.imageCount);
@@ -374,12 +385,13 @@ export const useGenerationStore = defineStore("generation", () => {
     replaceMessage(message);
     await enqueueMessageSave(message).catch(input.value.onStorageError);
 
-    await Promise.all(
+    await runImageRequests(
       createJobs(
         {
           assistantMessageId: message.id,
           conversationId: message.conversationId,
           generationParams,
+          generationRecipe,
           promptRequestSettings:
             message.promptRequestSettings ??
             input.value.currentPromptRequestSettings(userMessage.content),
@@ -390,11 +402,11 @@ export const useGenerationStore = defineStore("generation", () => {
           userMessageId: userMessage.id,
         },
         imageCount,
-      ).map(runImageRequest),
+      ),
     );
   }
 
-  async function runImageRequest(job: GenerationJob) {
+  async function runImageRequest(job: GenerationJob, signal: AbortSignal) {
     try {
       const params = job.generationParams;
       const onPartialImage = (event: { b64Json: string }) => {
@@ -416,8 +428,11 @@ export const useGenerationStore = defineStore("generation", () => {
             job.editMaskImageId,
             (retryAttempt) => updateMessageNetworkRetry(job.assistantMessageId, retryAttempt),
             onPartialImage,
+            job.generationRecipe,
+            signal,
           )
-        : await requestImageGeneration(job, params, onPartialImage);
+        : await requestImageGeneration(job, params, onPartialImage, signal);
+      if (signal.aborted) return;
       const resultList = Array.isArray(imageResults) ? imageResults : [imageResults];
       const now = Date.now();
       const generationDurationMs = Math.max(0, now - job.startedAtMs);
@@ -451,6 +466,7 @@ export const useGenerationStore = defineStore("generation", () => {
       await Promise.all(saveTasks);
       await input.value.refreshStorageUsage();
     } catch (error) {
+      if (signal.aborted) return;
       const rawMessage = formatError(error);
       const moderationAdvice = formatModerationAdvice(
         analyzeModerationRejection(rawMessage, job.prompt),
@@ -477,11 +493,14 @@ export const useGenerationStore = defineStore("generation", () => {
     job: GenerationJob,
     params: GenerationParams,
     onPartialImage: (event: { b64Json: string }) => void,
+    signal: AbortSignal,
   ) {
     const commonInput = {
       prompt: job.prompt,
       params,
       promptRequestSettings: job.promptRequestSettings,
+      recipe: job.generationRecipe,
+      signal,
       onNetworkRetry: (retryAttempt: number) =>
         updateMessageNetworkRetry(job.assistantMessageId, retryAttempt),
       onPartialImage,
@@ -490,7 +509,7 @@ export const useGenerationStore = defineStore("generation", () => {
     if (
       job.batchImageCount &&
       job.batchImageCount > 1 &&
-      input.value.imageClient.canGenerateBatch?.() &&
+      input.value.imageClient.canGenerateBatch?.(commonInput) &&
       input.value.imageClient.generateBatch
     ) {
       return input.value.imageClient.generateBatch({
@@ -537,6 +556,7 @@ export const useGenerationStore = defineStore("generation", () => {
       referencedImageIds: job.referencedImageIds,
       editSourceImageId: job.editSourceImageId,
       generationDurationMs,
+      generationRecipe: { ...job.generationRecipe, params: { ...job.generationRecipe.params } },
       createdAt,
       updatedAt: createdAt,
       previewUrl: createObjectUrl(blob),
@@ -554,6 +574,8 @@ export const useGenerationStore = defineStore("generation", () => {
     editMaskImageId?: string,
     onNetworkRetry?: (retryAttempt: number) => void,
     onPartialImage?: (event: { b64Json: string }) => void,
+    recipe?: GenerationRecipe,
+    signal?: AbortSignal,
   ) {
     const imageSources = await Promise.all(
       references.map(async (id) => {
@@ -655,6 +677,8 @@ export const useGenerationStore = defineStore("generation", () => {
         : undefined,
       onNetworkRetry,
       onPartialImage,
+      recipe,
+      signal,
     });
   }
 
@@ -766,14 +790,46 @@ export const useGenerationStore = defineStore("generation", () => {
       jobInput.referencedImageIds.length === 0 &&
       !jobInput.editSourceImageId &&
       !jobInput.editMaskImageId &&
-      Boolean(input.value.imageClient.canGenerateBatch?.())
+      Boolean(
+        input.value.imageClient.canGenerateBatch?.({
+          prompt: jobInput.prompt,
+          params: jobInput.generationParams,
+          promptRequestSettings: jobInput.promptRequestSettings,
+          recipe: jobInput.generationRecipe,
+        }),
+      )
     );
   }
 
-  function runImageRequests(createdJobs: GenerationJob[]) {
-    createdJobs.forEach((job) => {
-      void runImageRequest(job);
-    });
+  async function runImageRequests(createdJobs: GenerationJob[]) {
+    const messageId = createdJobs[0]?.assistantMessageId;
+    if (!messageId) return;
+    requestControllers.get(messageId)?.abort();
+    const controller = new AbortController();
+    requestControllers.set(messageId, controller);
+    await Promise.all(createdJobs.map((job) => runImageRequest(job, controller.signal)));
+    if (requestControllers.get(messageId) === controller) requestControllers.delete(messageId);
+  }
+
+  function cancelMessageGeneration(messageId: string) {
+    const controller = requestControllers.get(messageId);
+    if (!controller) return;
+    controller.abort();
+    requestControllers.delete(messageId);
+    jobs.value = jobs.value.map((job) =>
+      job.assistantMessageId === messageId && job.status === "pending"
+        ? { ...job, status: "cancelled", finishedAtMs: Date.now(), errorMessage: "已停止生成。" }
+        : job,
+    );
+    const message = findMessage(messageId);
+    if (!message) return;
+    message.status = "error";
+    message.content = "已停止生成。";
+    message.errorMessage = "已停止生成，可重新尝试。";
+    message.networkRetryAttempt = undefined;
+    clearPartialPreview(messageId);
+    replaceMessage(message);
+    void enqueueMessageSave(message).catch(input.value.onStorageError);
   }
 
   function markJobSuccess(jobId: string) {
@@ -782,6 +838,7 @@ export const useGenerationStore = defineStore("generation", () => {
     job.status = "success";
     job.finishedAtMs = Date.now();
     job.errorMessage = undefined;
+    jobs.value = [...jobs.value];
   }
 
   function markJobError(jobId: string, errorMessage: string) {
@@ -790,6 +847,7 @@ export const useGenerationStore = defineStore("generation", () => {
     job.status = "error";
     job.finishedAtMs = Date.now();
     job.errorMessage = errorMessage;
+    jobs.value = [...jobs.value];
   }
 
   function applyJobAggregateToMessage(
@@ -868,9 +926,25 @@ export const useGenerationStore = defineStore("generation", () => {
     return context;
   }
 
+  function currentGenerationRecipe(): GenerationRecipe {
+    const ctx = input.value;
+    return (
+      ctx.currentGenerationRecipe?.() ?? {
+        connectionMode: "direct",
+        apiProvider: "openai",
+        apiBaseUrl: "",
+        apiBaseUrlMode: "origin",
+        apiMode: "images",
+        model: "",
+        params: ctx.currentGenerationParams(),
+      }
+    );
+  }
+
   return {
     activeConversationPendingJobs,
     canSend,
+    cancelMessageGeneration,
     configureGenerationStore,
     expandPreview,
     isExpanding,

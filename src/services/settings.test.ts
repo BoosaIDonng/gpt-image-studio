@@ -163,6 +163,16 @@ describe("settings service", () => {
     expect(result?.model).toBe("gpt-image-2");
   });
 
+  it("does not invent a model when older settings have none", async () => {
+    const { model: _ignoredModel, ...settingsWithoutModel } = fullSettings;
+    mocks.getFromStore.mockResolvedValue({
+      key: "app",
+      value: settingsWithoutModel,
+    });
+
+    await expect(loadSettings()).resolves.toMatchObject({ model: "" });
+  });
+
   it("preserves a stored Grok provider and model", async () => {
     mocks.getFromStore.mockResolvedValue({
       key: "app",
@@ -180,7 +190,7 @@ describe("settings service", () => {
     expect(result?.model).toBe("grok-imagine-image-quality");
   });
 
-  it("preserves a stored Gemini provider and defaults an empty Gemini model to the preview image model", async () => {
+  it("preserves a stored Gemini provider without inventing a model", async () => {
     mocks.getFromStore.mockResolvedValue({
       key: "app",
       value: {
@@ -194,10 +204,10 @@ describe("settings service", () => {
     const result = await loadSettings();
 
     expect(result?.apiProvider).toBe("gemini");
-    expect(result?.model).toBe("gemini-3.1-flash-image-preview");
+    expect(result?.model).toBe("");
   });
 
-  it("migrates the old Gemini default model to the available preview image model", async () => {
+  it("preserves a stored Gemini model", async () => {
     mocks.getFromStore.mockResolvedValue({
       key: "app",
       value: {
@@ -211,7 +221,7 @@ describe("settings service", () => {
     const result = await loadSettings();
 
     expect(result?.apiProvider).toBe("gemini");
-    expect(result?.model).toBe("gemini-3.1-flash-image-preview");
+    expect(result?.model).toBe("gemini-3.1-flash-image");
   });
 
   it("saves settings record", async () => {

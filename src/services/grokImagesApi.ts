@@ -10,6 +10,7 @@ type GrokImageInput = {
   model: string;
   prompt: string;
   params: GenerationParams;
+  signal?: AbortSignal;
 };
 
 type GrokImageBatchInput = GrokImageInput & {
@@ -81,6 +82,7 @@ async function requestGrokImages(
       buildGrokEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "generations"),
       {
         method: "POST",
+        signal: input.signal,
         headers: {
           Authorization: `Bearer ${input.apiKey}`,
           "Content-Type": "application/json",
@@ -119,6 +121,7 @@ export async function editGrokImage(input: GrokEditInput): Promise<GrokImageApiR
   try {
     response = await fetch(buildGrokEndpoint(input.apiBaseUrl, input.apiBaseUrlMode, "edits"), {
       method: "POST",
+      signal: input.signal,
       headers: {
         Authorization: `Bearer ${input.apiKey}`,
         "Content-Type": "application/json",

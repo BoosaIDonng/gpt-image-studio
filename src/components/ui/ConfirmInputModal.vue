@@ -36,14 +36,14 @@ function confirm() {
   <Teleport to="body">
     <div
       v-if="isOpen"
-      class="fixed inset-0 z-60 flex items-center justify-center bg-black/50 px-4"
+      class="cupertino-dialog-backdrop fixed inset-0 z-60 flex items-center justify-center px-4"
       role="presentation"
       @mousedown.self="emit('cancel')"
     >
       <section
         aria-labelledby="confirmInputTitle"
         aria-modal="true"
-        class="w-full max-w-md rounded-lg bg-white p-5 shadow-xl"
+        class="cupertino-dialog w-full max-w-md rounded-lg p-5 shadow-xl"
         role="dialog"
       >
         <div class="mb-4">

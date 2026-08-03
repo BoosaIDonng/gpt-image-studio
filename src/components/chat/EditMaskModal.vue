@@ -213,7 +213,6 @@ function resetViewport() {
 
 function handleWheel(event: WheelEvent) {
   if (!event.ctrlKey && !event.metaKey) return;
-  event.preventDefault();
   const delta = event.deltaY > 0 ? -0.1 : 0.1;
   applyZoom(clamp(Number((zoom.value + delta).toFixed(2)), 0.5, 3));
 }
@@ -717,7 +716,7 @@ function clamp(value: number, min: number, max: number) {
             :class="
               tool === 'pan' ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-crosshair'
             "
-            @wheel="handleWheel"
+            @wheel.prevent="handleWheel"
             @pointerdown.prevent="startSelection"
             @pointermove.prevent="updateSelection"
             @pointerup.prevent="stopSelection"

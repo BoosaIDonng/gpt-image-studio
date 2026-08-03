@@ -129,6 +129,16 @@ export async function restoreStudioBackup(file: File) {
       }
     : currentSettings;
 
+  // Snapshot existing data so we can attempt rollback on write failure
+  const snapshot = await Promise.all([
+    getAllFromStore<Conversation>(STORE_NAMES.conversations),
+    getAllFromStore<Message>(STORE_NAMES.messages),
+    getAllFromStore<ImageAsset>(STORE_NAMES.imageAssets),
+    getAllFromStore<ImageBlobRecord>(STORE_NAMES.imageBlobs),
+  ]);
+  const [snapConversations, snapMessages, snapImageAssets, snapImageBlobs] = snapshot;
+  const snapSettings = await loadSettings();
+
   await Promise.all([
     clearStore(STORE_NAMES.conversations),
     clearStore(STORE_NAMES.messages),
@@ -137,30 +147,50 @@ export async function restoreStudioBackup(file: File) {
     clearStore(STORE_NAMES.settings),
   ]);
 
-  await Promise.all([
-    bulkPut(STORE_NAMES.conversations, data.conversations),
-    bulkPut(STORE_NAMES.messages, data.messages.map(normalizeMessage)),
-    bulkPut(STORE_NAMES.imageAssets, data.imageAssets.map(stripPreviewUrl)),
-    (async () => {
-      // blob 需要先 await arrayBuffer，在写入前并行预处理，再用一次批量事务落盘。
-      const blobRecords = await Promise.all(
-        data.imageAssets.map(async (asset) => {
-          if (!asset.blobKey) return null;
-          const blob = files.get(blobEntryName(asset.blobKey));
-          if (!blob) return null;
-          return {
-            key: asset.blobKey,
-            blob: await restoreImageBlob(blob, asset),
-          } satisfies ImageBlobRecord;
-        }),
-      );
-      await bulkPut(
-        STORE_NAMES.imageBlobs,
-        blobRecords.filter((record): record is ImageBlobRecord => record !== null),
-      );
-    })(),
-    restoredSettings ? saveSettings(restoredSettings) : Promise.resolve(),
-  ]);
+  try {
+    await Promise.all([
+      bulkPut(STORE_NAMES.conversations, data.conversations),
+      bulkPut(STORE_NAMES.messages, data.messages.map(normalizeMessage)),
+      bulkPut(STORE_NAMES.imageAssets, data.imageAssets.map(stripPreviewUrl)),
+      (async () => {
+        // blob 需要先 await arrayBuffer，在写入前并行预处理，再用一次批量事务落盘。
+        const blobRecords = await Promise.all(
+          data.imageAssets.map(async (asset) => {
+            if (!asset.blobKey) return null;
+            const blob = files.get(blobEntryName(asset.blobKey));
+            if (!blob) return null;
+            return {
+              key: asset.blobKey,
+              blob: await restoreImageBlob(blob, asset),
+            } satisfies ImageBlobRecord;
+          }),
+        );
+        await bulkPut(
+          STORE_NAMES.imageBlobs,
+          blobRecords.filter((record): record is ImageBlobRecord => record !== null),
+        );
+      })(),
+      restoredSettings ? saveSettings(restoredSettings) : Promise.resolve(),
+    ]);
+  } catch (writeError) {
+    // Attempt rollback from snapshot
+    console.error("[backup] 写入失败，尝试回滚...", writeError);
+    await Promise.all([
+      clearStore(STORE_NAMES.conversations),
+      clearStore(STORE_NAMES.messages),
+      clearStore(STORE_NAMES.imageAssets),
+      clearStore(STORE_NAMES.imageBlobs),
+      clearStore(STORE_NAMES.settings),
+    ]);
+    await Promise.all([
+      bulkPut(STORE_NAMES.conversations, snapConversations),
+      bulkPut(STORE_NAMES.messages, snapMessages),
+      bulkPut(STORE_NAMES.imageAssets, snapImageAssets.map(stripPreviewUrl)),
+      bulkPut(STORE_NAMES.imageBlobs, snapImageBlobs),
+      snapSettings ? saveSettings(snapSettings) : Promise.resolve(),
+    ]);
+    throw writeError;
+  }
 }
 
 function jsonEntry(name: string, value: unknown) {

@@ -21,6 +21,7 @@ const emit = defineEmits<{
   attachImage: [id: string];
   continueEdit: [id: string];
   copyText: [text: string];
+  cancelMessageGeneration: [messageId: string];
   deleteMessage: [id: string];
   generateAnother: [message: Message];
   loadMessageConfig: [message: Message];
@@ -147,6 +148,7 @@ function stopPendingTimer() {
           :duration-label="pendingDurationLabel()"
           :preview-url="pendingPreviewUrl"
           :retry-attempt="message.networkRetryAttempt"
+          @cancel="emit('cancelMessageGeneration', message.id)"
         />
 
         <ErrorGenerationCard

@@ -4,6 +4,7 @@ import type { ImageClient } from "./imageClients/imageClient";
 import type {
   Conversation,
   GenerationParams,
+  GenerationRecipe,
   ImageAsset,
   Message,
   PromptRequestSettings,
@@ -25,6 +26,7 @@ type UseStudioGenerationInput = {
   composerText: Ref<string>;
   createConversationRecord: (input: CreateConversationRecordInput) => Promise<Conversation>;
   currentGenerationParams: () => GenerationParams;
+  currentGenerationRecipe: () => GenerationRecipe;
   currentPromptRequestSettings: (prompt?: string) => PromptRequestSettings;
   customSizeError: ComputedRef<string>;
   imageAssets: Ref<ImageAsset[]>;
@@ -57,6 +59,7 @@ export function useStudioGeneration(input: UseStudioGenerationInput) {
 
   return {
     ...refs,
+    cancelMessageGeneration: generation.cancelMessageGeneration,
     generateAnother: generation.generateAnother,
     refreshGeneratedImage: generation.refreshGeneratedImage,
     retryMessage: generation.retryMessage,

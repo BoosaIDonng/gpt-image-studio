@@ -20,6 +20,32 @@ afterEach(() => {
 });
 
 describe("direct image client", () => {
+  it("requires an explicitly selected image model", async () => {
+    const client = createDirectImagesClient({
+      getApiProvider: () => "openai",
+      getApiBaseUrl: () => "https://api.example.test",
+      getApiBaseUrlMode: () => "origin",
+      getApiMode: () => "images",
+      getApiKey: () => "sk-test",
+      getModel: () => "",
+      getStreamImages: () => false,
+      getStreamPartialImages: () => 1,
+    });
+
+    await expect(
+      client.generate({
+        prompt: "画一张图",
+        params: generationParams,
+        promptRequestSettings: {
+          promptMode: "default",
+          promptWordbanks: defaultPromptWordbanks,
+          promptRewriteGuardEnabled: false,
+          promptRewriteGuardText: PROMPT_REWRITE_GUARD_PREFIX,
+        },
+      }),
+    ).rejects.toThrow("请先获取并选择图片模型。");
+  });
+
   it("applies prompt mode and rewrite guard before calling Grok", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response(

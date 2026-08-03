@@ -8,6 +8,7 @@ export const useFloatingChatStore = defineStore("floatingChat", () => {
   const messages = ref<ChatMessage[]>([]);
   const input = ref("");
   const error = ref("");
+  const abortController = ref<AbortController | null>(null);
 
   function open() {
     isOpen.value = true;
@@ -20,6 +21,8 @@ export const useFloatingChatStore = defineStore("floatingChat", () => {
   }
 
   function clear() {
+    abortController.value?.abort();
+    abortController.value = null;
     messages.value = [];
     error.value = "";
   }
@@ -34,6 +37,8 @@ export const useFloatingChatStore = defineStore("floatingChat", () => {
     messages.value.push({ role: "assistant", content: "" });
     const assistantIdx = messages.value.length - 1;
     isStreaming.value = true;
+    const controller = new AbortController();
+    abortController.value = controller;
 
     try {
       await streamChatReply(
@@ -49,6 +54,7 @@ export const useFloatingChatStore = defineStore("floatingChat", () => {
       messages.value.splice(assistantIdx, 1);
     } finally {
       isStreaming.value = false;
+      abortController.value = null;
     }
   }
 

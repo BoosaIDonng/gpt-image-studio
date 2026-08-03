@@ -15,6 +15,7 @@ const emit = defineEmits<{
   attachImage: [id: string];
   continueEdit: [id: string];
   copyText: [text: string];
+  cancelMessageGeneration: [messageId: string];
   deleteMessage: [id: string];
   generateAnother: [message: Message];
   loadMessageConfig: [message: Message];
@@ -77,6 +78,7 @@ watch(
         @attach-image="emit('attachImage', $event)"
         @continue-edit="emit('continueEdit', $event)"
         @copy-text="emit('copyText', $event)"
+        @cancel-message-generation="emit('cancelMessageGeneration', $event)"
         @delete-message="emit('deleteMessage', $event)"
         @generate-another="emit('generateAnother', $event)"
         @load-message-config="emit('loadMessageConfig', $event)"

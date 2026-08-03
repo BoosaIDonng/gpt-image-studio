@@ -70,8 +70,6 @@ export function useStudioViewModel() {
 
   // ── 子 composable：设置同步 ──
   const settingsSync = useStudioSettingsSync({
-    saveCurrentSettings: () => settings.saveCurrentSettings(),
-    reportStorageError,
     notifyError: feedback.notifyError,
     promptRewriteGuardEnabled: settings.promptRewriteGuardEnabled,
     autoRetryOnNetworkError: settings.autoRetryOnNetworkError,
@@ -145,7 +143,7 @@ export function useStudioViewModel() {
     getApiBaseUrl: () => settings.apiBaseUrl.value,
     getApiBaseUrlMode: () => settings.apiBaseUrlMode.value,
     getApiMode: () => settings.apiMode.value,
-    getApiKey: () => settings.apiKey.value,
+    getApiKey: (provider) => settings.apiKeyForProvider(provider),
     getModel: () => settings.model.value,
     getStreamImages: () => settings.streamImages.value,
     getStreamPartialImages: () => settings.streamPartialImages.value,
@@ -157,45 +155,49 @@ export function useStudioViewModel() {
     getModel: () => settings.model.value,
   });
   const imageClient: ImageClient = {
-    canGenerateBatch() {
+    canGenerateBatch(input) {
+      const recipe = input?.recipe;
       if (
-        settings.connectionMode.value === "localCompanion" &&
-        settings.apiMode.value !== "images"
+        (recipe?.connectionMode ?? settings.connectionMode.value) === "localCompanion" &&
+        (recipe?.apiMode ?? settings.apiMode.value) !== "images"
       ) {
         return false;
       }
       const client =
-        settings.connectionMode.value === "localCompanion"
+        (recipe?.connectionMode ?? settings.connectionMode.value) === "localCompanion"
           ? localCompanionImagesClient
           : directImagesClient;
-      return client.canGenerateBatch?.() ?? false;
+      return client.canGenerateBatch?.(input) ?? false;
     },
     generate(input) {
+      const recipe = input.recipe;
       if (
-        settings.connectionMode.value === "localCompanion" &&
-        settings.apiMode.value !== "images"
+        (recipe?.connectionMode ?? settings.connectionMode.value) === "localCompanion" &&
+        (recipe?.apiMode ?? settings.apiMode.value) !== "images"
       ) {
         throw new Error("本地 Companion 当前仅支持 Images API。");
       }
       const fn = () =>
-        settings.connectionMode.value === "localCompanion"
+        (recipe?.connectionMode ?? settings.connectionMode.value) === "localCompanion"
           ? localCompanionImagesClient.generate(input)
           : directImagesClient.generate(input);
       return withNetworkRetry(
         fn,
         () => settings.autoRetryOnNetworkError.value,
         input.onNetworkRetry,
+        input.signal,
       );
     },
     generateBatch(input) {
+      const recipe = input.recipe;
       if (
-        settings.connectionMode.value === "localCompanion" &&
-        settings.apiMode.value !== "images"
+        (recipe?.connectionMode ?? settings.connectionMode.value) === "localCompanion" &&
+        (recipe?.apiMode ?? settings.apiMode.value) !== "images"
       ) {
         throw new Error("本地 Companion 当前仅支持 Images API。");
       }
       const client =
-        settings.connectionMode.value === "localCompanion"
+        (recipe?.connectionMode ?? settings.connectionMode.value) === "localCompanion"
           ? localCompanionImagesClient
           : directImagesClient;
       const fn = () =>
@@ -206,23 +208,26 @@ export function useStudioViewModel() {
         fn,
         () => settings.autoRetryOnNetworkError.value,
         input.onNetworkRetry,
+        input.signal,
       );
     },
     edit(input) {
+      const recipe = input.recipe;
       if (
-        settings.connectionMode.value === "localCompanion" &&
-        settings.apiMode.value !== "images"
+        (recipe?.connectionMode ?? settings.connectionMode.value) === "localCompanion" &&
+        (recipe?.apiMode ?? settings.apiMode.value) !== "images"
       ) {
         throw new Error("本地 Companion 当前仅支持 Images API。");
       }
       const fn = () =>
-        settings.connectionMode.value === "localCompanion"
+        (recipe?.connectionMode ?? settings.connectionMode.value) === "localCompanion"
           ? localCompanionImagesClient.edit(input)
           : directImagesClient.edit(input);
       return withNetworkRetry(
         fn,
         () => settings.autoRetryOnNetworkError.value,
         input.onNetworkRetry,
+        input.signal,
       );
     },
   };
@@ -267,6 +272,7 @@ export function useStudioViewModel() {
     composerText,
     createConversationRecord: conversations.createConversationRecord,
     currentGenerationParams: settings.currentGenerationParams,
+    currentGenerationRecipe: settings.currentGenerationRecipe,
     currentPromptRequestSettings,
     customSizeError: settings.customSizeError,
     imageAssets: images.imageAssets,
@@ -408,6 +414,7 @@ export function useStudioViewModel() {
     },
     retryMessage: generation.retryMessage,
     refreshImage: generation.refreshGeneratedImage,
+    cancelMessageGeneration: generation.cancelMessageGeneration,
     setEditModeEnabled: (value: boolean) => {
       if (!value) {
         if (activeEditMaskImageId.value) {

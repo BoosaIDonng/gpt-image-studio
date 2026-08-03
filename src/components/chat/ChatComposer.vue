@@ -34,7 +34,7 @@ defineExpose({ focusComposer });
 
 <template>
   <div
-    class="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-3"
+    class="cupertino-composer-surface border-t border-gray-200 dark:border-gray-700 px-4 py-3"
     @click="emit('closeAllEditors')"
   >
     <form class="mx-auto max-w-3xl" @submit.prevent="generation.submitMessage">

@@ -36,14 +36,14 @@ function closeSidebar() {
 <template>
   <div
     v-if="composer.isConversationSidebarOpen"
-    class="fixed inset-0 z-20 bg-black/35 md:hidden"
+    class="fixed inset-0 z-20 bg-black/35 2xl:hidden"
     role="presentation"
     @click="closeSidebar"
   ></div>
   <aside
     :class="[
-      'flex w-65 shrink-0 flex-col bg-[#171717] text-gray-100 max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-30 max-md:transition-transform max-md:duration-200',
-      composer.isConversationSidebarOpen ? 'max-md:translate-x-0' : 'max-md:-translate-x-full',
+      'cupertino-sidebar flex w-65 shrink-0 flex-col max-2xl:fixed max-2xl:inset-y-0 max-2xl:left-0 max-2xl:z-30 max-2xl:transition-transform max-2xl:duration-200',
+      composer.isConversationSidebarOpen ? 'max-2xl:translate-x-0' : 'max-2xl:-translate-x-full',
     ]"
     aria-label="历史会话"
   >
@@ -51,12 +51,14 @@ function closeSidebar() {
       <div class="flex min-w-0 items-center gap-2 px-2 py-2">
         <img class="h-8 w-8 shrink-0" src="/favicon.svg" alt="" aria-hidden="true" />
         <div class="min-w-0">
-          <div class="truncate text-sm font-semibold text-white">GPT Image Studio</div>
+          <div class="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
+            GPT Image Studio
+          </div>
           <div class="truncate text-xs text-gray-500">BoosaIDonng</div>
         </div>
       </div>
       <button
-        class="cursor-pointer rounded-lg p-2 text-sm transition-colors hover:bg-white/10"
+        class="cursor-pointer rounded-lg p-2 text-sm text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
         :aria-label="`主题: ${theme === 'light' ? '浅色' : theme === 'dark' ? '深色' : '跟随系统'}`"
         :title="`主题: ${theme === 'light' ? '浅色' : theme === 'dark' ? '深色' : '跟随系统'}（点击切换）`"
         type="button"
@@ -113,7 +115,7 @@ function closeSidebar() {
         </svg>
       </button>
       <button
-        class="cursor-pointer rounded-lg p-2 text-sm transition-colors hover:bg-white/10"
+        class="cursor-pointer rounded-lg p-2 text-sm text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
         aria-label="打开设置"
         type="button"
         @click="emit('openSettings')"
@@ -138,7 +140,7 @@ function closeSidebar() {
 
     <div class="px-3 pt-2 pb-1">
       <button
-        class="flex w-full cursor-pointer items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2.5 text-left text-sm font-medium transition-colors hover:bg-white/20"
+        class="flex w-full cursor-pointer items-center gap-1.5 rounded-lg bg-blue-500 px-3 py-2.5 text-left text-sm font-medium text-white transition-colors hover:bg-blue-600"
         type="button"
         @click="
           emit('createConversation');
@@ -168,13 +170,13 @@ function closeSidebar() {
         <input
           id="conversationSearch"
           v-model="searchText"
-          class="w-full rounded-lg border border-white/10 bg-white/5 py-2 pl-3 pr-9 text-sm text-gray-100 outline-none transition-colors placeholder:text-gray-500 focus:border-white/20 focus:bg-white/10"
+          class="w-full rounded-lg border border-gray-200 bg-gray-100 py-2 pl-3 pr-9 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-500 focus:border-blue-400 focus:bg-white dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
           placeholder="查找会话..."
           type="text"
         />
         <button
           v-if="searchText"
-          class="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded p-1 text-gray-500 transition-colors hover:bg-white/10 hover:text-gray-200"
+          class="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded p-1 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100"
           aria-label="清空搜索"
           type="button"
           @click="searchText = ''"
@@ -198,8 +200,8 @@ function closeSidebar() {
         :class="[
           'group mb-0.5 flex items-center gap-1 rounded-lg pr-1 transition-colors',
           conversation.id === conversations.activeConversationId
-            ? 'bg-white/10 text-white'
-            : 'text-gray-400 hover:bg-white/5 hover:text-gray-200',
+            ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-gray-100'
+            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200',
         ]"
       >
         <button
@@ -219,7 +221,7 @@ function closeSidebar() {
           {{ generation.pendingJobCountByConversation[conversation.id] }}
         </span>
         <button
-          class="hidden shrink-0 cursor-pointer rounded-md px-2 py-1 text-xs text-gray-500 transition-colors hover:bg-white/10 hover:text-gray-200 group-hover:block focus:block"
+          class="shrink-0 cursor-pointer rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200 hover:text-gray-900 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100"
           type="button"
           aria-label="重命名会话"
           title="重命名会话"
@@ -228,7 +230,7 @@ function closeSidebar() {
           重命名
         </button>
         <button
-          class="hidden shrink-0 cursor-pointer rounded-md px-2 py-1 text-xs text-gray-500 transition-colors hover:bg-white/10 hover:text-red-300 group-hover:block focus:block"
+          class="shrink-0 cursor-pointer rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-100 hover:text-red-700 dark:bg-red-950/50 dark:text-red-300 dark:hover:bg-red-950"
           type="button"
           aria-label="删除会话"
           title="删除会话"
@@ -239,7 +241,7 @@ function closeSidebar() {
       </div>
     </nav>
 
-    <div class="flex items-center gap-2 border-t border-white/10 p-3">
+    <div class="flex items-center gap-2 border-t border-gray-200 p-3 dark:border-gray-700">
       <img class="h-5 w-5 shrink-0" src="/favicon.svg" alt="" aria-hidden="true" />
       <div class="text-xs text-gray-500">GPT Image Studio - BoosaIDonng</div>
     </div>
