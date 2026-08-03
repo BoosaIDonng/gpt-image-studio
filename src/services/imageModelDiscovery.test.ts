@@ -5,9 +5,11 @@ afterEach(() => vi.restoreAllMocks());
 
 describe("image model discovery", () => {
   it("uses the OpenAI-compatible models endpoint as a connectivity check", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ data: [{ id: "gpt-image-2" }] }), { status: 200 }),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(
+        new Response(JSON.stringify({ data: [{ id: "gpt-image-2" }] }), { status: 200 }),
+      );
 
     await expect(
       fetchImageModels({

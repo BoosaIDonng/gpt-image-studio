@@ -142,9 +142,9 @@ function imageFilesFromTransfer(
     .filter((file): file is File => Boolean(file));
 }
 
-const failedMessageCount = computed(() =>
-  messages.activeMessages.filter((message) => message.status === "error").length
-)
+const failedMessageCount = computed(
+  () => messages.activeMessages.filter((message) => message.status === "error").length,
+);
 </script>
 
 <template>

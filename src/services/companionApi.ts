@@ -44,7 +44,10 @@ export async function getCompanionAuthStatusResult(
 }
 
 export async function startPairing(url: string): Promise<PairStartResponse> {
-  const res = await fetch(`${url}/pair/start`, { method: "POST", signal: AbortSignal.timeout(10000) });
+  const res = await fetch(`${url}/pair/start`, {
+    method: "POST",
+    signal: AbortSignal.timeout(10000),
+  });
   if (!res.ok) {
     let message = "发起配对失败";
     try {

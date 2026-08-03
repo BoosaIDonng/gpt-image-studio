@@ -260,128 +260,128 @@ function buildProjectContext() {
     @click="chat.close"
   />
   <FocusTrap v-if="chat.isOpen" :active="isMobile" :initial-focus="() => false">
-  <div
-    class="flex flex-col rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-2xl"
-    :style="panelStyle"
-    role="dialog"
-    aria-modal="true"
-    aria-label="AI assistant"
-  >
-    <!-- 头部 -->
     <div
-      class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-4 py-3"
+      class="flex flex-col rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-2xl"
+      :style="panelStyle"
+      role="dialog"
+      aria-modal="true"
+      aria-label="AI assistant"
     >
-      <div>
-        <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">AI 助手</h3>
-        <p class="text-xs text-gray-400 dark:text-gray-500">改写 prompt、提问、聊天</p>
-      </div>
-      <div class="flex items-center gap-1">
-        <button
-          v-if="chat.messages.length"
-          class="cursor-pointer rounded p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
-          type="button"
-          title="清空对话"
-          @click="chat.clear"
-        >
-          <svg
-            class="h-4 w-4"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M3 6h18" />
-            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-          </svg>
-        </button>
-        <button
-          class="cursor-pointer rounded p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
-          type="button"
-          title="关闭"
-          @click="chat.close"
-        >
-          <svg
-            class="h-4 w-4"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <!-- 消息列表 -->
-    <div ref="listRef" class="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+      <!-- 头部 -->
       <div
-        v-if="!chat.messages.length"
-        class="text-center text-xs text-gray-400 dark:text-gray-500 py-8"
+        class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-4 py-3"
       >
-        发一句试试。例如「帮我把这个 prompt 改写得更有电影感：一个女孩在咖啡馆」
-      </div>
-      <div
-        v-for="(msg, i) in chat.messages"
-        :key="`${msg.role}-${i}-${msg.content?.slice(0, 16) ?? ''}`"
-        :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'"
-      >
-        <div
-          :class="[
-            'max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words',
-            msg.role === 'user'
-              ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
-              : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200',
-          ]"
-        >
-          {{ msg.content || (chat.isStreaming && i === chat.messages.length - 1 ? "..." : "") }}
+        <div>
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">AI 助手</h3>
+          <p class="text-xs text-gray-400 dark:text-gray-500">改写 prompt、提问、聊天</p>
+        </div>
+        <div class="flex items-center gap-1">
           <button
-            v-if="
-              msg.role === 'assistant' &&
-              msg.content &&
-              !(chat.isStreaming && i === chat.messages.length - 1)
-            "
-            class="mt-2 block text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+            v-if="chat.messages.length"
+            class="cursor-pointer rounded p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
             type="button"
-            @click="insertToComposer(msg.content)"
+            title="清空对话"
+            @click="chat.clear"
           >
-            插入到输入框
+            <svg
+              class="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 6h18" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+          </button>
+          <button
+            class="cursor-pointer rounded p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
+            type="button"
+            title="关闭"
+            @click="chat.close"
+          >
+            <svg
+              class="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
           </button>
         </div>
       </div>
-      <div v-if="chat.error" class="text-xs text-red-500 dark:text-red-400 px-2">
-        {{ chat.error }}
-      </div>
-    </div>
 
-    <!-- 输入区 -->
-    <div class="border-t border-gray-100 dark:border-gray-700 p-3">
-      <div class="flex gap-2">
-        <textarea
-          v-model="chat.input"
-          rows="2"
-          class="flex-1 resize-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-gray-500 dark:focus:border-gray-400"
-          placeholder="输入消息，Enter 发送，Shift+Enter 换行"
-          :disabled="chat.isStreaming"
-          @keydown="handleKeydown"
-        />
-        <button
-          class="self-end cursor-pointer rounded-lg bg-gray-900 dark:bg-gray-100 px-3 py-2 text-sm font-medium text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
-          type="button"
-          :disabled="!chat.input.trim() || chat.isStreaming"
-          @click="sendWithProjectContext"
+      <!-- 消息列表 -->
+      <div ref="listRef" class="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+        <div
+          v-if="!chat.messages.length"
+          class="text-center text-xs text-gray-400 dark:text-gray-500 py-8"
         >
-          {{ chat.isStreaming ? "..." : "发送" }}
-        </button>
+          发一句试试。例如「帮我把这个 prompt 改写得更有电影感：一个女孩在咖啡馆」
+        </div>
+        <div
+          v-for="(msg, i) in chat.messages"
+          :key="`${msg.role}-${i}-${msg.content?.slice(0, 16) ?? ''}`"
+          :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'"
+        >
+          <div
+            :class="[
+              'max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words',
+              msg.role === 'user'
+                ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200',
+            ]"
+          >
+            {{ msg.content || (chat.isStreaming && i === chat.messages.length - 1 ? "..." : "") }}
+            <button
+              v-if="
+                msg.role === 'assistant' &&
+                msg.content &&
+                !(chat.isStreaming && i === chat.messages.length - 1)
+              "
+              class="mt-2 block text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+              type="button"
+              @click="insertToComposer(msg.content)"
+            >
+              插入到输入框
+            </button>
+          </div>
+        </div>
+        <div v-if="chat.error" class="text-xs text-red-500 dark:text-red-400 px-2">
+          {{ chat.error }}
+        </div>
+      </div>
+
+      <!-- 输入区 -->
+      <div class="border-t border-gray-100 dark:border-gray-700 p-3">
+        <div class="flex gap-2">
+          <textarea
+            v-model="chat.input"
+            rows="2"
+            class="flex-1 resize-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-gray-500 dark:focus:border-gray-400"
+            placeholder="输入消息，Enter 发送，Shift+Enter 换行"
+            :disabled="chat.isStreaming"
+            @keydown="handleKeydown"
+          />
+          <button
+            class="self-end cursor-pointer rounded-lg bg-gray-900 dark:bg-gray-100 px-3 py-2 text-sm font-medium text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
+            type="button"
+            :disabled="!chat.input.trim() || chat.isStreaming"
+            @click="sendWithProjectContext"
+          >
+            {{ chat.isStreaming ? "..." : "发送" }}
+          </button>
+        </div>
       </div>
     </div>
-  </div>
   </FocusTrap>
 </template>
 

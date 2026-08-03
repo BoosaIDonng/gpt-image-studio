@@ -354,7 +354,9 @@ describe("generation store", () => {
         generate: vi.fn(({ signal: abortSignal }) => {
           signal(abortSignal);
           return new Promise<never>((_, reject) => {
-            abortSignal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+            abortSignal?.addEventListener("abort", () =>
+              reject(new DOMException("Aborted", "AbortError")),
+            );
           });
         }),
         edit: vi.fn(),
@@ -377,7 +379,10 @@ describe("generation store", () => {
     store.cancelMessageGeneration(messages.value[1]!.id);
 
     expect(signal.mock.calls[0]?.[0]?.aborted).toBe(true);
-    expect(messages.value[1]).toMatchObject({ status: "error", errorMessage: "已停止生成，可重新尝试。" });
+    expect(messages.value[1]).toMatchObject({
+      status: "error",
+      errorMessage: "已停止生成，可重新尝试。",
+    });
   });
 });
 

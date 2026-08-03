@@ -47,7 +47,8 @@ function openAiModels(payload: unknown) {
 }
 
 function geminiModels(payload: unknown) {
-  const models = payload && typeof payload === "object" && "models" in payload ? payload.models : [];
+  const models =
+    payload && typeof payload === "object" && "models" in payload ? payload.models : [];
   if (!Array.isArray(models)) return [];
   return models
     .map((item) => (item && typeof item === "object" && "name" in item ? item.name : ""))
@@ -59,7 +60,12 @@ function readErrorMessage(payload: unknown) {
   if (!payload || typeof payload !== "object") return "";
   const error = "error" in payload ? payload.error : undefined;
   if (typeof error === "string") return error;
-  if (error && typeof error === "object" && "message" in error && typeof error.message === "string") {
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
     return error.message;
   }
   return "message" in payload && typeof payload.message === "string" ? payload.message : "";

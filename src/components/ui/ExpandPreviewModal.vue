@@ -27,7 +27,7 @@ async function copyText() {
 
 onBeforeUnmount(() => {
   if (copyTimer.value) clearTimeout(copyTimer.value);
-})
+});
 
 function sendEdited() {
   const text = editableText.value.trim();

@@ -29,7 +29,9 @@ export async function listMessagesByConversation(conversationId: string): Promis
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
-  return messages.map(normalizeMessage).sort((a, b) => timestampFromCreatedAt(a) - timestampFromCreatedAt(b));
+  return messages
+    .map(normalizeMessage)
+    .sort((a, b) => timestampFromCreatedAt(a) - timestampFromCreatedAt(b));
 }
 
 export function deleteMessage(id: string) {

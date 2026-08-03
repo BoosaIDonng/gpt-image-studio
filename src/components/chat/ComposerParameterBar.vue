@@ -95,7 +95,9 @@ function ragWeightedScoreLabel(score: number) {
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-nowrap items-center gap-1.5 overflow-x-auto touch-pan-x [&>*]:shrink-0 md:flex-wrap md:overflow-visible">
+  <div
+    class="flex min-w-0 flex-nowrap items-center gap-1.5 overflow-x-auto touch-pan-x [&>*]:shrink-0 md:flex-wrap md:overflow-visible"
+  >
     <span class="cursor-not-allowed rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-400">
       供应商: {{ providerLabel }}
     </span>

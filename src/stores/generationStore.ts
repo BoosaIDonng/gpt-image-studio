@@ -278,10 +278,9 @@ export const useGenerationStore = defineStore("generation", () => {
       {
         assistantMessageId: assistantMessage.id,
         conversationId,
-          generationParams:
-            assistantMessage.generationParams ?? input.value.currentGenerationParams(),
-          generationRecipe:
-            assistantMessage.generationRecipe ?? currentGenerationRecipe(),
+        generationParams:
+          assistantMessage.generationParams ?? input.value.currentGenerationParams(),
+        generationRecipe: assistantMessage.generationRecipe ?? currentGenerationRecipe(),
         promptRequestSettings:
           assistantMessage.promptRequestSettings ?? input.value.currentPromptRequestSettings(text),
         prompt: text,

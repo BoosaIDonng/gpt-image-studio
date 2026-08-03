@@ -114,9 +114,15 @@ function hideTooltip() {
 }
 
 onBeforeUnmount(() => {
-  if (delayTimer) { clearTimeout(delayTimer); delayTimer = null }
-  if (hideTimer) { clearTimeout(hideTimer); hideTimer = null }
-})
+  if (delayTimer) {
+    clearTimeout(delayTimer);
+    delayTimer = null;
+  }
+  if (hideTimer) {
+    clearTimeout(hideTimer);
+    hideTimer = null;
+  }
+});
 </script>
 
 <template>
