@@ -1,4 +1,5 @@
 import type { ApiBaseUrlMode, ApiMode, ApiProvider } from "../types/studio";
+import { proxyDevelopmentApiRequest } from "./devApiProxy";
 
 type ImageModelDiscoveryInput = {
   apiProvider: ApiProvider;
@@ -15,8 +16,11 @@ export async function fetchImageModels(input: ImageModelDiscoveryInput): Promise
   if (!baseUrl) throw new Error("请先填写 API 地址。");
 
   const isGemini = input.apiProvider === "gemini";
+  const endpoint = isGemini
+    ? `${baseUrl}/models?key=${encodeURIComponent(apiKey)}`
+    : `${baseUrl}/models`;
   const response = await fetch(
-    isGemini ? `${baseUrl}/models?key=${encodeURIComponent(apiKey)}` : `${baseUrl}/models`,
+    proxyDevelopmentApiRequest(endpoint),
     isGemini ? undefined : { headers: { Authorization: `Bearer ${apiKey}` } },
   ).catch(() => {
     throw new Error("无法连接上游 API，请检查地址和网络。");

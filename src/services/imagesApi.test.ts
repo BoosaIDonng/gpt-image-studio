@@ -46,7 +46,9 @@ describe("images API requests", () => {
     });
 
     const requestBody = JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string);
-    expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.example.test/v1/images/generations");
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      devProxyUrl("https://api.example.test/v1/images/generations"),
+    );
     // gpt-image 系列不支持 response_format 参数，传了会报 HTTP 400。
     expect(requestBody.response_format).toBeUndefined();
     expect(requestBody.quality).toBe("auto");
@@ -88,7 +90,30 @@ describe("images API requests", () => {
       params: generationParams,
     });
 
-    expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.example.test/v1/images/generations");
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      devProxyUrl("https://api.example.test/v1/images/generations"),
+    );
+  });
+
+  it("preserves a port in a proxied API origin", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        data: [{ b64_json: "generated-image" }],
+      }),
+    );
+
+    await generateImage({
+      apiBaseUrl: "http://127.0.0.1:8787/?url=http%3A%2F%2Fgateway.example.com%3A8080",
+      apiBaseUrlMode: "origin",
+      apiKey: "sk-test",
+      model: "gpt-image-2",
+      prompt: "画一张图",
+      params: generationParams,
+    });
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      "http://127.0.0.1:8787/?url=http%3A%2F%2Fgateway.example.com%3A8080/v1/images/generations",
+    );
   });
 
   it("normalizes extra trailing slashes before appending the Images API path", async () => {
@@ -107,7 +132,9 @@ describe("images API requests", () => {
       params: generationParams,
     });
 
-    expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.example.test/v1/images/generations");
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      devProxyUrl("https://api.example.test/v1/images/generations"),
+    );
   });
 
   it("adds the prompt rewrite guard when enabled for image generation", async () => {
@@ -292,7 +319,7 @@ describe("images API requests", () => {
       revisedPrompt: "responses rewrite",
     });
 
-    expect(fetchMock.mock.calls[0]?.[0]).toBe("https://api.example.test/v1/responses");
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(devProxyUrl("https://api.example.test/v1/responses"));
     const requestBody = JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string);
     expect(requestBody).toMatchObject({
       model: "gpt-5.5",
@@ -486,6 +513,10 @@ describe("getCustomSizeError", () => {
     expect(getCustomSizeError(1920, 1088)).toBe("");
   });
 });
+
+function devProxyUrl(endpoint: string) {
+  return `/__api-proxy?url=${encodeURIComponent(endpoint)}`;
+}
 
 function jsonResponse(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload), {

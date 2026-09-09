@@ -1,5 +1,6 @@
 import type { ApiMode, GenerationParams } from "../types/studio";
 import { isGptImageModel } from "../shared/models";
+import { proxyDevelopmentApiRequest } from "./devApiProxy";
 import {
   MAX_CUSTOM_ASPECT_RATIO,
   MAX_CUSTOM_DIMENSION,
@@ -38,7 +39,9 @@ export function buildApiEndpoint(
   apiMode: ApiMode,
   path: string,
 ) {
-  return `${normalizeApiBaseUrl(apiBaseUrl, apiBaseUrlMode, apiMode)}/${path}`;
+  return proxyDevelopmentApiRequest(
+    `${normalizeApiBaseUrl(apiBaseUrl, apiBaseUrlMode, apiMode)}/${path}`,
+  );
 }
 
 export function imageApiParams(
