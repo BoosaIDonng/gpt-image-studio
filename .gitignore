@@ -23,6 +23,10 @@ docs/superpowers
 vite-dev.pid
 embed-test.html
 
+# Agent working files
+AGENTS.md
+MEMORY.md
+
 # Windows junk
 nul
 desktop.ini

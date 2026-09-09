@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "dev:companion": "pnpm --filter @honlnk/image-studio-companion dev",
+    "proxy": "node tools/cors-proxy/server.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",

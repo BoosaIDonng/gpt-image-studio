@@ -69,6 +69,33 @@
 | 浏览器直连 | 配置 API Base URL 和 API key，浏览器直接调用接口 |
 | 本地 Companion | 安装本地 CLI 服务，凭据保存在本机，浏览器只与 localhost 通信 |
 
+### HTTP 中转站与非标准端口
+
+浏览器页面通过 HTTPS 加载时，不能直接请求不提供 CORS 的 HTTP 地址，例如
+`http://gateway.example.com:8080`。项目内置的本地代理会保持上游端口、授权头、图片编辑
+表单和流式响应，并将浏览器请求转为本机回环请求。
+
+开发时，`pnpm dev` 已自动使用同源代理。直接在「设置 → 接口」选择「OpenAI 兼容」和
+「Images API」，保持「输入完整 API Base URL」未勾选，并将 API 地址设置为：
+
+```text
+http://gateway.example.com:8080
+```
+
+填写该中转站的 API key，点击「获取模型」确认连接后选择图片模型。
+
+应用会把生成请求转发到
+`http://gateway.example.com:8080/v1/images/generations`，并将模型发现请求转发到
+`http://gateway.example.com:8080/v1/models`。部署后的 HTTPS 页面需要运行 `pnpm proxy`，
+并把 API 地址包装为
+
+```text
+http://127.0.0.1:8787/?url=http%3A%2F%2Fgateway.example.com%3A8080
+```
+
+若页面来源不是默认的线上站点或本地开发地址，
+使用 `pnpm proxy -- --allow-origin https://your-site.example` 启动代理。
+
 ## 提示词模式
 
 提示词模式可以在「设置」里的「提示词保护」页面切换。默认模式不会修改 prompt；其他模式会在发送请求前追加模式说明和随机灵感词。

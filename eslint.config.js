@@ -52,6 +52,20 @@ export default [
     },
   },
   {
+    files: ["tools/**/*.{js,mjs}"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: {
+        ...globals.node,
+        ...globals.es2024,
+      },
+    },
+    rules: {
+      "no-console": "off",
+    },
+  },
+  {
     files: ["**/*.vue"],
     languageOptions: {
       parser: vueParser,
