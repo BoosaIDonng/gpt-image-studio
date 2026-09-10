@@ -4,10 +4,11 @@ import {
   deleteConversation as deleteConversationRecord,
   saveConversation,
 } from "../services/conversations";
-import { deleteMessage as deleteMessageRecord } from "../services/messages";
+import { deleteMessage as deleteMessageRecord, saveMessage } from "../services/messages";
 import { isoTimestamp } from "../shared/dateTime";
 import { formatError } from "../shared/errors";
 import { createId } from "../shared/id";
+import { useCommandStore } from "./commandStore";
 import { useFeedbackStore } from "./feedbackStore";
 import type { Conversation, Message } from "../types/studio";
 
@@ -123,12 +124,25 @@ export const useConversationsStore = defineStore("conversations", () => {
     });
     if (!confirmed) return;
 
+    const index = messages.value.findIndex((item) => item.id === id);
     messages.value = messages.value.filter((item) => item.id !== id);
+    const commands = useCommandStore();
 
     try {
-      await deleteMessageRecord(id);
-      await input.refreshStorageUsage();
-      feedback.notifySuccess("消息已删除。");
+      await commands.execute({
+        label: "删除消息",
+        run: async () => {
+          await deleteMessageRecord(id);
+          await input.refreshStorageUsage();
+          feedback.notifySuccess("消息已删除。");
+        },
+        undo: async () => {
+          const list = [...messages.value];
+          list.splice(Math.min(Math.max(index, 0), list.length), 0, message);
+          messages.value = list;
+          await saveMessage(message);
+        },
+      });
     } catch (error) {
       feedback.notifyError(`删除消息失败：${formatError(error)}`);
       input.onStorageError(error);
