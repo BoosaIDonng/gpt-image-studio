@@ -5,7 +5,10 @@ import {
 import { deleteImageAsset, deleteImageBlob, listImageAssets } from "../../services/imageAssets";
 import { deleteMessage, listMessages, saveMessage } from "../../services/messages";
 import { loadSettings } from "../../services/settings";
-import { migrateLegacyTimeFields } from "../../services/timeFieldMigration";
+import {
+  migrateLegacyTimeFields,
+  TIME_FIELD_MIGRATION_VERSION,
+} from "../../services/timeFieldMigration";
 import { formatError } from "../../shared/errors";
 import type { AppSettings, Conversation, ImageAsset, Message } from "../../types/studio";
 import type { Ref } from "vue";
@@ -15,7 +18,6 @@ type UseStudioRestoreInput = {
   applySettings: (settings: AppSettings) => void;
   attachedImages: Ref<string[]>;
   conversations: Ref<Conversation[]>;
-  hydrateImagePreviews: (assets: ImageAsset[]) => Promise<ImageAsset[]>;
   imageAssets: Ref<ImageAsset[]>;
   isHydrated: Ref<boolean>;
   messages: Ref<Message[]>;
@@ -32,10 +34,18 @@ const LEGACY_SEED_IMAGE_IDS = new Set(["img-1", "img-2", "img-3", "img-4"]);
 export function useStudioRestore(input: UseStudioRestoreInput) {
   async function restoreFromStorage() {
     try {
-      await migrateLegacyTimeFields();
+      // Settings first: the stored migration version decides whether the
+      // (store-wide) legacy time-field migration has to read all stores.
+      const savedSettings = await loadSettings();
+      if (savedSettings?.timeFieldMigrationVersion !== TIME_FIELD_MIGRATION_VERSION) {
+        await migrateLegacyTimeFields();
+      }
 
-      const [savedSettings, savedConversations, savedMessages, savedImageAssets] =
-        await Promise.all([loadSettings(), listConversations(), listMessages(), listImageAssets()]);
+      const [savedConversations, savedMessages, savedImageAssets] = await Promise.all([
+        listConversations(),
+        listMessages(),
+        listImageAssets(),
+      ]);
 
       if (savedSettings) {
         input.applySettings(savedSettings);
@@ -66,7 +76,9 @@ export function useStudioRestore(input: UseStudioRestoreInput) {
       input.messages.value = normalizedMessages;
       await persistNormalizedMessages(restoredMessages, normalizedMessages);
 
-      input.imageAssets.value = await input.hydrateImagePreviews(restoredImages);
+      // Preview Blobs are no longer loaded at startup (O(library) reads and
+      // resident object URLs); cards load them lazily when scrolled into view.
+      input.imageAssets.value = restoredImages;
       input.attachedImages.value = input.attachedImages.value.filter((id) =>
         restoredImages.some((image) => image.id === id),
       );

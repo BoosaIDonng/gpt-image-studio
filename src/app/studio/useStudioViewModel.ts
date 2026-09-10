@@ -1,5 +1,6 @@
 import { computed, onMounted, proxyRefs, ref, watch } from "vue";
 import { storeToRefs } from "pinia";
+import type { SettingsPanelsContext } from "../../components/settings/settingsModalContext";
 import { useStudioBackup, useStudioRestore } from "../../features/backup";
 import { useStudioConversations } from "../../features/conversations";
 import { useStudioFeedback } from "../../features/feedback";
@@ -21,6 +22,7 @@ import {
   hasUrlGenerationParams,
 } from "../../services/urlSettings";
 import { useComposerStore } from "../../stores/composerStore";
+import { useGlobalUndoRedo } from "../../composables/useGlobalUndoRedo";
 import type { PromptRequestSettings } from "../../types/studio";
 import { useStudioDrafts } from "./useStudioDrafts";
 import { useStudioImagePreview } from "./useStudioImagePreview";
@@ -28,6 +30,9 @@ import { useStudioRenameDialog } from "./useStudioRenameDialog";
 import { useStudioSettingsSync } from "./useStudioSettingsSync";
 
 export function useStudioViewModel() {
+  // Global Ctrl/Cmd+Z / Shift+Z for undoable operations (rename, tag, deletes).
+  useGlobalUndoRedo();
+
   const isHydrated = ref(false);
   const settings = useStudioSettings({
     isHydrated,
@@ -51,6 +56,7 @@ export function useStudioViewModel() {
 
   const imagePreview = useStudioImagePreview({
     imageById: (id) => images.imageById(id),
+    ensureImagePreview: (id) => images.ensureImagePreview(id),
     activeAttachments: computed(() => images?.activeAttachments.value ?? []),
     activeEditSourceImageId,
     activeEditMaskImageId,
@@ -258,6 +264,7 @@ export function useStudioViewModel() {
         }),
         excludedIds: ragExcludedMatchIds.value,
         topK: settings.ragTopK.value,
+        termWeights: settings.wordbankTermWeights.value,
       }).context || undefined
     );
   }
@@ -299,7 +306,6 @@ export function useStudioViewModel() {
     applySettings: settings.applySettings,
     attachedImages: images.attachedImages,
     conversations: conversations.conversations,
-    hydrateImagePreviews: images.hydrateImagePreviews,
     imageAssets: images.imageAssets,
     isHydrated,
     messages: conversations.messages,
@@ -446,66 +452,107 @@ export function useStudioViewModel() {
     previewImage: imagePreview.previewImageById,
     renameImage: renameDialogs.requestRenameImage,
   });
+  // 弹窗自身状态；面板数据统一走 settingsModalPanelsContext。
   const settingsModal = proxyRefs({
+    close: settingsSync.closeSettings,
+    open: settingsSync.openSettingsDefault,
+    importBackup: backup.importBackup,
+    initialBatchPanel: settingsSync.settingsInitialBatchPanel,
+    initialTab: settingsSync.settingsInitialTab,
+    isOpen: settingsSync.isSettingsOpen,
+  });
+  // ── 设置弹窗上下文 ──
+  // 在编排边界统一组装并通过单一 prop 下发，替代 App.vue 里几十个转发 props/事件。
+  // `importBackupRequest` 由 SettingsModal 自己补充（它依赖弹窗内部的恢复确认步骤）。
+  const settingsModalPanelsContext: SettingsPanelsContext = {
+    connectionMode: settings.connectionMode,
+    apiProvider: settings.apiProvider,
+    apiBaseUrl: settings.apiBaseUrl,
+    apiBaseUrlMode: settings.apiBaseUrlMode,
+    apiMode: settings.apiMode,
+    apiKey: settings.apiKey,
+    model: settings.model,
+    streamImages: settings.streamImages,
+    streamPartialImages: settings.streamPartialImages,
+    companionUrl: settings.companionUrl,
+    companionSessionToken: settings.companionSessionToken,
+    companionPaired: settings.companionPaired,
+    updateConnectionMode: (value) => {
+      settings.connectionMode.value = value;
+    },
+    updateApiProvider: (value) => {
+      settings.apiProvider.value = value;
+    },
+    updateApiBaseUrl: (value) => {
+      settings.apiBaseUrl.value = value;
+    },
+    updateApiBaseUrlMode: (value) => {
+      settings.apiBaseUrlMode.value = value;
+    },
+    updateApiMode: (value) => {
+      settings.apiMode.value = value;
+    },
+    updateApiKey: (value) => {
+      settings.apiKey.value = value;
+    },
+    updateModel: (value) => {
+      settings.model.value = value;
+    },
+    updateStreamImages: (value) => {
+      settings.streamImages.value = value;
+    },
+    updateStreamPartialImages: (value) => {
+      settings.streamPartialImages.value = value;
+    },
+    updateCompanionSessionToken: (value) => {
+      settings.companionSessionToken.value = value;
+    },
+
     autoRetryOnNetworkError: settings.autoRetryOnNetworkError,
     promptExpandEnabled: settings.promptExpandEnabled,
     chatApiKey: settings.chatApiKey,
     chatApiBaseUrl: settings.chatApiBaseUrl,
     chatModel: settings.chatModel,
-    setPromptExpandEnabled: settingsSync.setPromptExpandEnabled,
-    setAutoRetryOnNetworkError: settingsSync.setAutoRetryOnNetworkError,
-    setChatApiKey: settingsSync.setChatApiKey,
-    setChatApiBaseUrl: settingsSync.setChatApiBaseUrl,
-    setChatModel: settingsSync.setChatModel,
-    setChatSystemPrompt: settingsSync.setChatSystemPrompt,
     chatSystemPrompt: settings.chatSystemPrompt,
-    apiProvider: settings.apiProvider,
-    apiMode: settings.apiMode,
-    apiBaseUrl: settings.apiBaseUrl,
-    apiBaseUrlMode: settings.apiBaseUrlMode,
-    apiKey: settings.apiKey,
-    companionPaired: settings.companionPaired,
-    companionSessionToken: settings.companionSessionToken,
-    companionUrl: settings.companionUrl,
-    connectionMode: settings.connectionMode,
-    favoritePrompts: settings.favoritePrompts,
-    ragEnabled: settings.ragEnabled,
-    ragTopK: settings.ragTopK,
+    updateAutoRetryOnNetworkError: settingsSync.setAutoRetryOnNetworkError,
+    updatePromptExpandEnabled: settingsSync.setPromptExpandEnabled,
+    updateChatApiKey: settingsSync.setChatApiKey,
+    updateChatApiBaseUrl: settingsSync.setChatApiBaseUrl,
+    updateChatModel: settingsSync.setChatModel,
+    updateChatSystemPrompt: settingsSync.setChatSystemPrompt,
+
     promptMode: settings.promptMode,
     promptWordbanks: settings.promptWordbanks,
+    ragEnabled: settings.ragEnabled,
+    ragTopK: settings.ragTopK,
+    updatePromptMode: settingsSync.setPromptMode,
+    updateRagEnabled: settingsSync.setRagEnabled,
+    updateRagTopK: settingsSync.setRagTopK,
+    saveWordbank: settingsSync.savePromptWordbank,
+    restoreDefaultWordbank: settingsSync.restoreDefaultPromptWordbank,
+
     promptRewriteGuardEnabled: settings.promptRewriteGuardEnabled,
-    promptRewriteGuardHistory: settings.promptRewriteGuardHistory,
     promptRewriteGuardText: settings.promptRewriteGuardText,
-    close: settingsSync.closeSettings,
-    open: settingsSync.openSettingsDefault,
-    conversations: conversations.conversations,
-    deleteConversations: drafts.deleteConversationsWithDraft,
-    deleteImages: images.deleteImages,
-    exportBackup: backup.exportBackup,
-    images: images.imageAssets,
-    importBackup: backup.importBackup,
-    initialBatchPanel: settingsSync.settingsInitialBatchPanel,
-    initialTab: settingsSync.settingsInitialTab,
-    isOpen: settingsSync.isSettingsOpen,
-    messages: conversations.messages,
-    model: settings.model,
-    previewImage: imagePreview.previewImageById,
-    deletePromptRewriteGuardHistoryItem: settingsSync.deletePromptRewriteGuardHistoryItem,
+    promptRewriteGuardHistory: settings.promptRewriteGuardHistory,
+    updatePromptRewriteGuardEnabled: settingsSync.setPromptRewriteGuardEnabled,
+    savePromptRewriteGuardText: settingsSync.savePromptRewriteGuardText,
     restoreDefaultPromptRewriteGuardText: settingsSync.restoreDefaultPromptRewriteGuardText,
     restorePromptRewriteGuardHistoryItem: settingsSync.restorePromptRewriteGuardHistoryItem,
-    savePromptRewriteGuardText: settingsSync.savePromptRewriteGuardText,
-    savePromptWordbank: settingsSync.savePromptWordbank,
-    setPromptMode: settingsSync.setPromptMode,
-    setRagEnabled: settingsSync.setRagEnabled,
-    setRagTopK: settingsSync.setRagTopK,
-    setPromptRewriteGuardEnabled: settingsSync.setPromptRewriteGuardEnabled,
-    streamImages: settings.streamImages,
-    streamPartialImages: settings.streamPartialImages,
+    deletePromptRewriteGuardHistoryItem: settingsSync.deletePromptRewriteGuardHistoryItem,
+
+    favoritePrompts: settings.favoritePrompts,
     addFavoritePrompt: settingsSync.addFavoritePrompt,
     updateFavoritePrompt: settingsSync.updateFavoritePrompt,
     deleteFavoritePrompt: settingsSync.deleteFavoritePrompt,
-    restoreDefaultPromptWordbank: settingsSync.restoreDefaultPromptWordbank,
-  });
+
+    conversations: conversations.conversations,
+    images: images.imageAssets,
+    messages: conversations.messages,
+    deleteConversations: drafts.deleteConversationsWithDraft,
+    deleteImages: images.deleteImages,
+    previewImage: imagePreview.previewImageById,
+    exportBackup: backup.exportBackup,
+  };
   const preview = proxyRefs({
     close: imagePreview.closePreview,
     editImage: (id: string) => {
@@ -554,6 +601,7 @@ export function useStudioViewModel() {
     renameImageModal,
     renameModal,
     settingsModal,
+    settingsModalContext: settingsModalPanelsContext,
     sidebar,
   };
 }

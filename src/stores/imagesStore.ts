@@ -14,6 +14,7 @@ import { formatError } from "../shared/errors";
 import { createId } from "../shared/id";
 import { createObjectUrl, revokeObjectUrls } from "../shared/objectUrls";
 import { toPlainImageAsset } from "./generationStoreUtils";
+import { useCommandStore } from "./commandStore";
 import { useFeedbackStore } from "./feedbackStore";
 import type { ImageAsset, Message } from "../types/studio";
 import type { Ref } from "vue";
@@ -30,11 +31,30 @@ export const useImagesStore = defineStore("images", () => {
   const storageUsage = ref<StorageUsage | null>(null);
   let context: ImagesStoreContext | null = null;
 
+  const imageIndex = computed(() => {
+    const index = new Map<string, ImageAsset>();
+    for (const image of imageAssets.value) index.set(image.id, image);
+    return index;
+  });
+
   const activeAttachments = computed(() =>
     attachedImages.value
-      .map((id) => imageAssets.value.find((image) => image.id === id))
+      .map((id) => imageIndex.value.get(id))
       .filter((image): image is ImageAsset => Boolean(image)),
   );
+
+  /**
+   * Mean recorded generation duration across assets — used as the ETA basis
+   * for non-streaming providers where nothing else hints at progress.
+   */
+  const averageGenerationDurationMs = computed(() => {
+    const durations = imageAssets.value
+      .map((image) => image.generationDurationMs)
+      .filter((value): value is number => typeof value === "number" && value > 0)
+      .slice(-40);
+    if (!durations.length) return 0;
+    return durations.reduce((sum, value) => sum + value, 0) / durations.length;
+  });
 
   watch(
     imageAssets,
@@ -53,7 +73,12 @@ export const useImagesStore = defineStore("images", () => {
   }
 
   function imageById(id: string) {
-    return imageAssets.value.find((image) => image.id === id);
+    return imageIndex.value.get(id);
+  }
+
+  /** Replace an image without moving it to the front, so list order stays stable. */
+  function replaceImage(image: ImageAsset) {
+    imageAssets.value = imageAssets.value.map((item) => (item.id === image.id ? image : item));
   }
 
   function attachImage(id: string) {
@@ -89,16 +114,36 @@ export const useImagesStore = defineStore("images", () => {
     });
     if (!confirmed) return;
 
-    attachedImages.value = attachedImages.value.filter((item) => item !== id);
-    imageAssets.value = imageAssets.value.filter((item) => item.id !== id);
+    const index = imageAssets.value.findIndex((item) => item.id === id);
+    // Keep the blob in memory so undo can restore the record after deletion.
+    const blob = image.blobKey ? await loadImageBlob(image.blobKey).catch(() => undefined) : undefined;
+    const commands = useCommandStore();
 
     try {
-      await Promise.all([
-        deleteImageAsset(id),
-        image.blobKey ? deleteImageBlob(image.blobKey) : Promise.resolve(),
-      ]);
-      await refreshStorageUsage();
-      feedback.notifySuccess("图片已删除。");
+      await commands.execute({
+        label: "删除图片",
+        run: async () => {
+          attachedImages.value = attachedImages.value.filter((item) => item !== id);
+          imageAssets.value = imageAssets.value.filter((item) => item.id !== id);
+          await Promise.all([
+            deleteImageAsset(id),
+            image.blobKey ? deleteImageBlob(image.blobKey) : Promise.resolve(),
+          ]);
+          await refreshStorageUsage();
+          feedback.notifySuccess("图片已删除。");
+        },
+        undo: async () => {
+          const restored = { ...image, previewUrl: image.previewUrl };
+          const list = [...imageAssets.value];
+          list.splice(Math.min(Math.max(index, 0), list.length), 0, restored);
+          imageAssets.value = list;
+          await Promise.all([
+            saveImageAsset(toPlainImageAsset(restored)),
+            blob && image.blobKey ? saveImageBlob(image.blobKey, blob) : Promise.resolve(),
+          ]);
+          await refreshStorageUsage();
+        },
+      });
     } catch (error) {
       feedback.notifyError(`删除图片失败：${formatError(error)}`);
       input.onStorageError(error);
@@ -112,18 +157,48 @@ export const useImagesStore = defineStore("images", () => {
     const input = getContext();
     const feedback = useFeedbackStore();
     const deletedImages = imageAssets.value.filter((image) => idSet.has(image.id));
-    attachedImages.value = attachedImages.value.filter((id) => !idSet.has(id));
-    imageAssets.value = imageAssets.value.filter((image) => !idSet.has(image.id));
 
     try {
-      await Promise.all(
-        deletedImages.flatMap((image) => [
-          deleteImageAsset(image.id),
-          image.blobKey ? deleteImageBlob(image.blobKey) : Promise.resolve(),
-        ]),
+      const captured = await Promise.all(
+        deletedImages.map(async (image) => ({
+          image,
+          index: imageAssets.value.findIndex((item) => item.id === image.id),
+          blob: image.blobKey ? await loadImageBlob(image.blobKey).catch(() => undefined) : undefined,
+        })),
       );
-      await refreshStorageUsage();
-      feedback.notifySuccess(`已删除 ${deletedImages.length} 张图片。`);
+      const previousAttached = [...attachedImages.value];
+      const commands = useCommandStore();
+
+      await commands.execute({
+        label: `删除 ${deletedImages.length} 张图片`,
+        run: async () => {
+          attachedImages.value = attachedImages.value.filter((id) => !idSet.has(id));
+          imageAssets.value = imageAssets.value.filter((image) => !idSet.has(image.id));
+          await Promise.all(
+            captured.flatMap(({ image }) => [
+              deleteImageAsset(image.id),
+              image.blobKey ? deleteImageBlob(image.blobKey) : Promise.resolve(),
+            ]),
+          );
+          await refreshStorageUsage();
+          feedback.notifySuccess(`已删除 ${deletedImages.length} 张图片。`);
+        },
+        undo: async () => {
+          const list = [...imageAssets.value];
+          for (const { image, index } of captured) {
+            list.splice(Math.min(Math.max(index, 0), list.length), 0, { ...image });
+          }
+          imageAssets.value = list;
+          attachedImages.value = previousAttached;
+          await Promise.all(
+            captured.flatMap(({ image, blob }) => [
+              saveImageAsset(toPlainImageAsset(image)),
+              blob && image.blobKey ? saveImageBlob(image.blobKey, blob) : Promise.resolve(),
+            ]),
+          );
+          await refreshStorageUsage();
+        },
+      });
     } catch (error) {
       feedback.notifyError(`删除图片失败：${formatError(error)}`);
       input.onStorageError(error);
@@ -131,29 +206,50 @@ export const useImagesStore = defineStore("images", () => {
   }
 
   async function renameImage(id: string, nextName: string) {
-    const image = imageById(id);
-    if (!image) return false;
+    const current = imageById(id);
+    if (!current) return false;
 
     const trimmedName = nextName.trim();
-    if (!trimmedName) return false;
+    if (!trimmedName || trimmedName === current.name) return false;
 
     const input = getContext();
-    image.name = trimmedName;
-    image.updatedAt = isoTimestamp();
-    imageAssets.value = [image, ...imageAssets.value.filter((item) => item.id !== id)];
-    await saveImageAsset(toPlainImageAsset(image)).catch(input.onStorageError);
+    const commands = useCommandStore();
+    const applyName = async (name: string) => {
+      const image = imageById(id);
+      if (!image) return;
+      const updated: ImageAsset = { ...image, name, updatedAt: isoTimestamp() };
+      replaceImage(updated);
+      await saveImageAsset(toPlainImageAsset(updated)).catch(input.onStorageError);
+    };
+
+    await commands.execute({
+      label: "重命名图片",
+      run: () => applyName(trimmedName),
+      undo: () => applyName(current.name),
+    });
     return true;
   }
 
   async function setImageTagColor(id: string, nextColor?: ImageAsset["tagColor"]) {
-    const image = imageById(id);
-    if (!image) return false;
+    const current = imageById(id);
+    if (!current) return false;
+    if (current.tagColor === nextColor) return false;
 
     const input = getContext();
-    image.tagColor = nextColor;
-    image.updatedAt = isoTimestamp();
-    imageAssets.value = [image, ...imageAssets.value.filter((item) => item.id !== id)];
-    await saveImageAsset(toPlainImageAsset(image)).catch(input.onStorageError);
+    const commands = useCommandStore();
+    const applyColor = async (color?: ImageAsset["tagColor"]) => {
+      const image = imageById(id);
+      if (!image) return;
+      const updated: ImageAsset = { ...image, tagColor: color, updatedAt: isoTimestamp() };
+      replaceImage(updated);
+      await saveImageAsset(toPlainImageAsset(updated)).catch(input.onStorageError);
+    };
+
+    await commands.execute({
+      label: "设置图片标签",
+      run: () => applyColor(nextColor),
+      undo: () => applyColor(current.tagColor),
+    });
     return true;
   }
 
@@ -243,36 +339,33 @@ export const useImagesStore = defineStore("images", () => {
     imageAssets.value = imageAssets.value.filter((item) => item.id !== id);
   }
 
-  async function hydrateImagePreviews(assets: ImageAsset[]) {
+  const previewLoadInFlight = new Set<string>();
+
+  /**
+   * Load an asset's preview Blob on demand (viewport-triggered via
+   * `v-image-preview`). Startup no longer hydrates the whole library, so the
+   * Blob-read count is O(viewport), not O(library).
+   */
+  async function ensureImagePreview(id: string) {
+    const image = imageById(id);
+    if (!image || image.previewUrl || !image.blobKey || previewLoadInFlight.has(id)) return;
+
+    previewLoadInFlight.add(id);
     const input = getContext();
-    return Promise.all(
-      assets.map(async (asset) => {
-        if (!asset.blobKey) return asset;
+    try {
+      const blob = await loadImageBlob(image.blobKey);
+      if (!blob) return;
 
-        const blob = await loadImageBlob(asset.blobKey);
-        if (!blob) return asset;
-
-        const restoredAsset = {
-          ...asset,
-          previewUrl: createObjectUrl(blob),
-        };
-
-        if (restoredAsset.width && restoredAsset.height) {
-          return restoredAsset;
-        }
-
+      let restored: ImageAsset = { ...image, previewUrl: createObjectUrl(blob) };
+      if (!restored.width || !restored.height) {
         const dimensions = await readImageDimensions(blob);
-        if (!dimensions) return restoredAsset;
-
-        const updatedAsset = {
-          ...restoredAsset,
-          width: dimensions.width,
-          height: dimensions.height,
-        };
-        await saveImageAsset(toPlainImageAsset(updatedAsset)).catch(input.onStorageError);
-        return updatedAsset;
-      }),
-    );
+        if (dimensions) restored = { ...restored, width: dimensions.width, height: dimensions.height };
+      }
+      replaceImage(restored);
+      await saveImageAsset(toPlainImageAsset(restored)).catch(input.onStorageError);
+    } finally {
+      previewLoadInFlight.delete(id);
+    }
   }
 
   async function refreshStorageUsage() {
@@ -294,6 +387,7 @@ export const useImagesStore = defineStore("images", () => {
   return {
     activeAttachments,
     attachedImages,
+    averageGenerationDurationMs,
     imageAssets,
     storageUsage,
     attachImage,
@@ -302,7 +396,7 @@ export const useImagesStore = defineStore("images", () => {
     createMaskAsset,
     deleteImage,
     deleteImages,
-    hydrateImagePreviews,
+    ensureImagePreview,
     imageById,
     importImages,
     refreshStorageUsage,

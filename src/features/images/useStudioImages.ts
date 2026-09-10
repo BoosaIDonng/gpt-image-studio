@@ -27,7 +27,7 @@ export function useStudioImages(input: UseStudioImagesInput) {
     createMaskAsset: images.createMaskAsset,
     deleteImage: images.deleteImage,
     deleteImages: images.deleteImages,
-    hydrateImagePreviews: images.hydrateImagePreviews,
+    ensureImagePreview: images.ensureImagePreview,
     imageById: images.imageById,
     importImages: images.importImages,
     refreshStorageUsage: images.refreshStorageUsage,

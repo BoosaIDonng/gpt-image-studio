@@ -3,6 +3,7 @@ import type { ImageAsset } from "../../types/studio";
 
 export function useStudioImagePreview(ctx: {
   imageById: (id: string) => ImageAsset | undefined;
+  ensureImagePreview?: (id: string) => Promise<void>;
   activeAttachments: Ref<Array<{ id: string }>>;
   activeEditSourceImageId: Ref<string>;
   activeEditMaskImageId: Ref<string>;
@@ -21,6 +22,8 @@ export function useStudioImagePreview(ctx: {
 
   function previewImageById(id: string) {
     previewImageId.value = id;
+    // Previews load lazily; opening the modal must trigger the load itself.
+    void ctx.ensureImagePreview?.(id);
   }
 
   function closePreview() {

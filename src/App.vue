@@ -52,7 +52,7 @@ onUnmounted(() => document.removeEventListener("keydown", handleGlobalKeydown));
 </script>
 
 <template>
-  <main class="cupertino-app flex h-screen text-gray-900 antialiased dark:text-gray-100">
+  <main class="cupertino-app flex h-screen text-content antialiased dark:text-content">
     <ConversationSidebar
       @create-conversation="studio.sidebar.createConversation"
       @delete-conversation="studio.sidebar.deleteConversation"
@@ -74,70 +74,12 @@ onUnmounted(() => document.removeEventListener("keydown", handleGlobalKeydown));
     />
 
     <SettingsModal
-      v-model:api-provider="studio.settingsModal.apiProvider"
-      v-model:api-base-url="studio.settingsModal.apiBaseUrl"
-      v-model:api-base-url-mode="studio.settingsModal.apiBaseUrlMode"
-      v-model:api-mode="studio.settingsModal.apiMode"
-      v-model:api-key="studio.settingsModal.apiKey"
-      v-model:connection-mode="studio.settingsModal.connectionMode"
-      v-model:model="studio.settingsModal.model"
-      v-model:stream-images="studio.settingsModal.streamImages"
-      v-model:stream-partial-images="studio.settingsModal.streamPartialImages"
-      :auto-retry-on-network-error="studio.settingsModal.autoRetryOnNetworkError"
-      :prompt-expand-enabled="studio.settingsModal.promptExpandEnabled"
-      :chat-api-key="studio.settingsModal.chatApiKey"
-      :chat-api-base-url="studio.settingsModal.chatApiBaseUrl"
-      :chat-model="studio.settingsModal.chatModel"
-      :chat-system-prompt="studio.settingsModal.chatSystemPrompt"
-      :companion-paired="studio.settingsModal.companionPaired"
-      :companion-session-token="studio.settingsModal.companionSessionToken"
-      :companion-url="studio.settingsModal.companionUrl"
-      :favorite-prompts="studio.settingsModal.favoritePrompts"
-      :prompt-mode="studio.settingsModal.promptMode"
-      :prompt-wordbanks="studio.settingsModal.promptWordbanks"
-      :rag-enabled="studio.settingsModal.ragEnabled"
-      :rag-top-k="studio.settingsModal.ragTopK"
-      :prompt-rewrite-guard-enabled="studio.settingsModal.promptRewriteGuardEnabled"
-      :prompt-rewrite-guard-history="studio.settingsModal.promptRewriteGuardHistory"
-      :prompt-rewrite-guard-text="studio.settingsModal.promptRewriteGuardText"
-      :conversations="studio.settingsModal.conversations"
-      :images="studio.settingsModal.images"
+      :context="studio.settingsModalContext"
       :initial-batch-panel="studio.settingsModal.initialBatchPanel"
       :initial-tab="studio.settingsModal.initialTab"
       :is-open="studio.settingsModal.isOpen"
-      :messages="studio.settingsModal.messages"
       @close="studio.settingsModal.close"
-      @delete-conversations="studio.settingsModal.deleteConversations"
-      @delete-images="studio.settingsModal.deleteImages"
-      @delete-favorite-prompt="studio.settingsModal.deleteFavoritePrompt"
-      @delete-prompt-rewrite-guard-history-item="
-        studio.settingsModal.deletePromptRewriteGuardHistoryItem
-      "
-      @export-backup="studio.settingsModal.exportBackup"
       @import-backup="studio.settingsModal.importBackup"
-      @preview-image="studio.settingsModal.previewImage"
-      @restore-default-prompt-rewrite-guard-text="
-        studio.settingsModal.restoreDefaultPromptRewriteGuardText
-      "
-      @restore-default-prompt-wordbank="studio.settingsModal.restoreDefaultPromptWordbank"
-      @restore-prompt-rewrite-guard-history-item="
-        studio.settingsModal.restorePromptRewriteGuardHistoryItem
-      "
-      @save-prompt-rewrite-guard-text="studio.settingsModal.savePromptRewriteGuardText"
-      @save-prompt-wordbank="studio.settingsModal.savePromptWordbank"
-      @add-favorite-prompt="studio.settingsModal.addFavoritePrompt"
-      @set-prompt-rewrite-guard-enabled="studio.settingsModal.setPromptRewriteGuardEnabled"
-      @update-favorite-prompt="studio.settingsModal.updateFavoritePrompt"
-      @update:companion-session-token="studio.settingsModal.companionSessionToken = $event"
-      @update:auto-retry-on-network-error="studio.settingsModal.setAutoRetryOnNetworkError($event)"
-      @update:prompt-expand-enabled="studio.settingsModal.setPromptExpandEnabled($event)"
-      @update:chat-api-key="studio.settingsModal.setChatApiKey($event)"
-      @update:chat-api-base-url="studio.settingsModal.setChatApiBaseUrl($event)"
-      @update:chat-model="studio.settingsModal.setChatModel($event)"
-      @update:chat-system-prompt="studio.settingsModal.setChatSystemPrompt($event)"
-      @update:prompt-mode="studio.settingsModal.setPromptMode"
-      @update:rag-enabled="studio.settingsModal.setRagEnabled"
-      @update:rag-top-k="studio.settingsModal.setRagTopK"
     />
 
     <ExpandPreviewModal
