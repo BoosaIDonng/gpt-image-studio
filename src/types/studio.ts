@@ -151,6 +151,10 @@ export type AppSettings = {
   autoRetryOnNetworkError: boolean;
   defaults: GenerationParams;
   storageMode: "indexeddb";
+  /** Bumped when the legacy time-field migration last ran; skips re-reading all stores at startup. */
+  timeFieldMigrationVersion?: number;
+  /** Persistent per-term hit counts from successful generations ("个人词库"). */
+  wordbankTermWeights?: Record<string, number>;
 };
 
 export type EditorKey = "size" | "count" | "quality" | "background" | "format";

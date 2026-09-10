@@ -465,3 +465,69 @@ describe("RAG", () => {
     expect(result.items[0]?.rawScore).toBe(1);
   });
 });
+
+/**
+ * W5 召回评估集：中文语义召回的回归用例。
+ * 每条 query 标注期望命中的文档；改造前（单字切分、无同义词）
+ * 「少女 vs 女孩」「夜色 vs 夜景」这类查询命中率为 0。
+ */
+describe("RAG Chinese recall evaluation set", () => {
+  const evalDocuments = [
+    { id: "d-girl", text: "少女" },
+    { id: "d-night", text: "城市夜景赛博朋克街道" },
+    { id: "d-portrait", text: "职业女性肖像，摄影棚灯光" },
+    { id: "d-boy", text: "少年在海边奔跑的逆光剪影" },
+  ];
+
+  function retrieve(query: string, termWeights?: Record<string, number>) {
+    return retrieveRagContext({
+      query,
+      documents: evalDocuments.map((document) => ({
+        id: document.id,
+        source: "wordbank" as const,
+        title: document.id,
+        text: document.text,
+      })),
+      termWeights,
+      minScore: 0.1,
+    });
+  }
+
+  it("近义词查询（女孩 → 少女）能命中语义匹配文档", () => {
+    // 改造前：少女/女孩 单字零重叠，召回为空。
+    const { items } = retrieve("女孩");
+    expect(items[0]?.id).toBe("d-girl");
+  });
+
+  it("同义词变体（夜色/深夜 → 夜景）能命中对应文档", () => {
+    const { items } = retrieve("深夜的城市街拍");
+    expect(items[0]?.id).toBe("d-night");
+  });
+
+  it("中文 2-gram 提升匹配精度：无关文档不会因单字重叠而排在前面", () => {
+    // "红色汽车" 与 "红色的书" 共享单字（红/色/的），旧单字评分会给出高分；
+    // 2-gram 下只有「红色」一个 bigram 重叠，分数显著降低。
+    const irrelevant = retrieveRagContext({
+      query: "红色汽车",
+      documents: [
+        { id: "d-book", source: "wordbank", title: "book", text: "一本红色的书放在木桌上" },
+        { id: "d-car", source: "wordbank", title: "car", text: "红色汽车停在雨夜街头" },
+      ],
+      minScore: 0.1,
+    });
+    expect(irrelevant.items[0]?.id).toBe("d-car");
+    const carScore = irrelevant.items[0]?.score ?? 0;
+    const items = irrelevant.items.filter((item) => item.id === "d-book");
+    if (items.length) {
+      expect(carScore).toBeGreaterThan(items[0].score * 2);
+    }
+  });
+
+  it("个人词库命中权重会提升对应词条的排序", () => {
+    const boosted = retrieve("女孩", { 少女: 10 });
+    const unboosted = retrieve("女孩");
+    const boostedScore = boosted.items.find((item) => item.id === "d-girl")?.score ?? 0;
+    const unboostedScore = unboosted.items.find((item) => item.id === "d-girl")?.score ?? 0;
+    expect(boostedScore).toBeGreaterThan(unboostedScore);
+  });
+});

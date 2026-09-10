@@ -1,5 +1,7 @@
 import type { FavoritePrompt, ImageAsset, Message, PromptWordbanks } from "../types/studio";
 import { matchPromptWordbankTerms } from "./promptWordbankMatcher";
+import { synonymExpansions } from "./ragSynonyms";
+import { wordbankTermBoost } from "./wordbankWeights";
 
 export type RagDocumentSource = "wordbank" | "image" | "favorite" | "history";
 
@@ -42,6 +44,8 @@ type RetrieveRagContextInput = {
   excludedIds?: string[];
   topK?: number;
   minScore?: number;
+  /** Persisted per-term hit weights ("个人词库") that boost wordbank documents. */
+  termWeights?: Record<string, number>;
 };
 
 const SOURCE_WEIGHTS: Record<RagDocumentSource, number> = {
@@ -157,15 +161,21 @@ export function retrieveRagContext(input: RetrieveRagContextInput) {
   const items = input.documents
     .filter((document) => !excludedIds.has(document.id))
     .filter((document) => !matchesExcludedText(document, excludedTexts))
-    .map((document) => ({
-      ...document,
-      rawScore: scoreRagDocument(input.query, document),
-      sourceWeight: SOURCE_WEIGHTS[document.source],
-    }))
-    .map((item) => ({
-      ...item,
-      score: item.rawScore * item.sourceWeight,
-    }))
+    .map((document) => {
+      const rawScore = scoreRagDocument(input.query, document);
+      const sourceWeight = SOURCE_WEIGHTS[document.source];
+      // Successful-generation hit history only boosts wordbank terms.
+      const weightBoost =
+        document.source === "wordbank"
+          ? wordbankTermBoost(normalizeText(document.text), input.termWeights)
+          : 1;
+      return {
+        ...document,
+        rawScore,
+        sourceWeight,
+        score: rawScore * sourceWeight * weightBoost,
+      };
+    })
     .filter((item) => item.score >= minScore)
     .sort(
       (a, b) => b.score - a.score || b.sourceWeight - a.sourceWeight || a.id.localeCompare(b.id),
@@ -265,7 +275,7 @@ function matchesExcludedText(document: RagDocument, excludedTexts: Set<string>) 
 
 function vectorize(text: string) {
   const vector = new Map<string, number>();
-  for (const token of tokenize(text)) {
+  for (const token of expandWithSynonyms(tokenize(text))) {
     vector.set(token, (vector.get(token) ?? 0) + 1);
   }
   return vector;
@@ -283,10 +293,10 @@ function scoreRagDocument(query: string, document: RagDocument) {
 }
 
 function tokenCoverageScore(query: string, documentText: string) {
-  const queryTokens = uniqueTokens(tokenize(query));
+  const queryTokens = uniqueTokens(expandWithSynonyms(tokenize(query)));
   if (!queryTokens.length) return 0;
 
-  const documentTokens = new Set(tokenize(documentText));
+  const documentTokens = new Set(expandWithSynonyms(tokenize(documentText)));
   const matchedCount = queryTokens.filter((token) => documentTokens.has(token)).length;
   return matchedCount / queryTokens.length;
 }
@@ -308,6 +318,13 @@ function normalizeForExactMatch(text: string) {
   return text.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
+/**
+ * Tokenize for retrieval scoring.
+ *
+ * Latin words keep light stemming; CJK runs are tokenized into 2-grams —
+ * single Han characters carry almost no semantics ("少女" vs "女孩" share
+ * zero characters), while bigrams keep matching precise and cheap.
+ */
 function tokenize(text: string) {
   const normalized = text
     .toLowerCase()
@@ -320,8 +337,35 @@ function tokenize(text: string) {
     .map(normalizeToken)
     .filter((token) => token.length > 1);
 
-  const cjkChars = [...normalized].filter((char) => /\p{Script=Han}/u.test(char));
-  return [...tokens, ...cjkChars];
+  return [...tokens, ...cjkBigrams(normalized)];
+}
+
+function cjkBigrams(normalized: string): string[] {
+  const tokens: string[] = [];
+  const hanRuns = normalized.match(/\p{Script=Han}+/gu) ?? [];
+  for (const run of hanRuns) {
+    if (run.length === 1) {
+      tokens.push(run);
+      continue;
+    }
+    for (let index = 0; index < run.length - 1; index += 1) {
+      tokens.push(run.slice(index, index + 2));
+    }
+  }
+  return tokens;
+}
+
+/** Expand tokens with their synonym-group members so paraphrases can meet. */
+function expandWithSynonyms(tokens: string[]): string[] {
+  if (!tokens.length) return tokens;
+  const expanded: string[] = [];
+  for (const token of tokens) {
+    expanded.push(token);
+    for (const synonym of synonymExpansions(token)) {
+      expanded.push(synonym);
+    }
+  }
+  return expanded;
 }
 
 function normalizeToken(token: string) {

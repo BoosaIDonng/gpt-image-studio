@@ -32,6 +32,7 @@ import { createId } from "../shared/id";
 import { MAX_CUSTOM_DIMENSION, MAX_CUSTOM_PIXELS, SIZE_STEP } from "../shared/imageConstraints";
 import { readJsonStorage, readStorage, writeStorage } from "../shared/localStorage";
 import { imageCapabilities } from "../services/imageCapabilities";
+import { normalizeWordbankTermWeights } from "../services/wordbankWeights";
 import type {
   ApiMode,
   ApiProvider,
@@ -118,6 +119,7 @@ export const useSettingsStore = defineStore("settings", () => {
   const favoritePrompts = ref<FavoritePrompt[]>([]);
   const ragEnabled = ref(false);
   const ragTopK = ref(4);
+  const wordbankTermWeights = ref<Record<string, number>>({});
   const promptRewriteGuardHistory = ref<PromptRewriteGuardHistoryItem[]>([
     {
       id: "prompt-guard-default",
@@ -248,6 +250,7 @@ export const useSettingsStore = defineStore("settings", () => {
     autoRetryOnNetworkError.value = settings.autoRetryOnNetworkError ?? false;
     ragEnabled.value = settings.ragEnabled ?? false;
     ragTopK.value = normalizeRagTopK(settings.ragTopK);
+    wordbankTermWeights.value = normalizeWordbankTermWeights(settings.wordbankTermWeights);
     promptExpandEnabled.value = settings.promptExpandEnabled ?? false;
     chatApiKey.value = settings.chatApiKey ?? "";
     chatApiBaseUrl.value = settings.chatApiBaseUrl ?? "";
@@ -298,6 +301,7 @@ export const useSettingsStore = defineStore("settings", () => {
       favoritePrompts: favoritePrompts.value.map(toPlainFavoritePrompt),
       ragEnabled: ragEnabled.value,
       ragTopK: normalizeRagTopK(ragTopK.value),
+      wordbankTermWeights: { ...wordbankTermWeights.value },
       promptExpandEnabled: promptExpandEnabled.value,
       chatApiKey: chatApiKey.value.trim(),
       chatApiBaseUrl: chatApiBaseUrl.value.trim(),
@@ -543,6 +547,7 @@ export const useSettingsStore = defineStore("settings", () => {
     favoritePrompts,
     ragEnabled,
     ragTopK,
+    wordbankTermWeights,
     imageCount,
     imageCountMode,
     imageCountPresets,
