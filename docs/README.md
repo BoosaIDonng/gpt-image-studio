@@ -12,6 +12,13 @@
 - [Responses API 与流式图片预览开发方案](responses-streaming-plan.md)：浏览器直连模式下接入 `Responses API` 与流式图片预览的设计和实施计划。
 - [备份格式](backup-format.md)：当前备份 ZIP 结构和恢复行为。
 - [用户行为日志计划](analytics-event-logging-plan.md)：后续本地行为日志系统方案。
+- [UI 改造参考与选型](designs/2026-09-09-ui-redesign-reference-design.md)：UI token 化、组件原语和布局改造的当前方案。
+- [UI 改造实施契约](plans/2026-09-09-ui-redesign-implementation.md)：本次改造的范围、边界、验收标准与已完成的运行时验证记录。
+
+## 调研记录
+
+- [开源对标总结](reviews/2026-09-10-open-source-benchmark-review.md)：与 GitHub 上画布类 / Agent 类开源项目的对比，以及可借鉴项与优先级。含调研目标、适用范围、许可证提醒。
+- [功能层优化方案](reviews/2026-09-10-functional-optimization-review.md)：准确度 / 速度 / 工作流三个方向的优化目标、验收标准、现状问题、风险与落地顺序，标注了代码位置。
 
 ## 架构决策
 

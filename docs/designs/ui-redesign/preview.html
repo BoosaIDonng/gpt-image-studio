@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UI redesign — static reference</title>
+    <link rel="stylesheet" href="/src/style.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font:
+          14px/1.5 -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+      }
+      button {
+        cursor: pointer;
+        min-height: 36px;
+        padding: 6px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--cupertino-separator);
+        background: var(--cupertino-grouped-background);
+        color: var(--cupertino-label);
+      }
+      .primary {
+        background: #0068db;
+        color: white;
+        border-color: transparent;
+      }
+      .shell {
+        display: flex;
+        height: 100dvh;
+      }
+      .sidebar {
+        width: 280px;
+        padding: 16px;
+        border-right: 1px solid var(--cupertino-separator);
+      }
+      .sidebar p {
+        padding: 10px 12px;
+      }
+      .selected {
+        background: var(--cupertino-grouped-background);
+        border-radius: 12px;
+      }
+      .workspace {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        min-height: 64px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--cupertino-separator);
+      }
+      header strong {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .messages {
+        padding: 24px;
+        overflow: auto;
+        flex: 1;
+      }
+      .bubble {
+        background: var(--cupertino-secondary-fill);
+        padding: 16px;
+        border-radius: 16px;
+        margin-bottom: 24px;
+      }
+      .results {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      img {
+        width: 100%;
+        aspect-ratio: 4/3;
+        object-fit: contain;
+        background: var(--cupertino-secondary-fill);
+        border-radius: 12px;
+      }
+      .muted {
+        color: var(--cupertino-secondary-label);
+        font-size: 12px;
+      }
+      .composer {
+        padding: 16px;
+        border-top: 1px solid var(--cupertino-separator);
+      }
+      .composer div {
+        background: var(--cupertino-grouped-background);
+        border: 1px solid var(--cupertino-separator);
+        border-radius: 18px;
+        padding: 14px;
+      }
+      textarea {
+        background: transparent;
+        width: 100%;
+        border: 0;
+        resize: none;
+        color: inherit;
+        font: inherit;
+      }
+      .toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .library {
+        width: 360px;
+        padding: 16px;
+        border-left: 1px solid var(--cupertino-separator);
+        overflow: auto;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 16px;
+      }
+      article {
+        border: 1px solid var(--cupertino-separator);
+        border-radius: 16px;
+        padding: 8px;
+        min-width: 0;
+        background: var(--cupertino-grouped-background);
+      }
+      article.active {
+        border: 2px solid #0068db;
+        padding: 7px;
+      }
+      article p {
+        margin: 8px 0;
+        overflow-wrap: anywhere;
+      }
+      article button {
+        padding: 4px 7px;
+        font-size: 12px;
+      }
+      .library .toolbar {
+        margin-top: 12px;
+      }
+      .list {
+        display: block;
+      }
+      .list article {
+        margin-bottom: 10px;
+      }
+      @media (max-width: 1279px) {
+        .sidebar,
+        .library {
+          display: none;
+        }
+        .library.open,
+        .sidebar.open {
+          display: block;
+          position: fixed;
+          inset: 0 0 0 auto;
+          z-index: 10;
+          width: min(90vw, 360px);
+          background: var(--cupertino-background);
+          box-shadow: 0 0 0 100vmax #0006;
+        }
+        .sidebar.open {
+          inset: 0 auto 0 0;
+        }
+      }
+      @media (max-width: 600px) {
+        .messages {
+          padding: 16px;
+        }
+        .results {
+          grid-template-columns: 1fr;
+        }
+        button {
+          min-height: 44px;
+        }
+        header {
+          gap: 6px;
+          padding: 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <aside class="sidebar">
+        <div class="toolbar"><strong>GPT Image Studio</strong><button data-close>收起</button></div>
+        <p class="muted">创作工作台</p>
+        <button class="primary">＋ 新建会话</button>
+        <p class="selected">山间晨雾 · 场景概念</p>
+        <p>产品摄影</p>
+        <p>海报设计</p>
+      </aside>
+      <section class="workspace">
+        <header>
+          <button id="conversations">会话</button><strong>山间晨雾</strong
+          ><button id="theme">明暗</button><button id="library">图片库</button>
+        </header>
+        <div class="messages">
+          <div class="bubble">
+            <strong>你</strong>
+            <p>以柔和的晨光绘制山间风景，保留远山的层次与开阔留白。</p>
+          </div>
+          <p class="muted">Image Studio · 已完成</p>
+          <div class="results">
+            <article>
+              <img src="./sample.svg" alt="山间晨光示例" />
+              <p>晨光山谷</p>
+              <button>继续编辑</button>
+            </article>
+            <article>
+              <img src="./sample.svg" style="filter: hue-rotate(25deg)" alt="山谷色彩变体" />
+              <p>色彩变体</p>
+              <button>继续编辑</button>
+            </article>
+          </div>
+        </div>
+        <footer class="composer">
+          <div>
+            <textarea aria-label="图片需求" placeholder="描述你想生成的图片…" rows="2"></textarea
+            ><span class="toolbar"
+              ><span class="muted">＋ 引用图片　　尺寸：自动　　数量：2</span
+              ><button class="primary">发送</button></span
+            >
+          </div>
+        </footer>
+      </section>
+      <aside class="library">
+        <div class="toolbar"><strong>图片库 · 3 张</strong><button data-close>收起</button></div>
+        <div class="toolbar">
+          <button class="primary">当前会话</button><button>全部图片</button>
+        </div>
+        <div class="toolbar">
+          <span class="muted">作品</span><button id="view">网格 / 列表</button>
+        </div>
+        <div class="grid">
+          <article class="active">
+            <img src="./sample.svg" alt="晨光山谷" />
+            <p>晨光山谷</p>
+            <div class="toolbar"><button>下载</button><button>引用</button></div>
+          </article>
+          <article>
+            <img src="./sample.svg" style="aspect-ratio: 3/4" alt="竖幅山谷" />
+            <p>竖幅山谷</p>
+            <div class="toolbar"><button>下载</button><button>引用</button></div>
+          </article>
+          <article>
+            <img src="./sample.svg" style="aspect-ratio: 16/9" alt="宽幅景观" />
+            <p>宽幅景观</p>
+            <div class="toolbar"><button>下载</button><button>引用</button></div>
+          </article>
+        </div>
+      </aside>
+    </main>
+    <script type="module">
+      document.querySelector("#theme").onclick = () =>
+        document.documentElement.classList.toggle("dark");
+      for (const name of ["conversations", "library"])
+        document.querySelector(`#${name}`).onclick = () => {
+          const panel = document.querySelector(name === "conversations" ? ".sidebar" : ".library");
+          if (innerWidth < 1280) {
+            document.querySelectorAll("aside").forEach((el) => {
+              if (el !== panel) el.classList.remove("open");
+            });
+            panel.classList.toggle("open");
+          } else panel.hidden = !panel.hidden;
+        };
+      document.querySelectorAll("[data-close]").forEach(
+        (button) =>
+          (button.onclick = () => {
+            button.closest("aside").classList.remove("open");
+            if (innerWidth >= 1280) button.closest("aside").hidden = true;
+          }),
+      );
+      document.querySelector("#view").onclick = () =>
+        document.querySelector(".grid").classList.toggle("list");
+    </script>
+  </body>
+</html>
