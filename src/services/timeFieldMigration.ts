@@ -1,6 +1,6 @@
 import type { Conversation, ImageAsset, Message } from "../types/studio";
 import { isoTimestamp } from "../shared/dateTime";
-import { bulkPut, getAllFromStore, STORE_NAMES } from "./db";
+import { bulkPut, getAllFromStore, getFromStore, putInStore, STORE_NAMES } from "./db";
 
 type LegacyConversation = Conversation & {
   createdAtMs?: number;
@@ -16,6 +16,15 @@ type LegacyImageAsset = ImageAsset & {
   updatedAtMs?: number;
 };
 
+export const TIME_FIELD_MIGRATION_VERSION = 1;
+
+const MIGRATION_SETTINGS_KEY = "app";
+
+type SettingsRecord = {
+  key: string;
+  value: { timeFieldMigrationVersion?: number };
+};
+
 export async function migrateLegacyTimeFields() {
   const [conversations, messages, imageAssets] = await Promise.all([
     getAllFromStore<LegacyConversation>(STORE_NAMES.conversations),
@@ -29,15 +38,31 @@ export async function migrateLegacyTimeFields() {
   const migratedMessages = messages.map(normalizeMessageTimeFields).filter(isPresent);
   const migratedImages = imageAssets.map(normalizeImageTimeFields).filter(isPresent);
 
-  if (!migratedConversations.length && !migratedMessages.length && !migratedImages.length) {
-    return;
+  if (migratedConversations.length || migratedMessages.length || migratedImages.length) {
+    await Promise.all([
+      bulkPut(STORE_NAMES.conversations, migratedConversations),
+      bulkPut(STORE_NAMES.messages, migratedMessages),
+      bulkPut(STORE_NAMES.imageAssets, migratedImages),
+    ]);
   }
 
-  await Promise.all([
-    bulkPut(STORE_NAMES.conversations, migratedConversations),
-    bulkPut(STORE_NAMES.messages, migratedMessages),
-    bulkPut(STORE_NAMES.imageAssets, migratedImages),
-  ]);
+  // Stamp the version only after writes succeed, so a failed migration is
+  // retried on the next startup instead of being silently skipped forever.
+  await stampTimeFieldMigrationVersion();
+}
+
+async function stampTimeFieldMigrationVersion() {
+  try {
+    const record = await getFromStore<SettingsRecord>(STORE_NAMES.settings, MIGRATION_SETTINGS_KEY);
+    if (record?.value?.timeFieldMigrationVersion === TIME_FIELD_MIGRATION_VERSION) return;
+    await putInStore<SettingsRecord>(STORE_NAMES.settings, {
+      key: MIGRATION_SETTINGS_KEY,
+      value: { ...record?.value, timeFieldMigrationVersion: TIME_FIELD_MIGRATION_VERSION },
+    });
+  } catch (error) {
+    // Stamping is best-effort; worst case the (cheap) migration runs again.
+    console.warn("[migration] 无法写入迁移版本标记", error);
+  }
 }
 
 export function normalizeConversationTimeFields(record: LegacyConversation) {

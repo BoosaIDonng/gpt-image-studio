@@ -4,6 +4,10 @@ import { computed, ref, shallowRef, watch } from "vue";
 import type { GenerationJob } from "../features/generation/generationJobTypes";
 import type { ImageClient } from "../features/generation/imageClients/imageClient";
 import { normalizeImageCount } from "../services/generationParams";
+import { runWithConcurrency } from "../shared/concurrency";
+import { isNetworkError, isSafeToAutoRetry } from "../services/networkRetry";
+import { matchPromptWordbankTerms } from "../services/promptWordbankMatcher";
+import { recordWordbankTermHits } from "../services/wordbankWeights";
 import {
   deleteImageAsset,
   deleteImageBlob,
@@ -11,9 +15,9 @@ import {
   saveImageAsset,
   saveImageBlob,
 } from "../services/imageAssets";
+import { decodeBase64Image } from "../services/imageDecode";
 import { readImageDimensions } from "../services/imageMetadata";
 import { expandPrompt } from "../services/promptExpander";
-import { base64ToBlob } from "../services/imagesApi";
 import { saveMessage } from "../services/messages";
 import { isoTimestamp, timestampFromCreatedAt } from "../shared/dateTime";
 import { formatError, isApiConfigurationError } from "../shared/errors";
@@ -82,8 +86,12 @@ type GenerationStoreContext = {
 };
 
 export const useGenerationStore = defineStore("generation", () => {
+  /** Concurrent requests per message batch; higher values trigger upstream 429s whose backoff makes total time worse. */
+  const GENERATION_CONCURRENCY = 3;
   const jobs = shallowRef<GenerationJob[]>([]);
   const partialPreviewUrls = ref<Record<string, string>>({});
+  /** Coalescing state for streamed partial previews: only the newest frame decodes. */
+  const partialPreviewDecodes = new Map<string, { busy: boolean; latest?: string }>();
   let context: GenerationStoreContext | null = null;
   const messageSaveQueues = new Map<string, Promise<unknown>>();
   const requestControllers = new Map<string, AbortController>();
@@ -412,9 +420,12 @@ export const useGenerationStore = defineStore("generation", () => {
         const assistantMessage = findMessage(job.assistantMessageId);
         if (!assistantMessage || assistantMessage.status !== "pending") return;
 
-        updatePartialPreview(
+        // Streaming sends many intermediate frames; coalesce decodes so only
+        // the newest frame is processed and the main thread stays free.
+        schedulePartialPreview(
           job.assistantMessageId,
-          base64ToBlob(event.b64Json, outputFormatToMimeType(params.outputFormat)),
+          event.b64Json,
+          outputFormatToMimeType(params.outputFormat),
         );
       };
       const imageResults = job.referencedImageIds.length
@@ -433,6 +444,7 @@ export const useGenerationStore = defineStore("generation", () => {
         : await requestImageGeneration(job, params, onPartialImage, signal);
       if (signal.aborted) return;
       const resultList = Array.isArray(imageResults) ? imageResults : [imageResults];
+      recordWordbankHitsForJob(job, resultList);
       const now = Date.now();
       const generationDurationMs = Math.max(0, now - job.startedAtMs);
       const savedImages = await Promise.all(
@@ -463,14 +475,20 @@ export const useGenerationStore = defineStore("generation", () => {
         saveTasks.push(enqueueMessageSave(assistantMessage));
       }
       await Promise.all(saveTasks);
-      await input.value.refreshStorageUsage();
     } catch (error) {
       if (signal.aborted) return;
       const rawMessage = formatError(error);
+      // Distinguish "the upstream rejected the request" (auto-retried) from
+      // "the connection dropped mid-flight" (outcome unknown, may have been
+      // billed) — the latter is surfaced to the user instead of retried.
+      const unconfirmedOutcome = isNetworkError(error) && !isSafeToAutoRetry(error);
+      const baseMessage = unconfirmedOutcome
+        ? `${rawMessage}\n\n连接中断，结果未知：请求可能已到达上游并开始计费，可稍后手动重试。`
+        : rawMessage;
       const moderationAdvice = formatModerationAdvice(
         analyzeModerationRejection(rawMessage, job.prompt),
       );
-      const message = moderationAdvice ? `${rawMessage}\n\n${moderationAdvice}` : rawMessage;
+      const message = moderationAdvice ? `${baseMessage}\n\n${moderationAdvice}` : baseMessage;
       if (isApiConfigurationError(error)) {
         input.value.onApiConfigurationError?.(error);
       }
@@ -484,7 +502,6 @@ export const useGenerationStore = defineStore("generation", () => {
           input.value.onStorageError(saveError);
         });
       }
-      await input.value.refreshStorageUsage();
     }
   }
 
@@ -533,8 +550,8 @@ export const useGenerationStore = defineStore("generation", () => {
   ): Promise<{ blob: Blob; imageAsset: ImageAsset & { blobKey: string } }> {
     const createdAt = isoTimestamp();
     const mimeType = imageResult.mimeType ?? outputFormatToMimeType(params.outputFormat);
-    const blob = base64ToBlob(imageResult.b64Json, mimeType);
-    const dimensions = await readImageDimensions(blob);
+    // Worker-offloaded decode: base64 → Blob + pixel dimensions in one round trip.
+    const { blob, dimensions } = await decodeBase64Image(imageResult.b64Json, mimeType);
     const blobKey = createId("blob");
     const imageAsset: ImageAsset & { blobKey: string } = {
       id: createId("img"),
@@ -737,7 +754,36 @@ export const useGenerationStore = defineStore("generation", () => {
     };
   }
 
+  function schedulePartialPreview(messageId: string, b64Json: string, mimeType: string) {
+    let state = partialPreviewDecodes.get(messageId);
+    if (!state) {
+      state = { busy: false };
+      partialPreviewDecodes.set(messageId, state);
+    }
+    if (state.busy) {
+      state.latest = b64Json;
+      return;
+    }
+
+    state.busy = true;
+    void decodeBase64Image(b64Json, mimeType)
+      .then(({ blob }) => {
+        const message = findMessage(messageId);
+        if (message?.status === "pending") updatePartialPreview(messageId, blob);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        state.busy = false;
+        if (state.latest) {
+          const next = state.latest;
+          state.latest = undefined;
+          schedulePartialPreview(messageId, next, mimeType);
+        }
+      });
+  }
+
   function clearPartialPreview(messageId: string) {
+    partialPreviewDecodes.delete(messageId);
     const previousUrl = partialPreviewUrls.value[messageId];
     if (!previousUrl) return;
 
@@ -806,8 +852,48 @@ export const useGenerationStore = defineStore("generation", () => {
     requestControllers.get(messageId)?.abort();
     const controller = new AbortController();
     requestControllers.set(messageId, controller);
-    await Promise.all(createdJobs.map((job) => runImageRequest(job, controller.signal)));
+    // Bounded concurrency instead of firing every request at once: unlimited
+    // parallelism triggered 429s whose exponential backoff made total wall
+    // time worse than a small gate. Queue progress is visible via the
+    // message's pending label, which updates as each job settles.
+    await runWithConcurrency(createdJobs, GENERATION_CONCURRENCY, (job) =>
+      runImageRequest(job, controller.signal),
+    );
+    // Refresh storage usage once per batch instead of once per job.
+    await input.value.refreshStorageUsage();
     if (requestControllers.get(messageId) === controller) requestControllers.delete(messageId);
+  }
+
+  /**
+   * Persist which wordbank terms contributed to a successful generation
+   * ("个人词库"): retrieval later boosts terms with a hit history.
+   */
+  function recordWordbankHitsForJob(job: GenerationJob, results: Array<{ requestPrompt?: string; revisedPrompt?: string }>) {
+    const wordbanks = job.promptRequestSettings.promptWordbanks;
+    if (!wordbanks) return;
+
+    const terms: string[] = [];
+    const prompts = [
+      job.prompt,
+      ...results.map((result) => result.requestPrompt ?? ""),
+      ...results.map((result) => result.revisedPrompt ?? ""),
+    ].filter(Boolean);
+
+    for (const prompt of prompts) {
+      try {
+        matchPromptWordbankTerms({ prompt, mode: "adult", wordbanks, seed: prompt }).matchedTerms.forEach(
+          (term) => {
+            if (!terms.includes(term)) terms.push(term);
+          },
+        );
+      } catch {
+        // Best-effort: matching must never break a successful generation.
+      }
+    }
+
+    if (terms.length) {
+      void recordWordbankTermHits(terms).catch(() => undefined);
+    }
   }
 
   function cancelMessageGeneration(messageId: string) {

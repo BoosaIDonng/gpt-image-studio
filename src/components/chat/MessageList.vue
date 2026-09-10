@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useNow } from "../../composables/useNow";
-import { timestampFromCreatedAt } from "../../shared/dateTime";
 import type { ImageAsset, Message } from "../../types/studio";
 import MessageItem from "./MessageItem.vue";
 
@@ -39,19 +38,28 @@ async function scrollToBottom() {
   });
 }
 
-function sourcePromptFor(message: Message) {
-  if (message.role !== "assistant") return "";
-  return (
-    [...props.messages]
-      .reverse()
-      .find(
-        (item) =>
-          item.conversationId === message.conversationId &&
-          item.role === "user" &&
-          timestampFromCreatedAt(item) <= timestampFromCreatedAt(message),
-      )?.content ?? ""
-  );
-}
+/**
+ * Assistant messages show the user prompt they answered. Build the mapping in a
+ * single forward pass; previously every message scanned the whole list per render.
+ */
+const sourcePromptById = computed(() => {
+  const prompts = new Map<string, string>();
+  const latestUserPrompt = new Map<string, string>();
+
+  for (const message of props.messages) {
+    if (message.role === "user") {
+      latestUserPrompt.set(message.conversationId, message.content);
+      continue;
+    }
+
+    if (message.role === "assistant") {
+      const prompt = latestUserPrompt.get(message.conversationId);
+      if (prompt !== undefined) prompts.set(message.id, prompt);
+    }
+  }
+
+  return prompts;
+});
 
 onMounted(scrollToBottom);
 
@@ -74,7 +82,7 @@ watch(
         :image-by-id="imageById"
         :message="message"
         :now-ms="now"
-        :source-prompt="sourcePromptFor(message)"
+        :source-prompt="sourcePromptById.get(message.id) ?? ''"
         @attach-image="emit('attachImage', $event)"
         @continue-edit="emit('continueEdit', $event)"
         @copy-text="emit('copyText', $event)"
