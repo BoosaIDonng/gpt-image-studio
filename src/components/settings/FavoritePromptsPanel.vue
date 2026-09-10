@@ -77,15 +77,15 @@ function formatUpdatedAt(dateString: string) {
   <section class="flex min-h-0 flex-1 flex-col" aria-labelledby="favoritePromptsSettingsTitle">
     <div class="flex shrink-0 items-start justify-between gap-3">
       <div>
-        <h3 id="favoritePromptsSettingsTitle" class="text-base font-semibold text-gray-900">
+        <h3 id="favoritePromptsSettingsTitle" class="text-base font-semibold text-content">
           常用提示词
         </h3>
-        <p class="mt-1 text-sm leading-relaxed text-gray-500">
+        <p class="mt-1 text-sm leading-relaxed text-content-muted">
           在输入框输入 @ 后，可以用上下键选择，按空格或回车插入。
         </p>
       </div>
       <button
-        class="shrink-0 cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+        class="shrink-0 cursor-pointer rounded-card border border-border-subtle bg-surface px-3 py-1.5 text-sm font-medium text-content transition-colors hover:bg-surface-hover"
         type="button"
         @click="startCreate"
       >
@@ -97,7 +97,7 @@ function formatUpdatedAt(dateString: string) {
       <div class="min-h-0 space-y-2 overflow-y-auto pr-1">
         <div
           v-if="!sortedPrompts.length"
-          class="rounded-lg border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-gray-400"
+          class="rounded-card border border-dashed border-border-subtle px-4 py-8 text-center text-sm text-content-tertiary"
         >
           还没有常用提示词
         </div>
@@ -105,27 +105,27 @@ function formatUpdatedAt(dateString: string) {
         <article
           v-for="prompt in sortedPrompts"
           :key="prompt.id"
-          class="rounded-lg border border-gray-200 px-3 py-2.5"
+          class="rounded-card border border-border-subtle px-3 py-2.5"
         >
           <div class="mb-1.5 flex items-start justify-between gap-3">
             <div class="min-w-0">
-              <h4 class="truncate text-sm font-medium text-gray-800">
+              <h4 class="truncate text-sm font-medium text-content">
                 {{ prompt.title }}
               </h4>
-              <time class="text-xs text-gray-400">
+              <time class="text-xs text-content-tertiary">
                 {{ formatUpdatedAt(prompt.updatedAt) }}
               </time>
             </div>
             <div class="flex shrink-0 items-center gap-1">
               <button
-                class="cursor-pointer rounded-md px-2 py-1 text-xs text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
+                class="cursor-pointer rounded-md px-2 py-1 text-xs text-content-muted transition-colors hover:bg-surface-hover hover:text-content"
                 type="button"
                 @click="startEdit(prompt)"
               >
                 编辑
               </button>
               <button
-                class="cursor-pointer rounded-md px-2 py-1 text-xs text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600"
+                class="cursor-pointer rounded-md px-2 py-1 text-xs text-content-muted transition-colors hover:bg-red-50 hover:text-red-600"
                 type="button"
                 @click="deletePrompt(prompt.id)"
               >
@@ -134,7 +134,7 @@ function formatUpdatedAt(dateString: string) {
             </div>
           </div>
           <p
-            class="line-clamp-3 whitespace-pre-wrap break-words text-xs leading-relaxed text-gray-600"
+            class="line-clamp-3 whitespace-pre-wrap break-words text-xs leading-relaxed text-content"
           >
             {{ prompt.text }}
           </p>
@@ -142,47 +142,53 @@ function formatUpdatedAt(dateString: string) {
       </div>
 
       <form
-        class="flex h-80 flex-col rounded-lg border border-gray-200 bg-white p-3 lg:self-start"
+        class="flex h-80 flex-col rounded-card border border-border-subtle bg-surface p-3 lg:self-start"
         @submit.prevent="saveDraft"
       >
-        <h4 class="text-sm font-medium text-gray-800">
+        <h4 class="text-sm font-medium text-content">
           {{ isEditingExisting ? "编辑提示词" : "新增提示词" }}
         </h4>
         <div class="mt-3 flex min-h-0 flex-1 flex-col gap-3">
           <div>
-            <label class="mb-1 block text-xs font-medium text-gray-500" for="favoritePromptTitle">
+            <label
+              class="mb-1 block text-xs font-medium text-content-muted"
+              for="favoritePromptTitle"
+            >
               名称
             </label>
             <input
               id="favoritePromptTitle"
               v-model="draftTitle"
-              class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-gray-500"
+              class="w-full rounded-card border border-border-subtle bg-surface px-3 py-2 text-sm text-content outline-none transition-colors focus:border-border-subtle"
               placeholder="例如：产品摄影"
               type="text"
             />
           </div>
           <div class="flex min-h-0 flex-1 flex-col">
-            <label class="mb-1 block text-xs font-medium text-gray-500" for="favoritePromptText">
+            <label
+              class="mb-1 block text-xs font-medium text-content-muted"
+              for="favoritePromptText"
+            >
               提示词
             </label>
             <textarea
               id="favoritePromptText"
               v-model="draftText"
-              class="min-h-0 flex-1 resize-none rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm leading-relaxed text-gray-900 outline-none transition-colors focus:border-gray-500"
+              class="min-h-0 flex-1 resize-none rounded-card border border-border-subtle bg-surface px-3 py-2 text-sm leading-relaxed text-content outline-none transition-colors focus:border-border-subtle"
               placeholder="输入要复用的提示词内容"
             />
           </div>
         </div>
         <div class="mt-3 flex shrink-0 justify-end gap-2">
           <button
-            class="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            class="cursor-pointer rounded-card border border-border-subtle bg-surface px-3 py-1.5 text-sm font-medium text-content transition-colors hover:bg-surface-hover"
             type="button"
             @click="resetDraft"
           >
             取消
           </button>
           <button
-            class="cursor-pointer rounded-lg bg-black px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
+            class="cursor-pointer rounded-card bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent-pressed disabled:cursor-not-allowed disabled:opacity-40"
             :disabled="!canSave"
             type="submit"
           >

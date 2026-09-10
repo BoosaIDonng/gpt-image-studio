@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import StudioPanel from "./StudioPanel.vue";
+import { useDesktopLayout } from "../../composables/useDesktopLayout";
+const isDesktop = useDesktopLayout();
 import { useComposerStore } from "../../stores/composerStore";
 import { useConversationsStore } from "../../stores/conversationsStore";
 import { useGenerationStore } from "../../stores/generationStore";
@@ -34,31 +37,39 @@ function closeSidebar() {
 </script>
 
 <template>
-  <div
-    v-if="composer.isConversationSidebarOpen"
-    class="fixed inset-0 z-20 bg-black/35 2xl:hidden"
-    role="presentation"
-    @click="closeSidebar"
-  ></div>
-  <aside
-    :class="[
-      'cupertino-sidebar flex w-65 shrink-0 flex-col max-2xl:fixed max-2xl:inset-y-0 max-2xl:left-0 max-2xl:z-30 max-2xl:transition-transform max-2xl:duration-200',
-      composer.isConversationSidebarOpen ? 'max-2xl:translate-x-0' : 'max-2xl:-translate-x-full',
-    ]"
-    aria-label="历史会话"
+  <StudioPanel
+    id="conversation-panel"
+    label="历史会话"
+    side="left"
+    :open="composer.isConversationSidebarOpen"
+    :collapsed="composer.isConversationSidebarCollapsed"
+    :width="composer.sidebarWidth"
+    @reset-mobile="composer.setConversationSidebarOpen(false)"
+    @close="isDesktop ? composer.setConversationSidebarCollapsed(true) : closeSidebar()"
   >
+    <div class="flex items-center justify-between px-4 pt-3 text-xs text-content-muted">
+      <span>创作工作台</span>
+      <button
+        class="ui-button min-h-9 rounded-card px-2 hover:bg-surface-hover"
+        type="button"
+        aria-label="收起会话侧栏"
+        @click="isDesktop ? composer.setConversationSidebarCollapsed(true) : closeSidebar()"
+      >
+        收起
+      </button>
+    </div>
     <div class="flex items-center justify-between px-3 pt-3 pb-1">
       <div class="flex min-w-0 items-center gap-2 px-2 py-2">
         <img class="h-8 w-8 shrink-0" src="/favicon.svg" alt="" aria-hidden="true" />
         <div class="min-w-0">
-          <div class="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
+          <div class="truncate text-sm font-semibold text-content dark:text-content">
             GPT Image Studio
           </div>
-          <div class="truncate text-xs text-gray-500">BoosaIDonng</div>
+          <div class="truncate text-xs text-content-muted">BoosaIDonng</div>
         </div>
       </div>
       <button
-        class="cursor-pointer rounded-lg p-2 text-sm text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+        class="cursor-pointer rounded-card p-2 text-sm text-content transition-colors hover:bg-surface-hover hover:text-content dark:text-content-tertiary dark:hover:bg-surface-hover dark:hover:text-content"
         :aria-label="`主题: ${theme === 'light' ? '浅色' : theme === 'dark' ? '深色' : '跟随系统'}`"
         :title="`主题: ${theme === 'light' ? '浅色' : theme === 'dark' ? '深色' : '跟随系统'}（点击切换）`"
         type="button"
@@ -115,7 +126,7 @@ function closeSidebar() {
         </svg>
       </button>
       <button
-        class="cursor-pointer rounded-lg p-2 text-sm text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+        class="cursor-pointer rounded-card p-2 text-sm text-content transition-colors hover:bg-surface-hover hover:text-content dark:text-content-tertiary dark:hover:bg-surface-hover dark:hover:text-content"
         aria-label="打开设置"
         type="button"
         @click="emit('openSettings')"
@@ -140,7 +151,7 @@ function closeSidebar() {
 
     <div class="px-3 pt-2 pb-1">
       <button
-        class="flex w-full cursor-pointer items-center gap-1.5 rounded-lg bg-blue-500 px-3 py-2.5 text-left text-sm font-medium text-white transition-colors hover:bg-blue-600"
+        class="flex w-full cursor-pointer items-center gap-1.5 rounded-card bg-blue-500 px-3 py-2.5 text-left text-sm font-medium text-white transition-colors hover:bg-blue-600"
         type="button"
         @click="
           emit('createConversation');
@@ -170,13 +181,13 @@ function closeSidebar() {
         <input
           id="conversationSearch"
           v-model="searchText"
-          class="w-full rounded-lg border border-gray-200 bg-gray-100 py-2 pl-3 pr-9 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-500 focus:border-blue-400 focus:bg-white dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+          class="w-full rounded-card border border-border-subtle bg-surface-muted py-2 pl-3 pr-9 text-sm text-content outline-none transition-colors placeholder:text-content-muted focus:border-blue-400 focus:bg-surface dark:border-border-subtle dark:bg-surface dark:text-content"
           placeholder="查找会话..."
           type="text"
         />
         <button
           v-if="searchText"
-          class="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded p-1 text-gray-500 transition-colors hover:bg-gray-200 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+          class="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded p-1 text-content-muted transition-colors hover:bg-surface-hover hover:text-content dark:hover:bg-surface-hover dark:hover:text-content"
           aria-label="清空搜索"
           type="button"
           @click="searchText = ''"
@@ -191,17 +202,20 @@ function closeSidebar() {
     </div>
 
     <nav class="flex-1 overflow-y-auto px-2 py-1">
-      <div v-if="!filteredConversations.length" class="px-3 py-8 text-center text-sm text-gray-500">
+      <div
+        v-if="!filteredConversations.length"
+        class="px-3 py-8 text-center text-sm text-content-muted"
+      >
         没有找到会话
       </div>
       <div
         v-for="conversation in filteredConversations"
         :key="conversation.id"
         :class="[
-          'group mb-0.5 flex items-center gap-1 rounded-lg pr-1 transition-colors',
+          'group mb-0.5 flex items-center gap-1 rounded-card pr-1 transition-colors',
           conversation.id === conversations.activeConversationId
-            ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-800 dark:text-gray-100'
-            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200',
+            ? 'bg-surface text-content shadow-sm dark:bg-surface dark:text-content'
+            : 'text-content hover:bg-surface-hover hover:text-content dark:text-content-tertiary dark:hover:bg-surface-hover dark:hover:text-content',
         ]"
       >
         <button
@@ -221,7 +235,7 @@ function closeSidebar() {
           {{ generation.pendingJobCountByConversation[conversation.id] }}
         </span>
         <button
-          class="shrink-0 cursor-pointer rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200 hover:text-gray-900 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 dark:hover:text-gray-100"
+          class="shrink-0 cursor-pointer rounded-md bg-surface-muted px-2 py-1 text-xs font-medium text-content transition-colors hover:bg-surface-hover hover:text-content dark:bg-surface dark:text-content dark:hover:bg-surface-hover dark:hover:text-content"
           type="button"
           aria-label="重命名会话"
           title="重命名会话"
@@ -241,9 +255,23 @@ function closeSidebar() {
       </div>
     </nav>
 
-    <div class="flex items-center gap-2 border-t border-gray-200 p-3 dark:border-gray-700">
+    <div
+      class="flex items-center gap-2 border-t border-border-subtle p-3 dark:border-border-subtle"
+    >
       <img class="h-5 w-5 shrink-0" src="/favicon.svg" alt="" aria-hidden="true" />
-      <div class="text-xs text-gray-500">GPT Image Studio - BoosaIDonng</div>
+      <div class="text-xs text-content-muted">GPT Image Studio - BoosaIDonng</div>
     </div>
-  </aside>
+    <label v-if="isDesktop" class="flex items-center gap-2 px-4 pb-3 text-xs text-content-muted">
+      侧栏宽度
+      <input
+        class="min-w-0 flex-1"
+        type="range"
+        min="240"
+        max="360"
+        step="10"
+        :value="composer.sidebarWidth"
+        @input="composer.setSidebarWidth(Number(($event.target as HTMLInputElement).value))"
+      />
+    </label>
+  </StudioPanel>
 </template>

@@ -140,7 +140,7 @@ onBeforeUnmount(() => {
     <span
       v-if="isVisible"
       ref="tooltipRef"
-      class="fixed z-50 max-w-[calc(100vw-16px)] rounded-lg bg-gray-800 px-3 py-1.5 text-[11px] leading-snug text-white shadow-lg"
+      class="fixed z-50 max-w-[calc(100vw-16px)] rounded-card bg-[var(--cupertino-tooltip-surface)] px-3 py-1.5 text-[11px] leading-snug text-[var(--cupertino-tooltip-content)] shadow-lg"
       :class="[
         hoverable ? 'pointer-events-auto' : 'pointer-events-none',
         multiline
@@ -153,11 +153,13 @@ onBeforeUnmount(() => {
     >
       <span
         class="absolute border-4 border-transparent"
-        :style="{ left: `${position.arrowLeft}px` }"
-        :class="[
-          placement.y === 'bottom' ? 'bottom-full border-b-gray-800' : 'top-full border-t-gray-800',
-          '-translate-x-1/2',
+        :style="[
+          { left: `${position.arrowLeft}px` },
+          placement.y === 'bottom'
+            ? { borderBottomColor: 'var(--cupertino-tooltip-surface)' }
+            : { borderTopColor: 'var(--cupertino-tooltip-surface)' },
         ]"
+        :class="[placement.y === 'bottom' ? 'bottom-full' : 'top-full', '-translate-x-1/2']"
       ></span>
       {{ text }}
     </span>

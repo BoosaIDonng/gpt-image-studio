@@ -21,7 +21,7 @@ function selectRatioMode() {
 <template>
   <div
     v-if="activeEditor"
-    class="absolute bottom-full left-1/2 z-20 mb-2 w-max max-w-[calc(100vw-3rem)] -translate-x-1/2 rounded-xl border border-gray-200 bg-white p-2 shadow-lg"
+    class="absolute bottom-full left-1/2 z-20 mb-2 w-max max-w-[calc(100vw-3rem)] -translate-x-1/2 rounded-panel border border-border-subtle bg-surface p-2 shadow-lg"
     @click.stop
   >
     <div v-if="activeEditor === 'size'" class="space-y-2">
@@ -31,8 +31,8 @@ function selectRatioMode() {
             :class="[
               'cursor-pointer rounded border px-1.5 py-0.5 text-xs transition-colors',
               settings.activeSizePreset === 'auto'
-                ? 'border-gray-400 bg-gray-100 text-gray-900'
-                : 'border-gray-200 text-gray-400 hover:bg-gray-50',
+                ? 'border-border-subtle bg-surface-muted text-content'
+                : 'border-border-subtle text-content-tertiary hover:bg-surface-hover',
             ]"
             type="button"
             @click="settings.applySizePreset('auto')"
@@ -43,8 +43,8 @@ function selectRatioMode() {
             :class="[
               'cursor-pointer rounded border px-1.5 py-0.5 text-xs transition-colors',
               isRatioMode
-                ? 'border-gray-400 bg-gray-100 text-gray-900'
-                : 'border-gray-200 text-gray-400 hover:bg-gray-50',
+                ? 'border-border-subtle bg-surface-muted text-content'
+                : 'border-border-subtle text-content-tertiary hover:bg-surface-hover',
             ]"
             type="button"
             @click="selectRatioMode"
@@ -56,8 +56,8 @@ function selectRatioMode() {
             :class="[
               'cursor-pointer rounded border px-1.5 py-0.5 text-xs transition-colors',
               settings.activeSizePreset === 'custom'
-                ? 'border-gray-400 bg-gray-100 text-gray-900'
-                : 'border-gray-200 text-gray-400 hover:bg-gray-50',
+                ? 'border-border-subtle bg-surface-muted text-content'
+                : 'border-border-subtle text-content-tertiary hover:bg-surface-hover',
             ]"
             type="button"
             @click="settings.applySizePreset('custom')"
@@ -72,8 +72,8 @@ function selectRatioMode() {
             :class="[
               'cursor-pointer rounded border px-1.5 py-0.5 text-xs transition-colors',
               settings.sizeResolution === resolution.value
-                ? 'border-gray-400 bg-gray-100 text-gray-900'
-                : 'border-gray-200 text-gray-400 hover:bg-gray-50',
+                ? 'border-border-subtle bg-surface-muted text-content'
+                : 'border-border-subtle text-content-tertiary hover:bg-surface-hover',
             ]"
             type="button"
             @click="settings.applySizeResolution(resolution.value)"
@@ -90,8 +90,8 @@ function selectRatioMode() {
           :class="[
             'cursor-pointer rounded border px-1.5 py-1 text-xs transition-colors',
             settings.activeSizePreset === ratio.value
-              ? 'border-gray-400 bg-gray-100 text-gray-900'
-              : 'border-gray-200 text-gray-500 hover:bg-gray-50',
+              ? 'border-border-subtle bg-surface-muted text-content'
+              : 'border-border-subtle text-content-muted hover:bg-surface-hover',
           ]"
           type="button"
           @click="settings.applySizePreset(ratio.value)"
@@ -103,7 +103,7 @@ function selectRatioMode() {
       <div v-if="settings.activeSizePreset === 'custom'" class="flex items-center gap-2">
         <input
           :value="settings.imageWidth"
-          class="w-20 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 outline-none focus:border-gray-400"
+          class="w-20 rounded-card border border-border-subtle bg-surface px-2 py-1 text-xs text-content outline-none focus:border-border-subtle"
           type="number"
           min="16"
           max="3840"
@@ -111,10 +111,10 @@ function selectRatioMode() {
           placeholder="宽"
           @input="settings.imageWidth = Number(($event.target as HTMLInputElement).value)"
         />
-        <span class="text-xs text-gray-400">×</span>
+        <span class="text-xs text-content-tertiary">×</span>
         <input
           :value="settings.imageHeight"
-          class="w-20 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 outline-none focus:border-gray-400"
+          class="w-20 rounded-card border border-border-subtle bg-surface px-2 py-1 text-xs text-content outline-none focus:border-border-subtle"
           type="number"
           min="16"
           max="3840"
@@ -134,8 +134,8 @@ function selectRatioMode() {
           :class="[
             'cursor-pointer rounded border px-1.5 py-0.5 text-xs transition-colors',
             settings.imageCountMode === 'preset'
-              ? 'border-gray-400 bg-gray-100 text-gray-900'
-              : 'border-gray-200 text-gray-400 hover:bg-gray-50',
+              ? 'border-border-subtle bg-surface-muted text-content'
+              : 'border-border-subtle text-content-tertiary hover:bg-surface-hover',
           ]"
           type="button"
           @click="settings.applyImageCountMode('preset')"
@@ -146,8 +146,8 @@ function selectRatioMode() {
           :class="[
             'cursor-pointer rounded border px-1.5 py-0.5 text-xs transition-colors',
             settings.imageCountMode === 'custom'
-              ? 'border-gray-400 bg-gray-100 text-gray-900'
-              : 'border-gray-200 text-gray-400 hover:bg-gray-50',
+              ? 'border-border-subtle bg-surface-muted text-content'
+              : 'border-border-subtle text-content-tertiary hover:bg-surface-hover',
           ]"
           type="button"
           @click="settings.applyImageCountMode('custom')"
@@ -163,8 +163,8 @@ function selectRatioMode() {
           :class="[
             'cursor-pointer rounded border px-1.5 py-1 text-xs transition-colors',
             settings.imageCount === count
-              ? 'border-gray-400 bg-gray-100 text-gray-900'
-              : 'border-gray-200 text-gray-500 hover:bg-gray-50',
+              ? 'border-border-subtle bg-surface-muted text-content'
+              : 'border-border-subtle text-content-muted hover:bg-surface-hover',
           ]"
           type="button"
           @click="settings.applyImageCount(count, 'preset')"
@@ -176,17 +176,17 @@ function selectRatioMode() {
       <div v-if="settings.imageCountMode === 'custom'" class="flex items-center gap-2">
         <input
           :value="settings.imageCount"
-          class="w-24 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs text-gray-900 outline-none focus:border-gray-400"
+          class="w-24 rounded-card border border-border-subtle bg-surface px-2 py-1 text-xs text-content outline-none focus:border-border-subtle"
           type="number"
           :min="settings.minImageCount"
           step="1"
           placeholder="数量"
           @input="settings.applyImageCount(($event.target as HTMLInputElement).value, 'custom')"
         />
-        <span class="text-xs text-gray-400">张</span>
+        <span class="text-xs text-content-tertiary">张</span>
       </div>
 
-      <p class="text-xs leading-relaxed text-gray-400">
+      <p class="text-xs leading-relaxed text-content-tertiary">
         理论无上限，但请量力而行；一次太多可能影响本机和API供应商的服务器。
       </p>
     </div>
@@ -199,10 +199,10 @@ function selectRatioMode() {
         :class="[
           'rounded border px-1.5 py-0.5 text-xs transition-colors',
           opt.value === 'transparent' && settings.transparentDisabled
-            ? 'cursor-not-allowed border-gray-100 text-gray-300'
+            ? 'cursor-not-allowed border-border-subtle text-content-tertiary'
             : settings.background === opt.value
-              ? 'cursor-pointer border-gray-400 bg-gray-100 text-gray-900'
-              : 'cursor-pointer border-gray-200 text-gray-400 hover:bg-gray-50',
+              ? 'cursor-pointer border-border-subtle bg-surface-muted text-content'
+              : 'cursor-pointer border-border-subtle text-content-tertiary hover:bg-surface-hover',
         ]"
         type="button"
         @click="settings.background = opt.value"
@@ -218,8 +218,8 @@ function selectRatioMode() {
         :class="[
           'cursor-pointer rounded border px-1.5 py-0.5 text-xs transition-colors',
           settings.quality === opt.value
-            ? 'border-gray-400 bg-gray-100 text-gray-900'
-            : 'border-gray-200 text-gray-400 hover:bg-gray-50',
+            ? 'border-border-subtle bg-surface-muted text-content'
+            : 'border-border-subtle text-content-tertiary hover:bg-surface-hover',
         ]"
         type="button"
         @click="settings.quality = opt.value"
@@ -235,8 +235,8 @@ function selectRatioMode() {
         :class="[
           'cursor-pointer rounded border px-1.5 py-0.5 text-xs transition-colors',
           settings.outputFormat === opt.value
-            ? 'border-gray-400 bg-gray-100 text-gray-900'
-            : 'border-gray-200 text-gray-400 hover:bg-gray-50',
+            ? 'border-border-subtle bg-surface-muted text-content'
+            : 'border-border-subtle text-content-tertiary hover:bg-surface-hover',
         ]"
         type="button"
         @click="settings.outputFormat = opt.value"

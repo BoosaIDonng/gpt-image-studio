@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { FocusTrap } from "focus-trap-vue";
+import Button from "./Button.vue";
 
 type ConfirmDialogState = {
   title: string;
@@ -30,41 +31,29 @@ const emit = defineEmits<{
         <section
           aria-labelledby="confirmDialogTitle"
           aria-modal="true"
-          class="cupertino-dialog w-full max-w-md rounded-lg p-5 shadow-xl"
+          class="cupertino-dialog w-full max-w-md rounded-card p-5 shadow-xl"
           role="dialog"
         >
           <div class="mb-5">
             <h2
               id="confirmDialogTitle"
-              class="text-base font-semibold text-gray-900 dark:text-gray-100"
+              class="text-base font-semibold text-content dark:text-content"
             >
               {{ dialog.title }}
             </h2>
-            <p class="mt-1 text-sm leading-relaxed text-gray-500 dark:text-gray-400">
+            <p class="mt-1 text-sm leading-relaxed text-content-muted dark:text-content-tertiary">
               {{ dialog.description }}
             </p>
           </div>
 
           <div class="flex justify-end gap-2">
-            <button
-              class="cursor-pointer rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
-              type="button"
-              @click="emit('cancel')"
-            >
-              取消
-            </button>
-            <button
-              class="cursor-pointer rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors"
-              :class="
-                dialog.tone === 'danger'
-                  ? 'bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600'
-                  : 'bg-black dark:bg-gray-100 text-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-300'
-              "
-              type="button"
+            <Button variant="secondary" @click="emit('cancel')">取消</Button>
+            <Button
+              :variant="dialog.tone === 'danger' ? 'danger' : 'primary'"
               @click="emit('confirm')"
             >
               {{ dialog.confirmLabel }}
-            </button>
+            </Button>
           </div>
         </section>
       </FocusTrap>

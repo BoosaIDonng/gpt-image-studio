@@ -70,7 +70,7 @@ function deleteMessage() {
   >
     <Tooltip text="复制原始 prompt" preferred-placement="top">
       <button
-        class="inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:bg-gray-100 hover:text-gray-900"
+        class="inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-border-subtle bg-surface text-content-muted shadow-sm transition-colors hover:bg-surface-hover hover:text-content"
         aria-label="复制原始 prompt"
         type="button"
         @click="copyOriginalPrompt"
@@ -94,7 +94,7 @@ function deleteMessage() {
     <div class="relative">
       <Tooltip text="消息管理" preferred-placement="top">
         <button
-          class="inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:bg-gray-100 hover:text-gray-900"
+          class="inline-flex h-6 w-6 cursor-pointer items-center justify-center rounded-md border border-border-subtle bg-surface text-content-muted shadow-sm transition-colors hover:bg-surface-hover hover:text-content"
           aria-haspopup="menu"
           :aria-expanded="isMenuOpen"
           aria-label="消息管理"
@@ -120,11 +120,11 @@ function deleteMessage() {
 
       <div
         v-if="isMenuOpen"
-        class="absolute right-0 top-8 w-56 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 text-sm shadow-xl"
+        class="absolute right-0 top-8 w-56 overflow-hidden rounded-card border border-border-subtle bg-surface py-1 text-sm shadow-xl"
         role="menu"
       >
         <button
-          class="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-gray-700 transition-colors hover:bg-gray-50"
+          class="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-content transition-colors hover:bg-surface-hover"
           role="menuitem"
           type="button"
           @click="copyOriginalPrompt"
@@ -145,7 +145,7 @@ function deleteMessage() {
           <span>复制原始 prompt</span>
         </button>
         <button
-          class="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-gray-700 transition-colors hover:bg-gray-50"
+          class="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-content transition-colors hover:bg-surface-hover"
           role="menuitem"
           type="button"
           @click="copyFinalRequestPrompt"
@@ -168,7 +168,7 @@ function deleteMessage() {
           <span>复制最终请求 prompt</span>
         </button>
         <button
-          class="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-gray-700 transition-colors hover:bg-gray-50"
+          class="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-content transition-colors hover:bg-surface-hover"
           role="menuitem"
           type="button"
           @click="loadMessageConfig"
@@ -195,7 +195,7 @@ function deleteMessage() {
           </svg>
           <span>加载到输入面板</span>
         </button>
-        <div class="my-1 border-t border-gray-100"></div>
+        <div class="my-1 border-t border-border-subtle"></div>
         <button
           class="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-red-600 transition-colors hover:bg-red-50"
           role="menuitem"

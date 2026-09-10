@@ -77,10 +77,10 @@ function excludeMatch(item: RagMatch) {
 <template>
   <div
     v-if="matchBarState.shouldShow"
-    class="mb-2 rounded-lg border border-gray-200 bg-white px-3 py-2"
+    class="mb-2 rounded-card border border-border-subtle bg-surface px-3 py-2"
   >
     <div class="flex flex-wrap items-center gap-2">
-      <div class="shrink-0 text-[11px] font-medium text-gray-500">
+      <div class="shrink-0 text-[11px] font-medium text-content-muted">
         {{ summaryText }}
       </div>
 
@@ -88,25 +88,25 @@ function excludeMatch(item: RagMatch) {
         <button
           v-for="item in matchBarState.visibleItems"
           :key="item.id"
-          class="inline-flex max-w-full cursor-pointer items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700 transition-colors hover:bg-gray-200 hover:text-gray-900"
+          class="inline-flex max-w-full cursor-pointer items-center gap-1 rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-content transition-colors hover:bg-surface-hover hover:text-content"
           type="button"
           :title="`排除 ${item.text}`"
           @click="excludeMatch(item)"
         >
           <span class="truncate">{{ item.text }}</span>
-          <span class="text-gray-400" aria-hidden="true">×</span>
+          <span class="text-content-tertiary" aria-hidden="true">×</span>
         </button>
 
         <span
           v-if="matchBarState.hiddenItemCount"
-          class="rounded-full bg-gray-50 px-2 py-0.5 text-[11px] text-gray-400"
+          class="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-content-tertiary"
         >
           +{{ matchBarState.hiddenItemCount }}
         </span>
 
         <button
           v-if="matchBarState.excludedCount"
-          class="cursor-pointer rounded-full px-2 py-0.5 text-[11px] text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+          class="cursor-pointer rounded-full px-2 py-0.5 text-[11px] text-content-tertiary transition-colors hover:bg-surface-hover hover:text-content"
           type="button"
           @click="composer.clearRagExclusions()"
         >
@@ -115,7 +115,7 @@ function excludeMatch(item: RagMatch) {
       </div>
 
       <button
-        class="shrink-0 cursor-pointer rounded-full px-2 py-0.5 text-[11px] text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
+        class="shrink-0 cursor-pointer rounded-full px-2 py-0.5 text-[11px] text-content-muted transition-colors hover:bg-surface-hover hover:text-content"
         type="button"
         @click="composer.openPromptPreview()"
       >

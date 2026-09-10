@@ -89,12 +89,12 @@ function retryAiRewritePrompt() {
 
 <template>
   <figure
-    class="overflow-hidden rounded-xl border border-red-100 bg-white"
+    class="overflow-hidden rounded-panel border border-red-100 bg-surface"
     aria-label="图片生成失败"
   >
     <div class="flex h-48 flex-col items-center justify-center gap-3 bg-red-50/60 px-6 text-center">
       <div
-        class="flex h-11 w-11 items-center justify-center rounded-full border border-red-100 bg-white text-red-500 shadow-sm"
+        class="flex h-11 w-11 items-center justify-center rounded-full border border-red-100 bg-surface text-red-500 shadow-sm"
       >
         <svg
           class="h-5 w-5"
@@ -137,11 +137,11 @@ function retryAiRewritePrompt() {
             :delay="1000"
             :hide-delay="500"
           >
-            <div class="truncate text-xs text-gray-500">生成失败：{{ errorText }}</div>
+            <div class="truncate text-xs text-content-muted">生成失败：{{ errorText }}</div>
           </Tooltip>
         </div>
         <button
-          class="shrink-0 cursor-pointer rounded-lg border border-red-100 bg-white px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
+          class="shrink-0 cursor-pointer rounded-card border border-red-100 bg-surface px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
           type="button"
           @click="emit('retryMessage', props.message)"
         >
@@ -152,8 +152,8 @@ function retryAiRewritePrompt() {
       <div v-if="hasDiagnostics || canAiRewrite" class="mt-3 space-y-3 border-t border-red-50 pt-3">
         <section v-if="moderationAdvice.riskMatches.length">
           <div class="mb-1.5 flex items-center justify-between gap-2">
-            <h3 class="text-xs font-semibold text-gray-800">命中风险词</h3>
-            <span class="text-[11px] text-gray-400">来自本条 prompt</span>
+            <h3 class="text-xs font-semibold text-content">命中风险词</h3>
+            <span class="text-[11px] text-content-tertiary">来自本条 prompt</span>
           </div>
           <div class="flex flex-wrap gap-1.5">
             <span
@@ -168,9 +168,9 @@ function retryAiRewritePrompt() {
 
         <section v-if="moderationAdvice.riskMatches.length">
           <div class="mb-1.5 flex items-center justify-between gap-2">
-            <h3 class="text-xs font-semibold text-gray-800">替代词建议</h3>
+            <h3 class="text-xs font-semibold text-content">替代词建议</h3>
             <button
-              class="inline-flex cursor-pointer items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-[11px] text-gray-600 transition-colors hover:bg-gray-50"
+              class="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border-subtle bg-surface px-2 py-1 text-[11px] text-content transition-colors hover:bg-surface-hover"
               type="button"
               @click="copyRiskReplacements"
             >
@@ -181,10 +181,10 @@ function retryAiRewritePrompt() {
             <div
               v-for="match in moderationAdvice.riskMatches"
               :key="`${match.term}->${match.replacement}`"
-              class="min-w-0 rounded-lg border border-gray-100 bg-gray-50 px-2 py-1.5 text-[11px]"
+              class="min-w-0 rounded-card border border-border-subtle bg-surface-muted px-2 py-1.5 text-[11px]"
             >
               <div class="truncate font-mono text-red-600">{{ match.term }}</div>
-              <div class="text-gray-400">替换为</div>
+              <div class="text-content-tertiary">替换为</div>
               <div class="truncate font-mono text-emerald-700">
                 {{ match.replacement }}
               </div>
@@ -194,9 +194,9 @@ function retryAiRewritePrompt() {
 
         <section v-if="moderationAdvice.saferPrompt">
           <div class="mb-1.5 flex items-center justify-between gap-2">
-            <h3 class="text-xs font-semibold text-gray-800">保守版 prompt</h3>
+            <h3 class="text-xs font-semibold text-content">保守版 prompt</h3>
             <button
-              class="inline-flex cursor-pointer items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-[11px] text-gray-600 transition-colors hover:bg-gray-50"
+              class="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border-subtle bg-surface px-2 py-1 text-[11px] text-content transition-colors hover:bg-surface-hover"
               type="button"
               @click="copySaferPrompt"
             >
@@ -204,20 +204,20 @@ function retryAiRewritePrompt() {
             </button>
           </div>
           <div
-            class="max-h-28 overflow-y-auto rounded-lg border border-blue-100 bg-blue-50/60 px-2.5 py-2 text-xs leading-relaxed text-gray-700"
+            class="max-h-28 overflow-y-auto rounded-card border border-blue-100 bg-blue-50/60 px-2.5 py-2 text-xs leading-relaxed text-content"
           >
             {{ moderationAdvice.saferPrompt }}
           </div>
           <div class="mt-2 flex flex-wrap justify-end gap-2">
             <button
-              class="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50"
+              class="cursor-pointer rounded-card border border-border-subtle bg-surface px-3 py-1.5 text-xs font-medium text-content transition-colors hover:bg-surface-hover"
               type="button"
               @click="copySaferPrompt"
             >
               复制保守版 prompt
             </button>
             <button
-              class="cursor-pointer rounded-lg bg-black px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-gray-800"
+              class="cursor-pointer rounded-card bg-accent px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-accent-pressed"
               type="button"
               @click="retrySaferPrompt"
             >
@@ -228,9 +228,9 @@ function retryAiRewritePrompt() {
 
         <section>
           <div class="mb-1.5 flex items-center justify-between gap-2">
-            <h3 class="text-xs font-semibold text-gray-800">AI 助手改写</h3>
+            <h3 class="text-xs font-semibold text-content">AI 助手改写</h3>
             <button
-              class="inline-flex cursor-pointer items-center gap-1 rounded-md border border-gray-200 bg-white px-2 py-1 text-[11px] text-gray-600 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              class="inline-flex cursor-pointer items-center gap-1 rounded-md border border-border-subtle bg-surface px-2 py-1 text-[11px] text-content transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
               type="button"
               :disabled="isAiRewriteLoading || !canAiRewrite"
               @click="requestAiRewrite"
@@ -241,28 +241,28 @@ function retryAiRewritePrompt() {
 
           <div
             v-if="aiRewriteError"
-            class="rounded-lg border border-red-100 bg-red-50 px-2.5 py-2 text-xs leading-relaxed text-red-600"
+            class="rounded-card border border-red-100 bg-red-50 px-2.5 py-2 text-xs leading-relaxed text-red-600"
           >
             {{ aiRewriteError }}
           </div>
 
           <div
             v-if="aiRewritePrompt"
-            class="rounded-lg border border-emerald-100 bg-emerald-50/70 px-2.5 py-2 text-xs leading-relaxed text-gray-700"
+            class="rounded-card border border-emerald-100 bg-emerald-50/70 px-2.5 py-2 text-xs leading-relaxed text-content"
           >
             {{ aiRewritePrompt }}
           </div>
 
           <div v-if="aiRewritePrompt" class="mt-2 flex flex-wrap justify-end gap-2">
             <button
-              class="cursor-pointer rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50"
+              class="cursor-pointer rounded-card border border-border-subtle bg-surface px-3 py-1.5 text-xs font-medium text-content transition-colors hover:bg-surface-hover"
               type="button"
               @click="copyAiRewritePrompt"
             >
               复制 AI 改写 prompt
             </button>
             <button
-              class="cursor-pointer rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-800"
+              class="cursor-pointer rounded-card bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-800"
               type="button"
               @click="retryAiRewritePrompt"
             >

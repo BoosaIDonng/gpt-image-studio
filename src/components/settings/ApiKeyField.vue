@@ -50,21 +50,23 @@ onUnmounted(() => {
 
 <template>
   <div>
-    <label class="mb-1 block text-sm font-medium text-gray-700" for="apiKey">
+    <label class="mb-1 block text-sm font-medium text-content" for="apiKey">
       {{ label }}
     </label>
-    <div class="flex rounded-lg border border-gray-300 bg-white focus-within:border-gray-500">
+    <div
+      class="flex rounded-card border border-border-subtle bg-surface focus-within:border-border-subtle"
+    >
       <input
         id="apiKey"
         :value="apiKey"
-        class="min-w-0 flex-1 rounded-l-lg bg-transparent px-3 py-2 text-sm text-gray-900 outline-none"
+        class="min-w-0 flex-1 rounded-l-lg bg-transparent px-3 py-2 text-sm text-content outline-none"
         autocomplete="off"
         placeholder="sk-..."
         :type="apiKeyVisible ? 'text' : 'password'"
         @input="emit('update:apiKey', ($event.target as HTMLInputElement).value)"
       />
       <button
-        class="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center border-l border-gray-200 text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-800"
+        class="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center border-l border-border-subtle text-content-muted transition-colors hover:bg-surface-hover hover:text-content"
         type="button"
         :aria-label="apiKeyVisible ? '隐藏 API key' : '显示 API key'"
         :title="apiKeyVisible ? '隐藏 API key' : '显示 API key'"
@@ -103,7 +105,7 @@ onUnmounted(() => {
       </button>
       <button
         v-if="apiKeyVisible"
-        class="flex h-10 shrink-0 cursor-pointer items-center justify-center border-l border-gray-200 px-3 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900 disabled:cursor-not-allowed disabled:text-gray-300"
+        class="flex h-10 shrink-0 cursor-pointer items-center justify-center border-l border-border-subtle px-3 text-xs font-medium text-content transition-colors hover:bg-surface-hover hover:text-content disabled:cursor-not-allowed disabled:text-content-tertiary"
         type="button"
         :disabled="!apiKey"
         :aria-label="apiKeyCopyStatus === 'copied' ? 'API key 已复制' : '复制 API key'"

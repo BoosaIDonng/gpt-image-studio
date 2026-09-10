@@ -98,6 +98,13 @@ export type SettingsModalContext = {
 export const settingsModalContextKey: InjectionKey<SettingsModalContext> =
   Symbol("settingsModalContext");
 
+/**
+ * The subset supplied by the page orchestration boundary. `importBackupRequest`
+ * is intentionally excluded: SettingsModal fills it in itself because it drives
+ * a modal-local confirmation step before the real import runs.
+ */
+export type SettingsPanelsContext = Omit<SettingsModalContext, "importBackupRequest">;
+
 export function provideSettingsModalContext(ctx: SettingsModalContext) {
   provide(settingsModalContextKey, ctx);
 }

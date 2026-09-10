@@ -45,14 +45,14 @@ function percentOf(value: number, total: number) {
 
 <template>
   <div
-    class="mt-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+    class="mt-3 rounded-card border border-border-subtle dark:border-border-subtle bg-surface-muted dark:bg-surface"
   >
     <button
       class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs"
       @click="storageExpanded = !storageExpanded"
     >
       <svg
-        class="h-3 w-3 shrink-0 text-gray-400 transition-transform"
+        class="h-3 w-3 shrink-0 text-content-tertiary transition-transform"
         :class="{ 'rotate-90': storageExpanded }"
         viewBox="0 0 20 20"
         fill="currentColor"
@@ -63,8 +63,10 @@ function percentOf(value: number, total: number) {
           clip-rule="evenodd"
         />
       </svg>
-      <span class="font-medium text-gray-700 dark:text-gray-300">本地存储</span>
-      <span class="ml-auto inline-flex items-center gap-1 text-gray-500 dark:text-gray-400">
+      <span class="font-medium text-content dark:text-content-tertiary">本地存储</span>
+      <span
+        class="ml-auto inline-flex items-center gap-1 text-content-muted dark:text-content-tertiary"
+      >
         {{ formatBytes(storageUsage.projectBytes) }}
         <template v-if="storageUsage.quotaBytes">
           / {{ formatBytes(storageUsage.quotaBytes) }}
@@ -72,7 +74,7 @@ function percentOf(value: number, total: number) {
       </span>
       <Tooltip text="根据当前浏览器和设备状态估算，可用空间可能会变化。">
         <span
-          class="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-gray-200 dark:bg-gray-600 text-[10px] font-semibold text-gray-500 dark:text-gray-400 transition-colors hover:bg-gray-300 dark:hover:bg-gray-500"
+          class="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full bg-surface-hover dark:bg-surface text-[10px] font-semibold text-content-muted dark:text-content-tertiary transition-colors hover:bg-surface-hover dark:hover:bg-surface-hover"
         >
           <svg
             class="h-3 w-3"
@@ -92,27 +94,27 @@ function percentOf(value: number, total: number) {
       </Tooltip>
     </button>
     <div v-show="storageExpanded" class="px-3 pb-3 pt-0">
-      <div class="flex h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+      <div class="flex h-2 overflow-hidden rounded-full bg-surface-hover dark:bg-surface">
         <div
-          class="h-full flex-none bg-gray-900 dark:bg-gray-300"
+          class="h-full flex-none bg-accent dark:bg-surface-muted"
           :style="{ width: `${imageStoragePercent}%` }"
           title="图片数据"
         ></div>
         <div
-          class="h-full flex-none bg-gray-400 dark:bg-gray-500"
+          class="h-full flex-none bg-surface-hover dark:bg-surface-muted"
           :style="{ width: `${metadataStoragePercent}%` }"
           title="文本与索引"
         ></div>
       </div>
       <div
-        class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400"
+        class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-content-muted dark:text-content-tertiary"
       >
         <span class="inline-flex items-center gap-1">
-          <span class="h-2 w-2 rounded-full bg-gray-900 dark:bg-gray-300"></span>
+          <span class="h-2 w-2 rounded-full bg-accent dark:bg-surface-muted"></span>
           图片 {{ formatBytes(storageUsage.imageBytes) }}
         </span>
         <span class="inline-flex items-center gap-1">
-          <span class="h-2 w-2 rounded-full bg-gray-400 dark:bg-gray-500"></span>
+          <span class="h-2 w-2 rounded-full bg-surface-hover dark:bg-surface-muted"></span>
           文本与索引 {{ formatBytes(storageUsage.metadataBytes) }}
         </span>
         <span v-if="storageUsage.quotaBytes" class="ml-auto">

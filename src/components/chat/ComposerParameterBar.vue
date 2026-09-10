@@ -98,17 +98,23 @@ function ragWeightedScoreLabel(score: number) {
   <div
     class="flex min-w-0 flex-nowrap items-center gap-1.5 overflow-x-auto touch-pan-x [&>*]:shrink-0 md:flex-wrap md:overflow-visible"
   >
-    <span class="cursor-not-allowed rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-400">
+    <span
+      class="cursor-not-allowed rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-content-tertiary"
+    >
       供应商: {{ providerLabel }}
     </span>
-    <span class="cursor-not-allowed rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-400">
+    <span
+      class="cursor-not-allowed rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-content-tertiary"
+    >
       模型: {{ settings.model }}
     </span>
-    <span class="cursor-not-allowed rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-400">
+    <span
+      class="cursor-not-allowed rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-content-tertiary"
+    >
       内容: {{ promptModeLabel }}
     </span>
     <button
-      class="cursor-pointer rounded-full bg-gray-900 px-2 py-0.5 text-[11px] text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+      class="cursor-pointer rounded-full bg-accent px-2 py-0.5 text-[11px] text-white transition-colors hover:bg-accent-pressed disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-tertiary"
       type="button"
       :disabled="!previewPrompt"
       @click="composer.openPromptPreview()"
@@ -119,8 +125,8 @@ function ragWeightedScoreLabel(score: number) {
       :class="[
         'cursor-pointer rounded-full px-2 py-0.5 text-[11px] transition-colors',
         composer.editModeEnabled
-          ? 'bg-black text-white hover:bg-gray-800'
-          : 'bg-gray-100 text-gray-500 hover:bg-gray-200',
+          ? 'bg-accent text-white hover:bg-accent-pressed'
+          : 'bg-surface-muted text-content-muted hover:bg-surface-hover',
       ]"
       type="button"
       @click="emit('update:editModeEnabled', !composer.editModeEnabled)"
@@ -129,8 +135,8 @@ function ragWeightedScoreLabel(score: number) {
     </button>
     <span class="relative inline-flex">
       <button
-        class="cursor-pointer rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500 transition-colors hover:bg-gray-200"
-        :class="composer.activeEditor === 'size' ? 'bg-gray-200 text-gray-800' : ''"
+        class="cursor-pointer rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-content-muted transition-colors hover:bg-surface-hover"
+        :class="composer.activeEditor === 'size' ? 'bg-surface-hover text-content' : ''"
         type="button"
         @click="composer.toggleEditor('size')"
       >
@@ -143,8 +149,8 @@ function ragWeightedScoreLabel(score: number) {
     </span>
     <span class="relative inline-flex">
       <button
-        class="cursor-pointer rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500 transition-colors hover:bg-gray-200"
-        :class="composer.activeEditor === 'count' ? 'bg-gray-200 text-gray-800' : ''"
+        class="cursor-pointer rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-content-muted transition-colors hover:bg-surface-hover"
+        :class="composer.activeEditor === 'count' ? 'bg-surface-hover text-content' : ''"
         type="button"
         @click="composer.toggleEditor('count')"
       >
@@ -157,8 +163,8 @@ function ragWeightedScoreLabel(score: number) {
     </span>
     <span v-if="settings.imageCapabilities.quality" class="relative inline-flex">
       <button
-        class="cursor-pointer rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500 transition-colors hover:bg-gray-200"
-        :class="composer.activeEditor === 'quality' ? 'bg-gray-200 text-gray-800' : ''"
+        class="cursor-pointer rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-content-muted transition-colors hover:bg-surface-hover"
+        :class="composer.activeEditor === 'quality' ? 'bg-surface-hover text-content' : ''"
         type="button"
         @click="composer.toggleEditor('quality')"
       >
@@ -171,8 +177,8 @@ function ragWeightedScoreLabel(score: number) {
     </span>
     <span v-if="settings.imageCapabilities.background" class="relative inline-flex">
       <button
-        class="cursor-pointer rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500 transition-colors hover:bg-gray-200"
-        :class="composer.activeEditor === 'background' ? 'bg-gray-200 text-gray-800' : ''"
+        class="cursor-pointer rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-content-muted transition-colors hover:bg-surface-hover"
+        :class="composer.activeEditor === 'background' ? 'bg-surface-hover text-content' : ''"
         type="button"
         @click="composer.toggleEditor('background')"
       >
@@ -185,8 +191,8 @@ function ragWeightedScoreLabel(score: number) {
     </span>
     <span v-if="settings.imageCapabilities.outputFormat" class="relative inline-flex">
       <button
-        class="cursor-pointer rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500 transition-colors hover:bg-gray-200"
-        :class="composer.activeEditor === 'format' ? 'bg-gray-200 text-gray-800' : ''"
+        class="cursor-pointer rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-content-muted transition-colors hover:bg-surface-hover"
+        :class="composer.activeEditor === 'format' ? 'bg-surface-hover text-content' : ''"
         type="button"
         @click="composer.toggleEditor('format')"
       >
@@ -205,18 +211,18 @@ function ragWeightedScoreLabel(score: number) {
         @click="composer.closePromptPreview()"
       >
         <section
-          class="w-full max-w-3xl overflow-hidden rounded-lg bg-white shadow-2xl"
+          class="w-full max-w-3xl overflow-hidden rounded-card bg-surface shadow-2xl"
           role="dialog"
           aria-modal="true"
           aria-labelledby="prompt-preview-title"
           @click.stop
         >
-          <header class="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-            <h2 id="prompt-preview-title" class="text-sm font-semibold text-gray-900">
+          <header class="flex items-center justify-between border-b border-border-subtle px-4 py-3">
+            <h2 id="prompt-preview-title" class="text-sm font-semibold text-content">
               实际发送 Prompt
             </h2>
             <button
-              class="cursor-pointer rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+              class="cursor-pointer rounded-card p-1 text-content-tertiary transition-colors hover:bg-surface-hover hover:text-content"
               type="button"
               aria-label="关闭"
               @click="composer.closePromptPreview()"
@@ -231,18 +237,20 @@ function ragWeightedScoreLabel(score: number) {
           <div class="px-4 py-3">
             <div
               v-if="settings.ragEnabled && previewRagResult"
-              class="mb-3 rounded-md border border-gray-200 bg-white"
+              class="mb-3 rounded-md border border-border-subtle bg-surface"
             >
               <div
-                class="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-3 py-2"
+                class="flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle px-3 py-2"
               >
                 <div>
-                  <div class="text-xs font-semibold text-gray-800">RAG 命中</div>
-                  <div class="mt-0.5 text-[11px] text-gray-500">仅使用成功图片命中的词库参考</div>
+                  <div class="text-xs font-semibold text-content">RAG 命中</div>
+                  <div class="mt-0.5 text-[11px] text-content-muted">
+                    仅使用成功图片命中的词库参考
+                  </div>
                 </div>
                 <button
                   v-if="composer.ragExcludedMatchIds.length"
-                  class="cursor-pointer rounded-md px-2 py-1 text-[11px] text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
+                  class="cursor-pointer rounded-md px-2 py-1 text-[11px] text-content-muted transition-colors hover:bg-surface-hover hover:text-content"
                   type="button"
                   @click="composer.clearRagExclusions()"
                 >
@@ -252,7 +260,7 @@ function ragWeightedScoreLabel(score: number) {
               <div class="max-h-44 overflow-y-auto p-2">
                 <div
                   v-if="!previewRagResult.items.length"
-                  class="px-2 py-4 text-center text-xs text-gray-400"
+                  class="px-2 py-4 text-center text-xs text-content-tertiary"
                 >
                   当前没有纳入最终 Prompt 的 RAG 命中
                 </div>
@@ -260,28 +268,28 @@ function ragWeightedScoreLabel(score: number) {
                   <div
                     v-for="item in previewRagResult.items"
                     :key="item.id"
-                    class="flex min-w-0 items-start gap-2 rounded-md bg-gray-50 px-2 py-2"
+                    class="flex min-w-0 items-start gap-2 rounded-md bg-surface-muted px-2 py-2"
                   >
                     <div class="min-w-0 flex-1">
                       <div class="flex flex-wrap items-center gap-1.5">
-                        <span class="rounded bg-gray-900 px-1.5 py-0.5 text-[10px] text-white">
+                        <span class="rounded bg-accent px-1.5 py-0.5 text-[10px] text-white">
                           {{ ragSourceLabel(item.source) }}
                         </span>
-                        <span class="text-[11px] text-gray-500">
+                        <span class="text-[11px] text-content-muted">
                           {{ item.title }}
                         </span>
-                        <span class="text-[11px] text-gray-400">
+                        <span class="text-[11px] text-content-tertiary">
                           加权 {{ ragWeightedScoreLabel(item.score) }} / 原始
                           {{ ragScoreLabel(item.rawScore) }} / 权重
                           {{ item.sourceWeight.toFixed(2) }}
                         </span>
                       </div>
-                      <div class="mt-1 line-clamp-2 text-xs leading-relaxed text-gray-700">
+                      <div class="mt-1 line-clamp-2 text-xs leading-relaxed text-content">
                         {{ item.text }}
                       </div>
                     </div>
                     <button
-                      class="shrink-0 cursor-pointer rounded-md px-2 py-1 text-[11px] text-gray-500 transition-colors hover:bg-white hover:text-gray-900"
+                      class="shrink-0 cursor-pointer rounded-md px-2 py-1 text-[11px] text-content-muted transition-colors hover:bg-surface hover:text-content"
                       type="button"
                       @click="composer.excludeRagMatch(item.id)"
                     >
@@ -290,8 +298,11 @@ function ragWeightedScoreLabel(score: number) {
                   </div>
                 </div>
 
-                <div v-if="excludedRagMatches.length" class="mt-2 border-t border-gray-200 pt-2">
-                  <div class="mb-1 px-1 text-[11px] font-medium text-gray-500">已排除</div>
+                <div
+                  v-if="excludedRagMatches.length"
+                  class="mt-2 border-t border-border-subtle pt-2"
+                >
+                  <div class="mb-1 px-1 text-[11px] font-medium text-content-muted">已排除</div>
                   <div class="space-y-1">
                     <div
                       v-for="item in excludedRagMatches"
@@ -299,15 +310,15 @@ function ragWeightedScoreLabel(score: number) {
                       class="flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5"
                     >
                       <span
-                        class="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500"
+                        class="shrink-0 rounded bg-surface-muted px-1.5 py-0.5 text-[10px] text-content-muted"
                       >
                         {{ ragSourceLabel(item.source) }}
                       </span>
-                      <span class="min-w-0 flex-1 truncate text-xs text-gray-500">
+                      <span class="min-w-0 flex-1 truncate text-xs text-content-muted">
                         {{ item.text }}
                       </span>
                       <button
-                        class="shrink-0 cursor-pointer rounded-md px-2 py-1 text-[11px] text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                        class="shrink-0 cursor-pointer rounded-md px-2 py-1 text-[11px] text-content-muted transition-colors hover:bg-surface-hover hover:text-content"
                         type="button"
                         @click="composer.restoreRagMatch(item.id)"
                       >
@@ -319,14 +330,14 @@ function ragWeightedScoreLabel(score: number) {
               </div>
             </div>
             <textarea
-              class="h-[50vh] w-full resize-none rounded-md border border-gray-200 bg-gray-50 p-3 text-xs leading-relaxed text-gray-800 outline-none sm:h-96"
+              class="h-[50vh] w-full resize-none rounded-md border border-border-subtle bg-surface-muted p-3 text-xs leading-relaxed text-content outline-none sm:h-96"
               readonly
               :value="previewPrompt"
             />
           </div>
-          <footer class="flex justify-end border-t border-gray-200 px-4 py-3">
+          <footer class="flex justify-end border-t border-border-subtle px-4 py-3">
             <button
-              class="cursor-pointer rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white transition-colors hover:bg-gray-800"
+              class="cursor-pointer rounded-md bg-accent px-3 py-1.5 text-sm text-white transition-colors hover:bg-accent-pressed"
               type="button"
               @click="composer.closePromptPreview()"
             >

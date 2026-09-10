@@ -381,18 +381,20 @@ function clamp(value: number, min: number, max: number) {
         aria-modal="true"
         @mousedown.self="closeModal"
       >
-        <div class="w-full max-w-5xl rounded-xl bg-white p-4">
+        <div class="w-full max-w-5xl rounded-panel bg-surface p-4">
           <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div class="text-sm font-semibold text-gray-900">选择要编辑的区域</div>
-              <div class="text-xs text-gray-500">支持画笔、矩形、圆形，多次叠加选区</div>
+              <div class="text-sm font-semibold text-content">选择要编辑的区域</div>
+              <div class="text-xs text-content-muted">支持画笔、矩形、圆形，多次叠加选区</div>
             </div>
             <div class="flex items-center gap-1">
               <div
                 v-if="tool === 'brush' || tool === 'eraser'"
                 class="mr-2 flex items-center gap-2 whitespace-nowrap"
               >
-                <span class="text-xs text-gray-500">{{ tool === "eraser" ? "橡皮" : "画笔" }}</span>
+                <span class="text-xs text-content-muted">{{
+                  tool === "eraser" ? "橡皮" : "画笔"
+                }}</span>
                 <input
                   v-model.number="brushRadius"
                   class="styled-range w-40"
@@ -403,7 +405,7 @@ function clamp(value: number, min: number, max: number) {
                 />
               </div>
               <div class="mr-2 flex items-center gap-2">
-                <span class="text-xs text-gray-500">软边</span>
+                <span class="text-xs text-content-muted">软边</span>
                 <input
                   v-model.number="edgeSoftness"
                   class="styled-range"
@@ -416,8 +418,10 @@ function clamp(value: number, min: number, max: number) {
               <Tooltip text="画笔" :delay="2000">
                 <button
                   :class="[
-                    'rounded-lg p-2',
-                    tool === 'brush' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100',
+                    'rounded-card p-2',
+                    tool === 'brush'
+                      ? 'bg-accent text-white'
+                      : 'text-content hover:bg-surface-hover',
                   ]"
                   type="button"
                   @click="tool = 'brush'"
@@ -444,8 +448,10 @@ function clamp(value: number, min: number, max: number) {
               <Tooltip text="橡皮" :delay="2000">
                 <button
                   :class="[
-                    'rounded-lg p-2',
-                    tool === 'eraser' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100',
+                    'rounded-card p-2',
+                    tool === 'eraser'
+                      ? 'bg-accent text-white'
+                      : 'text-content hover:bg-surface-hover',
                   ]"
                   type="button"
                   @click="tool = 'eraser'"
@@ -472,8 +478,10 @@ function clamp(value: number, min: number, max: number) {
               <Tooltip text="方框" :delay="2000">
                 <button
                   :class="[
-                    'rounded-lg p-2',
-                    tool === 'rect' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100',
+                    'rounded-card p-2',
+                    tool === 'rect'
+                      ? 'bg-accent text-white'
+                      : 'text-content hover:bg-surface-hover',
                   ]"
                   type="button"
                   @click="tool = 'rect'"
@@ -496,8 +504,10 @@ function clamp(value: number, min: number, max: number) {
               <Tooltip text="圆框" :delay="2000">
                 <button
                   :class="[
-                    'rounded-lg p-2',
-                    tool === 'ellipse' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100',
+                    'rounded-card p-2',
+                    tool === 'ellipse'
+                      ? 'bg-accent text-white'
+                      : 'text-content hover:bg-surface-hover',
                   ]"
                   type="button"
                   @click="tool = 'ellipse'"
@@ -520,8 +530,8 @@ function clamp(value: number, min: number, max: number) {
               <Tooltip text="移动" :delay="2000">
                 <button
                   :class="[
-                    'rounded-lg p-2',
-                    tool === 'pan' ? 'bg-black text-white' : 'text-gray-600 hover:bg-gray-100',
+                    'rounded-card p-2',
+                    tool === 'pan' ? 'bg-accent text-white' : 'text-content hover:bg-surface-hover',
                   ]"
                   type="button"
                   @click="tool = 'pan'"
@@ -551,7 +561,7 @@ function clamp(value: number, min: number, max: number) {
           <div class="mb-3 flex items-center justify-end gap-1">
             <Tooltip text="撤销" :delay="2000">
               <button
-                class="rounded-lg p-2 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                class="rounded-card p-2 text-content hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
                 type="button"
                 :disabled="!canUndo"
                 @click="undoSelection"
@@ -574,7 +584,7 @@ function clamp(value: number, min: number, max: number) {
             </Tooltip>
             <Tooltip text="重做" :delay="2000">
               <button
-                class="rounded-lg p-2 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                class="rounded-card p-2 text-content hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
                 type="button"
                 :disabled="!canRedo"
                 @click="redoSelection"
@@ -597,7 +607,7 @@ function clamp(value: number, min: number, max: number) {
             </Tooltip>
             <Tooltip text="重置选区" :delay="2000">
               <button
-                class="rounded-lg p-2 text-gray-600 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                class="rounded-card p-2 text-content hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
                 type="button"
                 :disabled="!hasSelection"
                 @click="resetSelection"
@@ -619,10 +629,10 @@ function clamp(value: number, min: number, max: number) {
                 </svg>
               </button>
             </Tooltip>
-            <div class="mx-1 h-5 w-px bg-gray-200"></div>
+            <div class="mx-1 h-5 w-px bg-surface-hover"></div>
             <Tooltip text="缩小" :delay="2000">
               <button
-                class="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+                class="rounded-card p-2 text-content hover:bg-surface-hover"
                 type="button"
                 @click="zoomOut"
               >
@@ -643,12 +653,12 @@ function clamp(value: number, min: number, max: number) {
                 </svg>
               </button>
             </Tooltip>
-            <span class="min-w-10 text-center text-xs text-gray-500"
+            <span class="min-w-10 text-center text-xs text-content-muted"
               >{{ Math.round(zoom * 100) }}%</span
             >
             <Tooltip text="放大" :delay="2000">
               <button
-                class="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+                class="rounded-card p-2 text-content hover:bg-surface-hover"
                 type="button"
                 @click="zoomIn"
               >
@@ -672,7 +682,7 @@ function clamp(value: number, min: number, max: number) {
             </Tooltip>
             <Tooltip text="复位视图" :delay="2000">
               <button
-                class="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+                class="rounded-card p-2 text-content hover:bg-surface-hover"
                 type="button"
                 @click="resetViewport"
               >
@@ -694,16 +704,16 @@ function clamp(value: number, min: number, max: number) {
                 </svg>
               </button>
             </Tooltip>
-            <div class="mx-1 h-5 w-px bg-gray-200"></div>
+            <div class="mx-1 h-5 w-px bg-surface-hover"></div>
             <button
-              class="rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
+              class="rounded-card px-3 py-1.5 text-sm text-content hover:bg-surface-hover"
               type="button"
               @click="closeModal"
             >
               取消
             </button>
             <button
-              class="rounded-lg bg-black px-3 py-1.5 text-sm text-white disabled:cursor-not-allowed disabled:opacity-40"
+              class="rounded-card bg-accent px-3 py-1.5 text-sm text-white disabled:cursor-not-allowed disabled:opacity-40"
               type="button"
               :disabled="!canApply"
               @click="applyMask"
@@ -712,7 +722,7 @@ function clamp(value: number, min: number, max: number) {
             </button>
           </div>
           <div
-            class="relative mx-auto flex max-h-[70vh] items-center justify-center overflow-auto rounded-lg bg-gray-50 p-2"
+            class="relative mx-auto flex max-h-[70vh] items-center justify-center overflow-auto rounded-card bg-surface-muted p-2"
             :class="
               tool === 'pan' ? (isPanning ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-crosshair'
             "
@@ -790,7 +800,7 @@ function clamp(value: number, min: number, max: number) {
               </svg>
             </div>
           </div>
-          <div class="mt-2 text-xs text-gray-500">
+          <div class="mt-2 text-xs text-content-muted">
             预览说明：黑色区域=编辑区域，绿色区域=擦除已选区域；支持多选区、撤销重做、缩放平移。
           </div>
         </div>

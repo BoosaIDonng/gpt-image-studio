@@ -90,7 +90,9 @@ describe("ConfirmDialog", () => {
     });
     const buttons = document.body.querySelectorAll("button");
     const confirmButton = Array.from(buttons).find((b) => b.textContent?.includes("确定"));
-    expect(confirmButton!.className).toContain("bg-black");
+    // Primary actions use the accent token now that the `bg-black` -> blue
+    // remapping layer has been removed.
+    expect(confirmButton!.className).toContain("bg-accent");
     wrapper.unmount();
   });
 });

@@ -23,21 +23,21 @@ function importBackupFromInput(event: Event) {
 
 <template>
   <section aria-labelledby="backupSettingsTitle">
-    <h3 id="backupSettingsTitle" class="text-base font-semibold text-gray-900">数据备份</h3>
-    <p class="mt-1 text-sm leading-relaxed text-gray-500">
+    <h3 id="backupSettingsTitle" class="text-base font-semibold text-content">数据备份</h3>
+    <p class="mt-1 text-sm leading-relaxed text-content-muted">
       导出会话、消息和图片；API key 不会写入备份。恢复备份会覆盖当前浏览器里的本地数据。
     </p>
 
     <div class="mt-5 flex flex-wrap gap-2">
       <button
-        class="cursor-pointer rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+        class="cursor-pointer rounded-card border border-border-subtle bg-surface px-3 py-2 text-sm font-medium text-content transition-colors hover:bg-surface-hover"
         type="button"
         @click="exportBackup()"
       >
         导出备份
       </button>
       <button
-        class="cursor-pointer rounded-lg bg-black px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+        class="cursor-pointer rounded-card bg-accent px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-pressed"
         type="button"
         @click="chooseBackupFile"
       >

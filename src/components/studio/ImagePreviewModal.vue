@@ -124,7 +124,7 @@ function handleEdit() {
           @dblclick="resetView"
         >
           <img
-            class="max-h-[calc(100vh-160px)] max-w-full rounded-lg object-contain shadow-2xl transition-transform duration-75"
+            class="max-h-[calc(100vh-160px)] max-w-full rounded-card object-contain shadow-2xl transition-transform duration-75"
             draggable="false"
             decoding="async"
             :alt="image.name"
@@ -132,7 +132,7 @@ function handleEdit() {
           />
           <div
             v-if="maskUrl"
-            class="absolute inset-0 rounded-lg bg-black/60"
+            class="absolute inset-0 rounded-card bg-black/60"
             :style="
               {
                 maskImage: `url(${maskUrl})`,
@@ -161,10 +161,10 @@ function handleEdit() {
         class="pointer-events-none absolute right-0 bottom-0 left-0 z-10 flex justify-center pb-6"
       >
         <div
-          class="pointer-events-auto flex items-center gap-1 rounded-xl bg-white/15 p-1.5 backdrop-blur-xl"
+          class="pointer-events-auto flex items-center gap-1 rounded-panel bg-surface/15 p-1.5 backdrop-blur-xl"
         >
           <button
-            class="cursor-pointer rounded-lg px-3 py-1.5 text-sm transition-colors hover:bg-white/15"
+            class="cursor-pointer rounded-card px-3 py-1.5 text-sm transition-colors hover:bg-surface/15"
             type="button"
             title="编辑"
             @click="handleEdit"
@@ -172,7 +172,7 @@ function handleEdit() {
             编辑
           </button>
           <a
-            class="rounded-lg px-3 py-1.5 text-sm transition-colors hover:bg-white/15"
+            class="rounded-card px-3 py-1.5 text-sm transition-colors hover:bg-surface/15"
             title="下载"
             :download="imageDownloadName(image)"
             :href="image.previewUrl"
@@ -180,7 +180,7 @@ function handleEdit() {
             下载
           </a>
           <button
-            class="cursor-pointer rounded-lg px-3 py-1.5 text-sm transition-colors hover:bg-white/15"
+            class="cursor-pointer rounded-card px-3 py-1.5 text-sm transition-colors hover:bg-surface/15"
             :class="isTransformed ? 'text-white' : 'text-white/40'"
             type="button"
             title="重置视图"
@@ -190,7 +190,7 @@ function handleEdit() {
             重置
           </button>
           <button
-            class="cursor-pointer rounded-lg px-3 py-1.5 text-sm transition-colors hover:bg-white/15"
+            class="cursor-pointer rounded-card px-3 py-1.5 text-sm transition-colors hover:bg-surface/15"
             type="button"
             title="关闭"
             @click="emit('close')"

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from "vue";
 import { storeToRefs } from "pinia";
+import { useDesktopLayout } from "../../composables/useDesktopLayout";
 import { useComposerStore } from "../../stores/composerStore";
 import { useGenerationStore } from "../../stores/generationStore";
 import { useImagesStore } from "../../stores/imagesStore";
@@ -50,6 +51,37 @@ const { actions, header, messages } = defineProps<{
 
 const composerState = useComposerStore();
 const { selectingEditImageId: selectingImageId } = storeToRefs(composerState);
+const {
+  isConversationSidebarCollapsed,
+  isConversationSidebarOpen,
+  isLibraryCollapsed,
+  isLibraryOpen,
+} = storeToRefs(composerState);
+
+const isDesktop = useDesktopLayout();
+const conversationsPanelVisible = computed(() =>
+  isDesktop.value ? !isConversationSidebarCollapsed.value : isConversationSidebarOpen.value,
+);
+const libraryPanelVisible = computed(() =>
+  isDesktop.value ? !isLibraryCollapsed.value : isLibraryOpen.value,
+);
+
+/** Desktop: collapse/expand in place. Below 1280px: open/close the drawer. */
+function toggleConversationsPanel() {
+  if (isDesktop.value) {
+    composerState.setConversationSidebarCollapsed(!isConversationSidebarCollapsed.value);
+    return;
+  }
+  composerState.openConversations();
+}
+
+function toggleLibraryPanel() {
+  if (isDesktop.value) {
+    composerState.setLibraryCollapsed(!isLibraryCollapsed.value);
+    return;
+  }
+  composerState.setLibraryOpen(!isLibraryOpen.value);
+}
 const generation = useGenerationStore();
 const images = useImagesStore();
 const isDragActive = ref(false);
@@ -158,30 +190,33 @@ const failedMessageCount = computed(
   >
     <div
       v-if="isDragActive"
-      class="pointer-events-none absolute inset-0 z-40 flex items-center justify-center bg-white/85 dark:bg-gray-900/85 backdrop-blur-sm"
+      class="pointer-events-none absolute inset-0 z-40 flex items-center justify-center bg-surface/85 dark:bg-surface/85 backdrop-blur-sm"
     >
       <div
-        class="rounded-2xl border border-dashed border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-900 px-8 py-6 text-center shadow-xl"
+        class="rounded-dialog border border-dashed border-border-subtle dark:border-border-subtle bg-surface dark:bg-surface px-8 py-6 text-center shadow-xl"
       >
-        <div class="text-base font-semibold text-gray-900 dark:text-gray-100">松开以上传图片</div>
-        <div class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <div class="text-base font-semibold text-content dark:text-content">松开以上传图片</div>
+        <div class="mt-1 text-sm text-content-muted dark:text-content-tertiary">
           图片会保存到图片库，并作为下一条消息的引用图
         </div>
       </div>
     </div>
 
     <header
-      class="cupertino-navbar flex items-center justify-between border-b border-gray-200 dark:border-gray-700 px-4 py-3"
+      class="cupertino-navbar flex items-center justify-between border-b border-border-subtle dark:border-border-subtle px-4 py-3"
     >
       <div class="flex min-w-0 items-center gap-2">
         <button
-          class="cursor-pointer rounded-lg px-2.5 py-1.5 text-sm text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 2xl:hidden"
+          class="cursor-pointer rounded-card px-2.5 py-1.5 text-sm text-content transition-colors hover:bg-surface-hover"
+          :aria-expanded="conversationsPanelVisible"
+          :aria-label="conversationsPanelVisible ? '收起会话侧栏' : '展开会话侧栏'"
+          aria-controls="conversation-panel"
           type="button"
-          @click="actions.openConversations"
+          @click="toggleConversationsPanel"
         >
           会话
         </button>
-        <h1 class="truncate text-base font-semibold text-gray-800 dark:text-gray-100">
+        <h1 class="truncate text-base font-semibold text-content">
           {{ header.activeConversation?.title || "新的对话" }}
         </h1>
       </div>
@@ -196,7 +231,7 @@ const failedMessageCount = computed(
           href="https://github.com/BoosaIDonng/gpt-image-studio"
           target="_blank"
           rel="noopener noreferrer"
-          class="cursor-pointer rounded-lg p-1.5 text-sm text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100"
+          class="cursor-pointer rounded-card p-1.5 text-sm text-content transition-colors hover:bg-surface-hover"
           aria-label="GitHub 仓库"
         >
           <svg
@@ -212,7 +247,7 @@ const failedMessageCount = computed(
           </svg>
         </a>
         <button
-          class="cursor-pointer rounded-lg p-1.5 text-sm text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 2xl:hidden"
+          class="cursor-pointer rounded-card p-1.5 text-sm text-content transition-colors hover:bg-surface-hover"
           aria-label="打开设置"
           type="button"
           @click="actions.openSettings"
@@ -234,11 +269,13 @@ const failedMessageCount = computed(
           </svg>
         </button>
         <button
-          class="cursor-pointer rounded-lg px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 2xl:hidden"
+          class="cursor-pointer rounded-card px-3 py-1.5 text-sm text-content transition-colors hover:bg-surface-hover"
+          :aria-expanded="libraryPanelVisible"
+          aria-controls="library-panel"
           type="button"
-          @click="actions.setLibraryOpen(!header.isLibraryOpen)"
+          @click="toggleLibraryPanel"
         >
-          {{ header.isLibraryOpen ? "隐藏图片库" : "图片库" }}
+          {{ libraryPanelVisible ? "隐藏图片库" : "图片库" }}
         </button>
       </div>
     </header>

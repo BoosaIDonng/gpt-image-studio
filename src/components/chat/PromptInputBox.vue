@@ -330,8 +330,8 @@ defineExpose({ focusComposer });
 <template>
   <div
     :class="[
-      'cupertino-composer-card relative rounded-2xl border px-3 py-2 focus-within:border-gray-400 focus-within:shadow-md',
-      isDragActive ? 'border-gray-500 ring-2 ring-gray-200' : 'border-gray-300',
+      'cupertino-composer-card relative rounded-dialog border px-3 py-2 focus-within:border-border-subtle focus-within:shadow-md',
+      isDragActive ? 'border-border-subtle ring-2 ring-gray-200' : 'border-border-subtle',
     ]"
   >
     <label class="sr-only" for="composerText">输入图片需求</label>
@@ -339,7 +339,7 @@ defineExpose({ focusComposer });
       id="composerText"
       ref="textareaRef"
       :value="composerText"
-      class="max-h-40 w-full resize-none bg-transparent py-1 text-[15px] leading-relaxed text-gray-800 outline-none placeholder:text-gray-400"
+      class="max-h-40 w-full resize-none bg-transparent py-1 text-[15px] leading-relaxed text-content outline-none placeholder:text-content-tertiary"
       :placeholder="composerPlaceholder"
       rows="2"
       @input="handleComposerInput($event)"
@@ -350,7 +350,7 @@ defineExpose({ focusComposer });
     <div class="flex items-end justify-between">
       <div class="flex min-w-0 flex-1 items-center gap-1.5">
         <label
-          class="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
+          class="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-card text-lg text-content-muted transition-colors hover:bg-surface-hover hover:text-content"
           aria-label="上传图片"
           title="上传图片"
         >
@@ -378,7 +378,7 @@ defineExpose({ focusComposer });
         <slot />
       </div>
       <button
-        class="ml-1.5 shrink-0 cursor-pointer rounded-lg bg-black px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-30"
+        class="ml-1.5 shrink-0 cursor-pointer rounded-card bg-accent px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent-pressed disabled:cursor-not-allowed disabled:opacity-30"
         :disabled="!canSend || isExpanding"
         type="submit"
       >
@@ -390,13 +390,15 @@ defineExpose({ focusComposer });
       <div
         v-if="isPromptMenuOpen"
         ref="promptMenuRef"
-        class="fixed z-70 w-72 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl"
+        class="fixed z-70 w-72 overflow-hidden rounded-card border border-border-subtle bg-surface shadow-xl"
         :style="promptMenuStyle"
       >
-        <div class="flex items-center justify-between border-b border-gray-100 bg-white px-3 py-2">
-          <span class="text-xs font-medium text-gray-500"> 常用提示词 </span>
+        <div
+          class="flex items-center justify-between border-b border-border-subtle bg-surface px-3 py-2"
+        >
+          <span class="text-xs font-medium text-content-muted"> 常用提示词 </span>
           <button
-            class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-content-tertiary transition-colors hover:bg-surface-hover hover:text-content"
             aria-label="管理常用提示词"
             title="管理常用提示词"
             type="button"
@@ -425,15 +427,15 @@ defineExpose({ focusComposer });
             :key="prompt.id"
             :ref="(el) => setPromptOptionRef(el, index)"
             class="block w-full cursor-pointer px-3 py-2 text-left transition-colors"
-            :class="index === activePromptIndex ? 'bg-gray-100' : 'hover:bg-gray-50'"
+            :class="index === activePromptIndex ? 'bg-surface-muted' : 'hover:bg-surface-hover'"
             type="button"
             @mousedown.prevent="insertFavoritePrompt(prompt)"
             @mouseenter="activePromptIndex = index"
           >
-            <span class="block truncate text-sm font-medium text-gray-800">
+            <span class="block truncate text-sm font-medium text-content">
               {{ prompt.title }}
             </span>
-            <span class="line-clamp-2 text-xs leading-relaxed text-gray-500">
+            <span class="line-clamp-2 text-xs leading-relaxed text-content-muted">
               {{ prompt.text }}
             </span>
           </button>

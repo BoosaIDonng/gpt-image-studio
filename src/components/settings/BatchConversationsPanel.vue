@@ -42,22 +42,22 @@ const updatedAtLabels = computed(
   <section class="mt-5 flex min-h-0 flex-1 flex-col" aria-labelledby="batchConversationsTitle">
     <div class="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
       <div>
-        <h4 id="batchConversationsTitle" class="text-sm font-semibold text-gray-900">对话</h4>
-        <p class="mt-0.5 text-xs text-gray-500">
+        <h4 id="batchConversationsTitle" class="text-sm font-semibold text-content">对话</h4>
+        <p class="mt-0.5 text-xs text-content-muted">
           找到 {{ filteredConversations.length }} 个，共 {{ conversations.length }} 个，已选
           {{ selectedConversations.length }} 个
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-1 text-xs">
-        <span class="text-gray-400">排序</span>
+        <span class="text-content-tertiary">排序</span>
         <button
           v-for="option in conversationSortOptions"
           :key="option.key"
-          class="inline-flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 transition-colors"
+          class="inline-flex cursor-pointer items-center gap-1 rounded-card px-2 py-1 transition-colors"
           :class="
             conversationSortKey === option.key
-              ? 'bg-gray-100 font-medium text-gray-900'
-              : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
+              ? 'bg-surface-muted font-medium text-content'
+              : 'text-content-muted hover:bg-surface-hover hover:text-content'
           "
           type="button"
           @click="emit('setSort', option.key)"
@@ -82,14 +82,14 @@ const updatedAtLabels = computed(
       </div>
       <div class="flex shrink-0 gap-1 text-xs">
         <button
-          class="cursor-pointer rounded-lg px-2 py-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
+          class="cursor-pointer rounded-card px-2 py-1 text-content-muted transition-colors hover:bg-surface-hover hover:text-content"
           type="button"
           @click="emit('selectAll')"
         >
           全选
         </button>
         <button
-          class="cursor-pointer rounded-lg px-2 py-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
+          class="cursor-pointer rounded-card px-2 py-1 text-content-muted transition-colors hover:bg-surface-hover hover:text-content"
           type="button"
           @click="emit('clearSelection')"
         >
@@ -103,16 +103,16 @@ const updatedAtLabels = computed(
         v-for="conversation in filteredConversations"
         :key="conversation.id"
         :class="[
-          'mb-2 flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors',
+          'mb-2 flex cursor-pointer items-center gap-3 rounded-panel border p-3 transition-colors',
           selectedConversationIds.has(conversation.id)
-            ? 'border-gray-900 bg-gray-50 shadow-sm'
-            : 'border-gray-200 hover:bg-gray-50',
+            ? 'border-border-subtle bg-surface-muted shadow-sm'
+            : 'border-border-subtle hover:bg-surface-hover',
         ]"
         @click="emit('toggleSelection', conversation.id)"
       >
         <div
           :class="[
-            'relative flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-sm font-semibold text-gray-500',
+            'relative flex h-10 w-10 shrink-0 items-center justify-center rounded-card bg-surface-muted text-sm font-semibold text-content-muted',
             selectedConversationIds.has(conversation.id)
               ? 'ring-2 ring-gray-900 ring-offset-1'
               : '',
@@ -121,7 +121,7 @@ const updatedAtLabels = computed(
           {{ conversation.title.slice(0, 1) || "会" }}
           <span
             v-if="selectedConversationIds.has(conversation.id)"
-            class="pointer-events-none absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-gray-900 text-[11px] font-bold text-white shadow"
+            class="pointer-events-none absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-white shadow"
             aria-hidden="true"
           >
             <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -134,21 +134,21 @@ const updatedAtLabels = computed(
           </span>
         </div>
         <div class="min-w-0 flex-1">
-          <p class="truncate text-sm font-medium text-gray-800">
+          <p class="truncate text-sm font-medium text-content">
             {{ conversation.title }}
           </p>
-          <p class="truncate text-xs text-gray-500">
+          <p class="truncate text-xs text-content-muted">
             {{ conversation.summary }} · {{ updatedAtLabels.get(conversation.id) }}
           </p>
         </div>
       </article>
       <div
         v-if="!filteredConversations.length"
-        class="rounded-xl border border-dashed border-gray-200 px-6 py-10 text-center"
+        class="rounded-panel border border-dashed border-border-subtle px-6 py-10 text-center"
       >
-        <p v-if="searchText" class="text-sm font-medium text-gray-600">没有找到匹配的对话</p>
-        <p v-else class="text-sm font-medium text-gray-600">还没有可批量处理的对话</p>
-        <p class="mt-1 text-xs leading-relaxed text-gray-400">
+        <p v-if="searchText" class="text-sm font-medium text-content">没有找到匹配的对话</p>
+        <p v-else class="text-sm font-medium text-content">还没有可批量处理的对话</p>
+        <p class="mt-1 text-xs leading-relaxed text-content-tertiary">
           {{
             searchText
               ? "换一个消息关键词试试。"
@@ -160,7 +160,7 @@ const updatedAtLabels = computed(
 
     <div class="mt-3 shrink-0">
       <button
-        class="rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors enabled:cursor-pointer enabled:hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
+        class="rounded-card bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors enabled:cursor-pointer enabled:hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
         :disabled="!selectedConversations.length"
         type="button"
         @click="emit('deleteSelected')"

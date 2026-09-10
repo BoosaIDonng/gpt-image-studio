@@ -2,6 +2,23 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* `inline` keeps the aliases pointing at the live `--cupertino-*` variables,
+   so `.dark` can redefine them without re-emitting any utility. */
+@theme inline {
+  --color-surface: var(--cupertino-grouped-background);
+  --color-surface-muted: var(--cupertino-secondary-fill);
+  --color-surface-hover: var(--cupertino-fill);
+  --color-border-subtle: var(--cupertino-separator);
+  --color-content: var(--cupertino-label);
+  --color-content-muted: var(--cupertino-secondary-label);
+  --color-content-tertiary: var(--cupertino-tertiary-label);
+  --color-accent: var(--cupertino-blue);
+  --color-accent-pressed: var(--cupertino-blue-pressed);
+  --radius-card: 12px;
+  --radius-panel: 16px;
+  --radius-dialog: 20px;
+}
+
 :root {
   color: #1c1c1e;
   background: #f2f2f7;
@@ -129,18 +146,17 @@ input[type="radio"] {
 .cupertino-app {
   position: relative;
   overflow: hidden;
-  color: var(--cupertino-label) !important;
-  background: var(--cupertino-background) !important;
+  color: var(--cupertino-label);
+  background: var(--cupertino-background);
 }
 
 .dark .cupertino-app {
-  background: var(--cupertino-background) !important;
+  background: var(--cupertino-background);
 }
 
 .cupertino-sidebar {
-  width: 17.5rem !important;
-  color: var(--cupertino-label) !important;
-  background: color-mix(in srgb, var(--cupertino-bar) 94%, transparent) !important;
+  color: var(--cupertino-label);
+  background: color-mix(in srgb, var(--cupertino-bar) 94%, transparent);
   border-right: 1px solid var(--cupertino-separator);
   backdrop-filter: saturate(180%) blur(24px);
   -webkit-backdrop-filter: saturate(180%) blur(24px);
@@ -154,127 +170,48 @@ input[type="radio"] {
   min-height: 3.25rem;
   color: var(--cupertino-label);
   background: color-mix(in srgb, var(--cupertino-bar) 92%, transparent);
-  border-color: var(--cupertino-separator) !important;
+  border-color: var(--cupertino-separator);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
 }
 
 .cupertino-library {
-  color: var(--cupertino-label) !important;
-  background: color-mix(in srgb, var(--cupertino-bar) 94%, transparent) !important;
-  border-color: var(--cupertino-separator) !important;
+  color: var(--cupertino-label);
+  background: color-mix(in srgb, var(--cupertino-bar) 94%, transparent);
+  border-color: var(--cupertino-separator);
   backdrop-filter: saturate(180%) blur(24px);
   -webkit-backdrop-filter: saturate(180%) blur(24px);
 }
 
-/* Surfaces and controls shared by the existing functional panels. */
-.cupertino-app :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select),
-.cupertino-sheet :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select),
-.cupertino-dialog :is(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
-  color: var(--cupertino-label) !important;
-  background: var(--cupertino-secondary-fill) !important;
-  border: 1px solid transparent !important;
-  border-radius: 10px !important;
-  box-shadow: none !important;
-}
+/* Shared control defaults. Utility classes provide component-specific values. */
+@layer base {
+  .cupertino-app :where(input:not([type="checkbox"]):not([type="radio"]), textarea, select),
+  .cupertino-sheet :where(input:not([type="checkbox"]):not([type="radio"]), textarea, select),
+  .cupertino-dialog :where(input:not([type="checkbox"]):not([type="radio"]), textarea, select) {
+    color: var(--cupertino-label);
+    background: var(--cupertino-secondary-fill);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    box-shadow: none;
+  }
 
-.cupertino-app :is(input, textarea, select):focus,
-.cupertino-sheet :is(input, textarea, select):focus,
-.cupertino-dialog :is(input, textarea, select):focus {
-  background: var(--cupertino-grouped-background) !important;
-  border-color: color-mix(in srgb, var(--cupertino-blue) 55%, transparent) !important;
-}
+  .cupertino-app :where(input, textarea, select):focus,
+  .cupertino-sheet :where(input, textarea, select):focus,
+  .cupertino-dialog :where(input, textarea, select):focus {
+    background: var(--cupertino-grouped-background);
+    border-color: color-mix(in srgb, var(--cupertino-blue) 55%, transparent);
+  }
 
-.cupertino-app input::placeholder,
-.cupertino-app textarea::placeholder,
-.cupertino-sheet input::placeholder,
-.cupertino-sheet textarea::placeholder {
-  color: var(--cupertino-tertiary-label) !important;
-}
-
-.cupertino-app .border-gray-200,
-.cupertino-app .border-gray-300,
-.cupertino-app .border-gray-100,
-.cupertino-sheet .border-gray-200,
-.cupertino-sheet .border-gray-300,
-.cupertino-sheet .border-gray-100,
-.cupertino-dialog .border-gray-200,
-.cupertino-dialog .border-gray-300 {
-  border-color: var(--cupertino-separator) !important;
-}
-
-.cupertino-app .bg-white,
-.cupertino-sheet .bg-white,
-.cupertino-dialog .bg-white {
-  background-color: var(--cupertino-grouped-background) !important;
-}
-
-.cupertino-app .bg-gray-50,
-.cupertino-app .bg-gray-100,
-.cupertino-sheet .bg-gray-50,
-.cupertino-sheet .bg-gray-100,
-.cupertino-dialog .bg-gray-50 {
-  background-color: var(--cupertino-secondary-fill) !important;
-}
-
-.dark .cupertino-app .dark\:bg-gray-900,
-.dark .cupertino-sheet .dark\:bg-gray-900,
-.dark .cupertino-dialog .dark\:bg-gray-900 {
-  background-color: var(--cupertino-grouped-background) !important;
-}
-
-.cupertino-app .text-gray-900,
-.cupertino-app .text-gray-800,
-.cupertino-sheet .text-gray-900,
-.cupertino-sheet .text-gray-800,
-.cupertino-dialog .text-gray-900 {
-  color: var(--cupertino-label) !important;
-}
-
-.cupertino-app .text-gray-500,
-.cupertino-app .text-gray-400,
-.cupertino-sheet .text-gray-500,
-.cupertino-sheet .text-gray-400,
-.cupertino-dialog .text-gray-500 {
-  color: var(--cupertino-secondary-label) !important;
-}
-
-.cupertino-app .bg-black,
-.cupertino-app .bg-gray-900,
-.cupertino-sheet .bg-black,
-.cupertino-sheet .bg-gray-900,
-.cupertino-dialog .bg-black {
-  background-color: var(--cupertino-blue) !important;
-}
-
-.cupertino-app .hover\:bg-gray-800:hover,
-.cupertino-app .hover\:bg-gray-900:hover,
-.cupertino-sheet .hover\:bg-gray-800:hover,
-.cupertino-dialog .hover\:bg-gray-800:hover {
-  background-color: var(--cupertino-blue-pressed) !important;
-}
-
-.cupertino-app .rounded-lg,
-.cupertino-sheet .rounded-lg,
-.cupertino-dialog .rounded-lg {
-  border-radius: 12px !important;
-}
-
-.cupertino-app .rounded-xl,
-.cupertino-sheet .rounded-xl,
-.cupertino-dialog .rounded-xl {
-  border-radius: 16px !important;
-}
-
-.cupertino-app .rounded-2xl,
-.cupertino-sheet .rounded-2xl,
-.cupertino-dialog .rounded-2xl {
-  border-radius: 20px !important;
+  .cupertino-app :where(input, textarea)::placeholder,
+  .cupertino-sheet :where(input, textarea)::placeholder,
+  .cupertino-dialog :where(input, textarea)::placeholder {
+    color: var(--cupertino-tertiary-label);
+  }
 }
 
 /* The send field is an iOS message composer, not a floating dashboard card. */
 .cupertino-composer-surface {
-  border-color: var(--cupertino-separator) !important;
+  border-color: var(--cupertino-separator);
   background: color-mix(in srgb, var(--cupertino-bar) 92%, transparent) !important;
   backdrop-filter: saturate(180%) blur(18px);
   -webkit-backdrop-filter: saturate(180%) blur(18px);
@@ -301,7 +238,7 @@ input[type="radio"] {
 
 .cupertino-sheet,
 .cupertino-dialog {
-  color: var(--cupertino-label) !important;
+  color: var(--cupertino-label);
   background: color-mix(in srgb, var(--cupertino-grouped-background) 88%, transparent) !important;
   border: 1px solid color-mix(in srgb, var(--cupertino-separator) 72%, transparent);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.22) !important;
@@ -315,7 +252,7 @@ input[type="radio"] {
 
 .cupertino-tabs {
   background: var(--cupertino-secondary-fill) !important;
-  border-color: var(--cupertino-separator) !important;
+  border-color: var(--cupertino-separator);
 }
 
 .cupertino-tabs button {
@@ -324,15 +261,15 @@ input[type="radio"] {
 
 .cupertino-tabs button[aria-current="page"],
 .cupertino-tabs button.cupertino-tab-active {
-  color: var(--cupertino-label) !important;
+  color: var(--cupertino-label);
   background: var(--cupertino-grouped-background) !important;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
 .cupertino-toast {
-  color: var(--cupertino-label) !important;
+  color: var(--cupertino-label);
   background: color-mix(in srgb, var(--cupertino-grouped-background) 86%, transparent) !important;
-  border-color: var(--cupertino-separator) !important;
+  border-color: var(--cupertino-separator);
   border-radius: 14px !important;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18) !important;
   backdrop-filter: saturate(180%) blur(24px);
@@ -340,11 +277,7 @@ input[type="radio"] {
 }
 
 @media (max-width: 767px) {
-  .cupertino-sidebar,
-  .cupertino-library {
-    width: min(88vw, 22rem) !important;
-  }
-
+  /* Drawer widths are set inline by StudioPanel; only the sheet needs a rule here. */
   .cupertino-sheet {
     align-self: end;
     width: 100% !important;

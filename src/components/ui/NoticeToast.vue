@@ -16,11 +16,11 @@ const emit = defineEmits<{
 <template>
   <div
     v-if="notice"
-    class="cupertino-toast fixed bottom-4 right-4 z-70 max-w-sm rounded-lg border px-4 py-3 text-sm shadow-xl"
+    class="cupertino-toast fixed bottom-4 right-4 z-70 max-w-sm rounded-card border px-4 py-3 text-sm shadow-xl"
     :class="
       notice.type === 'error'
         ? 'border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
-        : 'border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200'
+        : 'border-border-subtle dark:border-border-subtle text-content dark:text-content'
     "
     role="status"
     aria-live="polite"
@@ -31,7 +31,7 @@ const emit = defineEmits<{
         :class="
           notice.type === 'error'
             ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'
-            : 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
+            : 'bg-accent dark:bg-surface-muted text-white dark:text-content'
         "
         aria-hidden="true"
       >
@@ -59,7 +59,7 @@ const emit = defineEmits<{
         {{ notice.message }}
       </p>
       <button
-        class="cursor-pointer rounded p-0.5 text-gray-400 dark:text-gray-500 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
+        class="cursor-pointer rounded p-0.5 text-content-tertiary dark:text-content-muted transition-colors hover:bg-surface-hover dark:hover:bg-surface-hover hover:text-content dark:hover:text-content-tertiary"
         aria-label="关闭提示"
         type="button"
         @click="emit('close')"

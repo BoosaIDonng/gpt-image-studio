@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { FocusTrap } from "focus-trap-vue";
+import { DESKTOP_MIN_WIDTH, useDesktopLayout } from "../../composables/useDesktopLayout";
 import { buildFloatingChatProjectContext } from "../../services/floatingChatContext";
 import { useFloatingChatStore } from "../../stores/floatingChatStore";
 import { useComposerStore } from "../../stores/composerStore";
@@ -18,6 +19,15 @@ const listRef = ref<HTMLDivElement | null>(null);
 // ── 视口尺寸（响应式） ──
 const viewportWidth = ref(window.innerWidth);
 const isMobile = computed(() => viewportWidth.value < 768);
+const isDesktopLayout = useDesktopLayout();
+
+/**
+ * 气泡以 z-40 悬浮；在桌面断点以下打开的会话/图片库抽屉是模态层（z-30/40），
+ * 气泡若继续显示会盖住抽屉内容与引用/下载等操作，因此抽屉打开时隐藏气泡。
+ */
+const modalDrawerOpen = computed(
+  () => !isDesktopLayout.value && (composer.isLibraryOpen || composer.isConversationSidebarOpen),
+);
 
 // ── 拖拽状态 ──
 const STORAGE_KEY = "floating-chat-position";
@@ -25,6 +35,7 @@ const BUTTON_SIZE = 48; // h-12 w-12 = 48px
 const PANEL_W = 380;
 const PANEL_H = 520;
 const EDGE_MARGIN = 24; // 距视口边缘最小距离 (6 * 4 = 24px)
+const COMPOSER_CLEARANCE = 148; // 让气泡停在输入区上方，避免压住"发送"
 const CLICK_THRESHOLD = 5;
 
 const posRight = ref(EDGE_MARGIN);
@@ -107,12 +118,31 @@ function clampBottom(value: number) {
 }
 
 function minimumBottomMargin() {
-  return window.innerWidth < 768 ? 148 : EDGE_MARGIN;
+  return libraryOwnsBottomRight() ? EDGE_MARGIN : COMPOSER_CLEARANCE;
+}
+
+/**
+ * The composer owns the bottom-right corner unless the inline image library
+ * covers it. Without this the floating button sits on top of the send action.
+ */
+function libraryOwnsBottomRight() {
+  return window.innerWidth >= DESKTOP_MIN_WIDTH && !composer.isLibraryCollapsed;
 }
 
 function updateViewport() {
   viewportWidth.value = window.innerWidth;
+  // Re-apply the minimum so a resize into a narrower layout cannot park the
+  // bubble on top of the composer.
+  posBottom.value = clampBottom(posBottom.value);
 }
+
+// Collapsing or expanding the library changes who owns the bottom-right corner.
+watch(
+  () => composer.isLibraryCollapsed,
+  () => {
+    posBottom.value = clampBottom(posBottom.value);
+  },
+);
 
 function onPointerDown(e: PointerEvent) {
   if (e.button !== 0) return; // 仅左键
@@ -226,8 +256,8 @@ function buildProjectContext() {
 <template>
   <!-- 气泡按钮（可拖动） -->
   <button
-    v-if="!chat.isOpen"
-    class="z-40 flex h-12 w-12 touch-none select-none items-center justify-center rounded-full bg-gray-900 text-white shadow-lg"
+    v-if="!chat.isOpen && !modalDrawerOpen"
+    class="z-40 flex h-12 w-12 touch-none select-none items-center justify-center rounded-full bg-accent text-white shadow-lg"
     :class="isDragging ? 'cursor-grabbing' : 'cursor-grab floating-chat-trigger'"
     :style="{
       position: 'fixed',
@@ -261,7 +291,7 @@ function buildProjectContext() {
   />
   <FocusTrap v-if="chat.isOpen" :active="isMobile" :initial-focus="() => false">
     <div
-      class="flex flex-col rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-2xl"
+      class="flex flex-col rounded-dialog border border-border-subtle dark:border-border-subtle bg-surface dark:bg-surface shadow-2xl"
       :style="panelStyle"
       role="dialog"
       aria-modal="true"
@@ -269,16 +299,18 @@ function buildProjectContext() {
     >
       <!-- 头部 -->
       <div
-        class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 px-4 py-3"
+        class="flex items-center justify-between border-b border-border-subtle dark:border-border-subtle px-4 py-3"
       >
         <div>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">AI 助手</h3>
-          <p class="text-xs text-gray-400 dark:text-gray-500">改写 prompt、提问、聊天</p>
+          <h3 class="text-sm font-semibold text-content dark:text-content">AI 助手</h3>
+          <p class="text-xs text-content-tertiary dark:text-content-muted">
+            改写 prompt、提问、聊天
+          </p>
         </div>
         <div class="flex items-center gap-1">
           <button
             v-if="chat.messages.length"
-            class="cursor-pointer rounded p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
+            class="cursor-pointer rounded p-1.5 text-content-tertiary dark:text-content-muted hover:bg-surface-hover dark:hover:bg-surface-hover hover:text-content dark:hover:text-content-tertiary"
             type="button"
             title="清空对话"
             @click="chat.clear"
@@ -298,7 +330,7 @@ function buildProjectContext() {
             </svg>
           </button>
           <button
-            class="cursor-pointer rounded p-1.5 text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300"
+            class="cursor-pointer rounded p-1.5 text-content-tertiary dark:text-content-muted hover:bg-surface-hover dark:hover:bg-surface-hover hover:text-content dark:hover:text-content-tertiary"
             type="button"
             title="关闭"
             @click="chat.close"
@@ -323,7 +355,7 @@ function buildProjectContext() {
       <div ref="listRef" class="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         <div
           v-if="!chat.messages.length"
-          class="text-center text-xs text-gray-400 dark:text-gray-500 py-8"
+          class="text-center text-xs text-content-tertiary dark:text-content-muted py-8"
         >
           发一句试试。例如「帮我把这个 prompt 改写得更有电影感：一个女孩在咖啡馆」
         </div>
@@ -334,10 +366,10 @@ function buildProjectContext() {
         >
           <div
             :class="[
-              'max-w-[85%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words',
+              'max-w-[85%] rounded-card px-3 py-2 text-sm whitespace-pre-wrap break-words',
               msg.role === 'user'
-                ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200',
+                ? 'bg-accent dark:bg-surface-muted text-white dark:text-content'
+                : 'bg-surface-muted dark:bg-surface text-content dark:text-content',
             ]"
           >
             {{ msg.content || (chat.isStreaming && i === chat.messages.length - 1 ? "..." : "") }}
@@ -361,18 +393,18 @@ function buildProjectContext() {
       </div>
 
       <!-- 输入区 -->
-      <div class="border-t border-gray-100 dark:border-gray-700 p-3">
+      <div class="border-t border-border-subtle dark:border-border-subtle p-3">
         <div class="flex gap-2">
           <textarea
             v-model="chat.input"
             rows="2"
-            class="flex-1 resize-none rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-gray-500 dark:focus:border-gray-400"
+            class="flex-1 resize-none rounded-card border border-border-subtle dark:border-border-subtle bg-surface dark:bg-surface px-3 py-2 text-sm text-content dark:text-content outline-none focus:border-border-subtle dark:focus:border-border-subtle"
             placeholder="输入消息，Enter 发送，Shift+Enter 换行"
             :disabled="chat.isStreaming"
             @keydown="handleKeydown"
           />
           <button
-            class="self-end cursor-pointer rounded-lg bg-gray-900 dark:bg-gray-100 px-3 py-2 text-sm font-medium text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed"
+            class="self-end cursor-pointer rounded-card bg-accent px-3 py-2 text-sm font-medium text-white hover:bg-accent-pressed disabled:opacity-40 disabled:cursor-not-allowed"
             type="button"
             :disabled="!chat.input.trim() || chat.isStreaming"
             @click="sendWithProjectContext"
