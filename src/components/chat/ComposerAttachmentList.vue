@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { vImagePreview } from "../../composables/imagePreviewDirective";
 import type { ImageAsset } from "../../types/studio";
 import Tooltip from "../ui/Tooltip.vue";
 
@@ -110,7 +111,8 @@ const totalSizeLabel = computed(() => {
       preferred-placement="top"
     >
       <div
-        class="group relative h-20 cursor-pointer overflow-hidden rounded-lg border border-gray-200"
+        v-image-preview="item.kind === 'editingPair' ? item.source : item.image"
+        class="group relative h-20 cursor-pointer overflow-hidden rounded-card border border-border-subtle"
         @click="handleClick(item)"
       >
         <img
@@ -151,6 +153,6 @@ const totalSizeLabel = computed(() => {
         </button>
       </div>
     </Tooltip>
-    <span class="text-xs text-gray-400">{{ totalSizeLabel }}</span>
+    <span class="text-xs text-content-tertiary">{{ totalSizeLabel }}</span>
   </div>
 </template>

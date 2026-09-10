@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useNow } from "../../composables/useNow";
+import { vImagePreview } from "../../composables/imagePreviewDirective";
 import { formatRelativeTime } from "../../shared/dateTime";
 import type { ImageAsset } from "../../types/studio";
 import Tooltip from "../ui/Tooltip.vue";
@@ -38,41 +39,41 @@ function toggleTagColor(nextColor: ImageAsset["tagColor"]) {
 </script>
 
 <template>
-  <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-3">
+  <div v-image-preview="image" class="border-t border-border-subtle dark:border-border-subtle px-4 py-3">
     <div class="mb-3 flex items-start justify-between gap-3">
       <div class="min-w-0">
-        <div class="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
+        <div class="truncate text-sm font-semibold text-content dark:text-content">
           {{ image.name }}
         </div>
-        <div class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+        <div class="mt-0.5 text-xs text-content-muted dark:text-content-tertiary">
           {{ sourceLabel(image) }} · {{ createdAtLabel }}
         </div>
       </div>
       <div class="flex shrink-0 items-center gap-1">
         <a
           v-if="image.previewUrl"
-          class="rounded-lg px-2 py-1 text-xs text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+          class="rounded-card px-2 py-1 text-xs text-content dark:text-content-tertiary transition-colors hover:bg-surface-hover dark:hover:bg-surface-hover"
           :download="imageDownloadName(image)"
           :href="image.previewUrl"
         >
           下载
         </a>
         <button
-          class="cursor-pointer rounded-lg px-2 py-1 text-xs text-gray-600 dark:text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
+          class="cursor-pointer rounded-card px-2 py-1 text-xs text-content dark:text-content-tertiary transition-colors hover:bg-surface-hover dark:hover:bg-surface-hover"
           type="button"
           @click="emit('renameImage', image.id)"
         >
           重命名
         </button>
         <button
-          class="cursor-pointer rounded-lg px-2 py-1 text-xs text-red-500 dark:text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
+          class="cursor-pointer rounded-card px-2 py-1 text-xs text-red-500 dark:text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
           type="button"
           @click="emit('deleteImage', image.id)"
         >
           删除
         </button>
         <button
-          class="cursor-pointer rounded-lg p-1 text-gray-400 dark:text-gray-500 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-600 dark:hover:text-gray-300"
+          class="cursor-pointer rounded-card p-1 text-content-tertiary dark:text-content-muted transition-colors hover:bg-surface-hover dark:hover:bg-surface-hover hover:text-content dark:hover:text-content-tertiary"
           type="button"
           @click="emit('clearSelection')"
         >
@@ -86,7 +87,7 @@ function toggleTagColor(nextColor: ImageAsset["tagColor"]) {
     </div>
 
     <div class="mb-3 flex items-center gap-2">
-      <span class="text-xs text-gray-400 dark:text-gray-500">分类颜色</span>
+      <span class="text-xs text-content-tertiary dark:text-content-muted">分类颜色</span>
       <button
         v-for="color in IMAGE_TAG_COLORS"
         :key="color"
@@ -94,8 +95,8 @@ function toggleTagColor(nextColor: ImageAsset["tagColor"]) {
         :class="[
           'h-3 w-3 cursor-pointer rounded-full border transition-transform hover:scale-105',
           image.tagColor === color
-            ? 'border-gray-700 dark:border-gray-300 ring-2 ring-gray-400/60 dark:ring-gray-500/60'
-            : 'border-gray-300 dark:border-gray-600',
+            ? 'border-border-subtle dark:border-border-subtle ring-2 ring-gray-400/60 dark:ring-gray-500/60'
+            : 'border-border-subtle dark:border-border-subtle',
         ]"
         :style="{ backgroundColor: imageTagDotColor(color) }"
         type="button"
@@ -105,22 +106,22 @@ function toggleTagColor(nextColor: ImageAsset["tagColor"]) {
 
     <dl class="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
       <div>
-        <dt class="text-gray-400 dark:text-gray-500">格式</dt>
-        <dd class="mt-0.5 text-gray-700 dark:text-gray-300">
+        <dt class="text-content-tertiary dark:text-content-muted">格式</dt>
+        <dd class="mt-0.5 text-content dark:text-content-tertiary">
           {{ imageFormat(image) }}
         </dd>
       </div>
       <div>
-        <dt class="text-gray-400 dark:text-gray-500">尺寸</dt>
-        <dd class="mt-0.5 text-gray-700 dark:text-gray-300">{{ imageSize(image) }}</dd>
+        <dt class="text-content-tertiary dark:text-content-muted">尺寸</dt>
+        <dd class="mt-0.5 text-content dark:text-content-tertiary">{{ imageSize(image) }}</dd>
       </div>
       <div>
-        <dt class="text-gray-400 dark:text-gray-500">文件</dt>
-        <dd class="mt-0.5 text-gray-700 dark:text-gray-300">{{ fileSize(image) }}</dd>
+        <dt class="text-content-tertiary dark:text-content-muted">文件</dt>
+        <dd class="mt-0.5 text-content dark:text-content-tertiary">{{ fileSize(image) }}</dd>
       </div>
       <div>
-        <dt class="text-gray-400 dark:text-gray-500">状态</dt>
-        <dd class="mt-0.5 text-gray-700 dark:text-gray-300">
+        <dt class="text-content-tertiary dark:text-content-muted">状态</dt>
+        <dd class="mt-0.5 text-content dark:text-content-tertiary">
           {{ isAttached ? "已加入引用" : "未引用" }}
         </dd>
       </div>
@@ -128,7 +129,7 @@ function toggleTagColor(nextColor: ImageAsset["tagColor"]) {
 
     <div class="mt-3 grid gap-x-3 gap-y-2 sm:grid-cols-3">
       <div class="min-w-0">
-        <div class="text-xs text-gray-400 dark:text-gray-500">原始 Prompt</div>
+        <div class="text-xs text-content-tertiary dark:text-content-muted">原始 Prompt</div>
         <Tooltip
           :text="image.prompt"
           :delay="500"
@@ -138,14 +139,14 @@ function toggleTagColor(nextColor: ImageAsset["tagColor"]) {
           preferred-placement="top"
         >
           <p
-            class="mt-1 line-clamp-2 text-left text-xs leading-relaxed text-gray-600 dark:text-gray-400"
+            class="mt-1 line-clamp-2 text-left text-xs leading-relaxed text-content dark:text-content-tertiary"
           >
             {{ image.prompt }}
           </p>
         </Tooltip>
       </div>
       <div class="min-w-0">
-        <div class="text-xs text-gray-400 dark:text-gray-500">实际发送 Prompt</div>
+        <div class="text-xs text-content-tertiary dark:text-content-muted">实际发送 Prompt</div>
         <Tooltip
           v-if="image.requestPrompt"
           :text="image.requestPrompt"
@@ -156,15 +157,20 @@ function toggleTagColor(nextColor: ImageAsset["tagColor"]) {
           preferred-placement="top"
         >
           <p
-            class="mt-1 line-clamp-2 text-left text-xs leading-relaxed text-gray-600 dark:text-gray-400"
+            class="mt-1 line-clamp-2 text-left text-xs leading-relaxed text-content dark:text-content-tertiary"
           >
             {{ image.requestPrompt }}
           </p>
         </Tooltip>
-        <p v-else class="mt-1 text-xs leading-relaxed text-gray-400 dark:text-gray-500">未记录</p>
+        <p
+          v-else
+          class="mt-1 text-xs leading-relaxed text-content-tertiary dark:text-content-muted"
+        >
+          未记录
+        </p>
       </div>
       <div class="min-w-0">
-        <div class="text-xs text-gray-400 dark:text-gray-500">API 改写 Prompt</div>
+        <div class="text-xs text-content-tertiary dark:text-content-muted">API 改写 Prompt</div>
         <Tooltip
           v-if="image.revisedPrompt"
           :text="image.revisedPrompt"
@@ -175,12 +181,17 @@ function toggleTagColor(nextColor: ImageAsset["tagColor"]) {
           preferred-placement="top"
         >
           <p
-            class="mt-1 line-clamp-2 text-left text-xs leading-relaxed text-gray-600 dark:text-gray-400"
+            class="mt-1 line-clamp-2 text-left text-xs leading-relaxed text-content dark:text-content-tertiary"
           >
             {{ image.revisedPrompt }}
           </p>
         </Tooltip>
-        <p v-else class="mt-1 text-xs leading-relaxed text-gray-400 dark:text-gray-500">未返回</p>
+        <p
+          v-else
+          class="mt-1 text-xs leading-relaxed text-content-tertiary dark:text-content-muted"
+        >
+          未返回
+        </p>
       </div>
     </div>
   </div>

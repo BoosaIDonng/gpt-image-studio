@@ -1,6 +1,8 @@
 <script setup lang="ts">
 defineProps<{
   durationLabel: string;
+  /** Human-readable ETA based on the user's own generation history. */
+  etaLabel?: string;
   previewUrl?: string;
   retryAttempt?: number;
 }>();
@@ -12,35 +14,36 @@ defineEmits<{
 
 <template>
   <figure
-    class="generation-skeleton-card overflow-hidden rounded-xl border border-gray-200 bg-white"
+    class="generation-skeleton-card overflow-hidden rounded-panel border border-border-subtle bg-surface"
     aria-label="图片生成中"
   >
     <div
       :class="[
-        'generation-skeleton-media flex h-48 items-center justify-center text-gray-300',
-        previewUrl ? 'generation-skeleton-media--preview bg-gray-900' : 'bg-gray-50',
+        'generation-skeleton-media flex h-48 items-center justify-center text-content-tertiary',
+        previewUrl ? 'generation-skeleton-media--preview bg-accent' : 'bg-surface-muted',
       ]"
     >
       <img v-if="previewUrl" :src="previewUrl" alt="" class="h-full w-full object-cover" />
       <div
         v-if="!previewUrl"
-        class="generation-orbit flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white shadow-sm"
+        class="generation-orbit flex h-11 w-11 items-center justify-center rounded-full border border-border-subtle bg-surface shadow-sm"
       >
-        <span class="h-2 w-2 rounded-full bg-gray-300"></span>
+        <span class="h-2 w-2 rounded-full bg-surface-hover"></span>
       </div>
       <div
         :class="[
           'generation-duration-badge absolute left-1/2 top-[66%] z-1 -translate-x-1/2 rounded-full px-3 py-1 text-xs font-medium shadow-sm backdrop-blur',
           previewUrl
-            ? 'border border-black/10 bg-white/92 text-gray-700'
-            : 'border border-gray-200 bg-white/90 text-gray-500',
+            ? 'border border-black/10 bg-surface/92 text-content'
+            : 'border border-border-subtle bg-surface/90 text-content-muted',
         ]"
       >
-        {{ previewUrl ? "预览更新中" : "正在生成" }}：{{ durationLabel }}
+        {{ previewUrl ? "预览更新中" : "正在生成" }}：{{ durationLabel
+        }}<template v-if="etaLabel"> · 预计 {{ etaLabel }}</template>
       </div>
       <div
         v-if="retryAttempt"
-        class="absolute right-3 top-3 z-1 rounded-lg border border-blue-200 bg-white/95 px-2.5 py-1 text-xs font-medium text-blue-600 shadow-sm backdrop-blur"
+        class="absolute right-3 top-3 z-1 rounded-card border border-blue-200 bg-surface/95 px-2.5 py-1 text-xs font-medium text-blue-600 shadow-sm backdrop-blur"
       >
         正在重试第 {{ retryAttempt }} 次
       </div>
@@ -52,7 +55,7 @@ defineEmits<{
       </div>
       <div class="generation-skeleton-line mt-2 h-3 w-28 rounded"></div>
       <div class="mt-3 flex items-center justify-between gap-2">
-        <div class="generation-skeleton-line h-7 w-16 rounded-lg"></div>
+        <div class="generation-skeleton-line h-7 w-16 rounded-card"></div>
         <div class="flex items-center gap-2">
           <div class="generation-skeleton-line h-6 w-6 rounded-md"></div>
           <div class="generation-skeleton-line h-6 w-6 rounded-md"></div>
@@ -61,7 +64,7 @@ defineEmits<{
         </div>
       </div>
       <button
-        class="mt-3 cursor-pointer text-xs text-gray-500 transition-colors hover:text-gray-900"
+        class="mt-3 cursor-pointer text-xs text-content-muted transition-colors hover:text-content"
         type="button"
         @click="$emit('cancel')"
       >

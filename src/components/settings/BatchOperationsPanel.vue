@@ -3,6 +3,7 @@ import { computed, ref, watch } from "vue";
 import { timestampFromCreatedAt, timestampFromUpdatedAt } from "../../shared/dateTime";
 import { createObjectUrl, revokeObjectUrl } from "../../shared/objectUrls";
 import { createZipArchive } from "../../services/zipArchive";
+import { useImagesStore } from "../../stores/imagesStore";
 import type { Conversation, ImageAsset, Message } from "../../types/studio";
 import ConfirmInputModal from "../ui/ConfirmInputModal.vue";
 import BatchConversationsPanel from "./BatchConversationsPanel.vue";
@@ -58,9 +59,9 @@ const filteredImages = computed(() => {
   return [...list].sort(compareImages);
 });
 const selectedImages = computed(() =>
-  filteredImages.value.filter((image) => image.previewUrl && selectedImageIds.value.has(image.id)),
+  filteredImages.value.filter((image) => selectedImageIds.value.has(image.id)),
 );
-const downloadableImages = computed(() => filteredImages.value.filter((image) => image.previewUrl));
+const downloadableImages = computed(() => filteredImages.value);
 const messagesByConversationId = computed(() => {
   const grouped = new Map<string, Message[]>();
   messages.value.forEach((message) => {
@@ -259,6 +260,11 @@ function confirmPendingAction() {
 async function downloadSelectedImages() {
   if (!selectedImages.value.length) return;
 
+  // Previews load lazily; make sure every selected image has its blob before
+  // fetching the object URLs.
+  const imageStore = useImagesStore();
+  await Promise.all(selectedImages.value.map((image) => imageStore.ensureImagePreview(image.id)));
+
   const entries = await Promise.all(
     selectedImages.value.map(async (image, index) => {
       const response = await fetch(image.previewUrl as string);
@@ -311,18 +317,18 @@ function uniqueZipEntryName(filename: string, index: number) {
 <template>
   <section aria-labelledby="batchSettingsTitle" class="flex min-h-0 flex-1 flex-col">
     <div class="shrink-0">
-      <h3 id="batchSettingsTitle" class="text-base font-semibold text-gray-900">批量操作</h3>
+      <h3 id="batchSettingsTitle" class="text-base font-semibold text-content">批量操作</h3>
 
       <div class="mt-4 flex flex-col gap-2 sm:flex-row">
-        <div class="grid rounded-lg bg-gray-100 p-1 sm:w-80 sm:grid-cols-2">
+        <div class="grid rounded-card bg-surface-muted p-1 sm:w-80 sm:grid-cols-2">
           <button
             v-for="panel in batchPanels"
             :key="panel.key"
             class="cursor-pointer rounded-md px-2 py-1 text-sm font-medium transition-colors"
             :class="
               activeBatchPanel === panel.key
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-800'
+                ? 'bg-surface text-content shadow-sm'
+                : 'text-content-muted hover:text-content'
             "
             type="button"
             @click="activeBatchPanel = panel.key"
@@ -333,7 +339,7 @@ function uniqueZipEntryName(filename: string, index: number) {
 
         <div class="relative min-w-0 flex-1">
           <svg
-            class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+            class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-tertiary"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -347,13 +353,13 @@ function uniqueZipEntryName(filename: string, index: number) {
           </svg>
           <input
             v-model="searchText"
-            class="w-full rounded-lg border border-gray-200 bg-white py-2 pl-9 pr-9 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-gray-400"
+            class="w-full rounded-card border border-border-subtle bg-surface py-2 pl-9 pr-9 text-sm text-content outline-none transition-colors placeholder:text-content-tertiary focus:border-border-subtle"
             :placeholder="searchPlaceholder"
             type="text"
           />
           <button
             v-if="searchText"
-            class="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            class="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer rounded p-1 text-content-tertiary transition-colors hover:bg-surface-hover hover:text-content"
             aria-label="清空搜索"
             type="button"
             @click="searchText = ''"

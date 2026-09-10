@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ImageAsset, Message } from "../../../types/studio";
+import { vImagePreview } from "../../../composables/imagePreviewDirective";
 import Tooltip from "../../ui/Tooltip.vue";
 import { durationLabel, imageDownloadName } from "./messageImageFormat";
 
@@ -8,6 +9,10 @@ const props = defineProps<{
   imageId: string;
   isAttached: boolean;
   message: Message;
+  /** Human-readable deviations between request and result (size/count/transparent/prompt rewritten). */
+  deviationTexts?: string[];
+  /** Populated when the API rewrote the prompt; enables one-click re-run. */
+  revisedPrompt?: string;
 }>();
 
 const emit = defineEmits<{
@@ -17,6 +22,7 @@ const emit = defineEmits<{
   previewImage: [id: string];
   renameImage: [id: string];
   refreshImage: [message: Message, imageId: string];
+  retryRevised: [message: Message, prompt: string];
 }>();
 
 function attachActionLabel() {
@@ -26,9 +32,10 @@ function attachActionLabel() {
 </script>
 
 <template>
-  <figure class="overflow-hidden rounded-xl border border-gray-200">
+  <figure class="overflow-hidden rounded-panel border border-border-subtle">
     <div
-      class="group relative flex h-48 items-center justify-center bg-gray-100 text-sm text-gray-400"
+      v-image-preview="image"
+      class="group relative flex h-48 items-center justify-center bg-surface-muted text-sm text-content-tertiary"
     >
       <span
         v-if="image?.editSourceImageId"
@@ -50,11 +57,18 @@ function attachActionLabel() {
         </span>
       </button>
       <div
-        v-else
-        class="flex h-full w-full flex-col items-center justify-center gap-1 border border-dashed border-gray-300 bg-gray-50 px-4 text-center"
+        v-else-if="image"
+        class="flex h-full w-full flex-col items-center justify-center gap-1 border border-dashed border-border-subtle bg-surface-muted px-4 text-center"
       >
-        <span class="text-sm font-medium text-gray-500">图片已删除</span>
-        <span class="text-xs text-gray-400"> 这张图片已从图片库移除，无法显示预览 </span>
+        <span class="text-sm font-medium text-content-muted">正在加载预览</span>
+        <span class="text-xs text-content-tertiary"> 滚动到可视区域后自动加载原图 </span>
+      </div>
+      <div
+        v-else
+        class="flex h-full w-full flex-col items-center justify-center gap-1 border border-dashed border-border-subtle bg-surface-muted px-4 text-center"
+      >
+        <span class="text-sm font-medium text-content-muted">图片已删除</span>
+        <span class="text-xs text-content-tertiary"> 这张图片已从图片库移除，无法显示预览 </span>
       </div>
     </div>
     <figcaption class="px-3 py-2">
@@ -63,20 +77,37 @@ function attachActionLabel() {
           <div class="truncate text-sm font-medium">
             {{ image?.name || "图片已删除" }}
           </div>
-          <div class="shrink-0 text-xs text-gray-400">
+          <div class="shrink-0 text-xs text-content-tertiary">
             生成耗时：{{ durationLabel(image?.generationDurationMs) }}
           </div>
         </div>
-        <div class="truncate text-xs text-gray-500">
+        <div class="truncate text-xs text-content-muted">
           {{ image?.prompt || "原图片资产已从图片库中删除" }}
+        </div>
+        <div v-if="deviationTexts?.length" class="mt-2 space-y-1">
+          <div
+            v-for="text in deviationTexts"
+            :key="text"
+            class="rounded-card border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-700"
+          >
+            ⚠ {{ text }}
+          </div>
+          <button
+            v-if="revisedPrompt"
+            class="cursor-pointer rounded-card border border-amber-300 px-2 py-1 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100"
+            type="button"
+            @click="emit('retryRevised', message, revisedPrompt)"
+          >
+            用改写后的提示词重跑
+          </button>
         </div>
       </div>
       <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
         <button
-          class="cursor-pointer rounded-lg bg-black px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-gray-800"
+          class="cursor-pointer rounded-card bg-accent px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-accent-pressed"
           type="button"
           :disabled="!image"
-          :class="!image ? 'cursor-not-allowed opacity-30 hover:bg-black' : ''"
+          :class="!image ? 'cursor-not-allowed opacity-30 hover:bg-accent' : ''"
           @click="emit('continueEdit', imageId)"
         >
           继续编辑
@@ -85,10 +116,10 @@ function attachActionLabel() {
           <Tooltip :text="attachActionLabel()" preferred-placement="top">
             <button
               :class="[
-                'inline-flex h-7 w-7 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-30',
+                'inline-flex h-7 w-7 items-center justify-center rounded-card transition-colors disabled:cursor-not-allowed disabled:opacity-30',
                 isAttached
-                  ? 'bg-gray-100 text-gray-400'
-                  : 'cursor-pointer text-gray-600 hover:bg-gray-100',
+                  ? 'bg-surface-muted text-content-tertiary'
+                  : 'cursor-pointer text-content hover:bg-surface-hover',
               ]"
               type="button"
               :disabled="!image || isAttached"
@@ -126,7 +157,7 @@ function attachActionLabel() {
           </Tooltip>
           <Tooltip text="重命名" preferred-placement="top">
             <button
-              class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-30"
+              class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-card text-content transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-30"
               type="button"
               :disabled="!image"
               aria-label="重命名"
@@ -149,7 +180,7 @@ function attachActionLabel() {
           </Tooltip>
           <Tooltip text="再次生成" preferred-placement="top">
             <button
-              class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-30"
+              class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-card text-content transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-30"
               type="button"
               :disabled="!image"
               aria-label="再次生成"
@@ -172,7 +203,7 @@ function attachActionLabel() {
           </Tooltip>
           <Tooltip text="刷新" preferred-placement="top">
             <button
-              class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-30"
+              class="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-card text-content transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-30"
               type="button"
               :disabled="!image"
               aria-label="刷新"
@@ -198,7 +229,7 @@ function attachActionLabel() {
           <Tooltip text="下载" preferred-placement="top">
             <a
               v-if="image?.previewUrl"
-              class="inline-flex h-7 w-7 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100"
+              class="inline-flex h-7 w-7 items-center justify-center rounded-card text-content transition-colors hover:bg-surface-hover"
               :download="imageDownloadName(image)"
               :href="image?.previewUrl"
               aria-label="下载"

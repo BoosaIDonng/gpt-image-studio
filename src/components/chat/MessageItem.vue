@@ -2,6 +2,12 @@
 import { computed, onUnmounted, ref, watch } from "vue";
 import { formatRelativeTime } from "../../shared/dateTime";
 import { useGenerationStore } from "../../stores/generationStore";
+import { useImagesStore } from "../../stores/imagesStore";
+import {
+  describeGenerationDeviation,
+  validateGeneratedImage,
+  validateGenerationCount,
+} from "../../services/generationValidation";
 import type { ImageAsset, Message } from "../../types/studio";
 import ErrorGenerationCard from "./message-parts/ErrorGenerationCard.vue";
 import PendingGenerationCard from "./message-parts/PendingGenerationCard.vue";
@@ -33,8 +39,55 @@ const emit = defineEmits<{
 
 const attachedImageIds = computed(() => new Set(props.attachedImageIds));
 const generation = useGenerationStore();
+const imagesStore = useImagesStore();
 const createdAtLabel = computed(() => formatRelativeTime(props.message.createdAt, props.nowMs));
 const pendingPreviewUrl = computed(() => generation.getPartialPreviewUrl(props.message.id));
+
+/** ETA for non-streaming providers, based on the user's own past durations. */
+const pendingEtaLabel = computed(() => {
+  const averageMs = imagesStore.averageGenerationDurationMs;
+  if (!averageMs) return "";
+  const startedAtMs = new Date(
+    props.message.generationStartedAt ?? props.message.createdAt,
+  ).getTime();
+  const elapsedMs = Number.isFinite(startedAtMs)
+    ? Math.max(0, pendingNowMs.value - startedAtMs)
+    : 0;
+  const remainingSeconds = Math.round((averageMs - elapsedMs) / 1000);
+  if (remainingSeconds < 5) return "";
+  return remainingSeconds >= 60
+    ? `${Math.round(remainingSeconds / 60)} 分钟`
+    : `约 ${remainingSeconds} 秒`;
+});
+
+/** Visible deviations (size/count/transparent/prompt rewritten) for one result. */
+function deviationTextsForImage(imageId: string): string[] {
+  const image = props.imageById(imageId);
+  if (!image) return [];
+
+  const texts = validateGeneratedImage({
+    params: props.message.generationParams,
+    image,
+  }).map((deviation) => describeGenerationDeviation(deviation));
+
+  // Count mismatch is message-level; show it once, on the first result card.
+  const isFirstResult = props.message.resultImageIds[0] === imageId;
+  if (isFirstResult) {
+    const countDeviations = validateGenerationCount({
+      requested: props.message.generationParams?.imageCount,
+      actual: props.message.resultImageIds.length,
+      hasError: Boolean(props.message.errorMessage),
+    }).map((deviation) => describeGenerationDeviation(deviation));
+    texts.push(...countDeviations);
+  }
+
+  return texts;
+}
+
+function revisedPromptForImage(imageId: string) {
+  const image = props.imageById(imageId);
+  return image?.revisedPrompt?.trim() || "";
+}
 const hasImagePanel = computed(
   () =>
     props.message.resultImageIds.length ||
@@ -109,15 +162,17 @@ function stopPendingTimer() {
       @load-message-config="emit('loadMessageConfig', $event)"
     />
 
-    <article :class="['rounded-2xl px-5 py-4', message.role === 'user' ? 'bg-gray-50' : '']">
-      <div class="mb-1.5 flex items-center gap-2 text-xs text-gray-500">
-        <span class="font-semibold text-gray-700">
+    <article
+      :class="['rounded-dialog px-5 py-4', message.role === 'user' ? 'bg-surface-muted' : '']"
+    >
+      <div class="mb-1.5 flex items-center gap-2 text-xs text-content-muted">
+        <span class="font-semibold text-content">
           {{ message.role === "user" ? "你" : "Image Studio" }}
         </span>
         <span>{{ createdAtLabel }}</span>
       </div>
 
-      <p class="text-[15px] leading-relaxed text-gray-800">
+      <p class="text-[15px] leading-relaxed text-content">
         {{ message.content }}
       </p>
 
@@ -135,17 +190,21 @@ function stopPendingTimer() {
           :image-id="imageId"
           :is-attached="isImageAttached(imageId)"
           :message="message"
+          :deviation-texts="deviationTextsForImage(imageId)"
+          :revised-prompt="revisedPromptForImage(imageId)"
           @attach-image="emit('attachImage', $event)"
           @continue-edit="emit('continueEdit', $event)"
           @generate-another="emit('generateAnother', $event)"
           @preview-image="emit('previewImage', $event)"
           @rename-image="emit('renameImage', $event)"
           @refresh-image="(message, imageId) => emit('refreshImage', message, imageId)"
+          @retry-revised="(message, prompt) => emit('retryMessage', message, prompt)"
         />
 
         <PendingGenerationCard
           v-if="message.status === 'pending'"
           :duration-label="pendingDurationLabel()"
+          :eta-label="pendingEtaLabel"
           :preview-url="pendingPreviewUrl"
           :retry-attempt="message.networkRetryAttempt"
           @cancel="emit('cancelMessageGeneration', message.id)"

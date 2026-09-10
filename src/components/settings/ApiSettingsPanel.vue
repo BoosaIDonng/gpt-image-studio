@@ -12,6 +12,7 @@ import {
 } from "../../services/companionApi";
 import type { CompanionAuthStatus, CompanionHealthResponse } from "../../types/companion";
 import { fetchImageModels } from "../../services/imageModelDiscovery";
+import { imageCapabilities } from "../../services/imageCapabilities";
 import { useSettingsModalContext } from "./settingsModalContext";
 
 const ctx = useSettingsModalContext();
@@ -44,6 +45,10 @@ const modelDiscoveryMessage = ref("");
 const modelDiscoveryError = ref("");
 
 const isManagedCompanion = computed(() => companionHealth.value?.runMode !== "serve");
+// Streaming availability comes from the capability registry, not a provider name check.
+const streamingAvailable = computed(() =>
+  imageCapabilities(apiProvider.value, apiMode.value, model.value).streaming,
+);
 const providerOptions: Array<{ value: ApiProvider; label: string; description: string }> = [
   {
     value: "openai",
@@ -244,19 +249,19 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
 
 <template>
   <section aria-labelledby="apiSettingsTitle">
-    <h3 id="apiSettingsTitle" class="text-base font-semibold text-gray-900">接口</h3>
-    <p class="mt-1 text-sm text-gray-500">当前设置会保存到浏览器本地 IndexedDB。</p>
+    <h3 id="apiSettingsTitle" class="text-base font-semibold text-content">接口</h3>
+    <p class="mt-1 text-sm text-content-muted">当前设置会保存到浏览器本地 IndexedDB。</p>
 
     <div class="mt-5 space-y-4">
       <div>
-        <p class="mb-2 block text-sm font-medium text-gray-700">连接模式</p>
-        <div class="grid grid-cols-2 gap-2 rounded-lg bg-gray-100 p-1">
+        <p class="mb-2 block text-sm font-medium text-content">连接模式</p>
+        <div class="grid grid-cols-2 gap-2 rounded-card bg-surface-muted p-1">
           <button
             class="cursor-pointer rounded-md px-3 py-2 text-sm font-medium transition-colors"
             :class="
               connectionMode === 'direct'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-800'
+                ? 'bg-surface text-content shadow-sm'
+                : 'text-content-muted hover:text-content'
             "
             type="button"
             @click="ctx.updateConnectionMode('direct')"
@@ -267,8 +272,8 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
             class="cursor-pointer rounded-md px-3 py-2 text-sm font-medium transition-colors"
             :class="
               connectionMode === 'localCompanion'
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-gray-500 hover:text-gray-800'
+                ? 'bg-surface text-content shadow-sm'
+                : 'text-content-muted hover:text-content'
             "
             type="button"
             @click="ctx.updateConnectionMode('localCompanion')"
@@ -280,21 +285,21 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
 
       <!-- Direct mode -->
       <template v-if="connectionMode === 'direct'">
-        <div class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+        <div class="rounded-card bg-amber-50 p-3 text-sm text-amber-800">
           API key 会保存在当前浏览器本地环境。共享电脑或公共环境中请谨慎使用。
         </div>
 
         <div>
-          <p class="mb-2 block text-sm font-medium text-gray-700">接口供应商</p>
+          <p class="mb-2 block text-sm font-medium text-content">接口供应商</p>
           <div class="grid gap-2 sm:grid-cols-2">
             <button
               v-for="option in providerOptions"
               :key="option.value"
-              class="cursor-pointer rounded-xl border px-3 py-3 text-left transition-colors"
+              class="cursor-pointer rounded-panel border px-3 py-3 text-left transition-colors"
               :class="
                 apiProvider === option.value
-                  ? 'border-gray-900 bg-gray-900 text-white'
-                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                  ? 'border-border-subtle bg-accent text-white'
+                  : 'border-border-subtle bg-surface text-content hover:border-border-subtle hover:bg-surface-hover'
               "
               type="button"
               @click="selectProvider(option.value)"
@@ -302,7 +307,7 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
               <div class="text-sm font-semibold">{{ option.label }}</div>
               <div
                 class="mt-1 text-xs"
-                :class="apiProvider === option.value ? 'text-gray-200' : 'text-gray-500'"
+                :class="apiProvider === option.value ? 'text-content' : 'text-content-muted'"
               >
                 {{ option.description }}
               </div>
@@ -311,16 +316,16 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
         </div>
 
         <div v-if="apiProvider === 'openai'">
-          <p class="mb-2 block text-sm font-medium text-gray-700">接口模式</p>
+          <p class="mb-2 block text-sm font-medium text-content">接口模式</p>
           <div class="grid gap-2 sm:grid-cols-2">
             <button
               v-for="option in apiModeOptions"
               :key="option.value"
-              class="cursor-pointer rounded-xl border px-3 py-3 text-left transition-colors"
+              class="cursor-pointer rounded-panel border px-3 py-3 text-left transition-colors"
               :class="
                 apiMode === option.value
-                  ? 'border-gray-900 bg-gray-900 text-white'
-                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                  ? 'border-border-subtle bg-accent text-white'
+                  : 'border-border-subtle bg-surface text-content hover:border-border-subtle hover:bg-surface-hover'
               "
               type="button"
               @click="ctx.updateApiMode(option.value)"
@@ -328,7 +333,7 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
               <div class="text-sm font-semibold">{{ option.label }}</div>
               <div
                 class="mt-1 text-xs"
-                :class="apiMode === option.value ? 'text-gray-200' : 'text-gray-500'"
+                :class="apiMode === option.value ? 'text-content' : 'text-content-muted'"
               >
                 {{ option.description }}
               </div>
@@ -344,10 +349,10 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
 
         <div>
           <div class="mb-1 flex items-center justify-between gap-3">
-            <label class="block text-sm font-medium text-gray-700" for="apiModel"> 模型 </label>
+            <label class="block text-sm font-medium text-content" for="apiModel"> 模型 </label>
             <div class="flex items-center gap-3">
               <button
-                class="cursor-pointer text-xs text-gray-500 transition-colors hover:text-gray-800 disabled:cursor-not-allowed disabled:text-gray-300"
+                class="cursor-pointer text-xs text-content-muted transition-colors hover:text-content disabled:cursor-not-allowed disabled:text-content-tertiary"
                 type="button"
                 :disabled="fetchingModels || !apiKey || !apiBaseUrl"
                 @click="discoverModels"
@@ -355,7 +360,7 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
                 {{ fetchingModels ? "获取中..." : "获取模型" }}
               </button>
               <button
-                class="cursor-pointer text-xs text-gray-500 transition-colors hover:text-gray-800 disabled:cursor-not-allowed disabled:text-gray-300"
+                class="cursor-pointer text-xs text-content-muted transition-colors hover:text-content disabled:cursor-not-allowed disabled:text-content-tertiary"
                 type="button"
                 :disabled="fetchingModels || !apiKey || !apiBaseUrl"
                 @click="discoverModels"
@@ -368,7 +373,7 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
             v-if="availableModels.length"
             id="apiModel"
             :value="model"
-            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-500"
+            class="w-full rounded-card border border-border-subtle bg-surface px-3 py-2 text-sm text-content outline-none focus:border-border-subtle"
             @change="ctx.updateModel(($event.target as HTMLSelectElement).value)"
           >
             <option value="" disabled>请选择上游模型</option>
@@ -379,7 +384,7 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
             v-else
             id="apiModel"
             :value="model"
-            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-500"
+            class="w-full rounded-card border border-border-subtle bg-surface px-3 py-2 text-sm text-content outline-none focus:border-border-subtle"
             placeholder="先获取模型，或输入上游模型 ID"
             spellcheck="false"
             type="text"
@@ -395,10 +400,10 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
 
         <div>
           <div class="mb-1 flex items-center justify-between gap-3">
-            <label class="block text-sm font-medium text-gray-700" for="apiBaseUrl">
+            <label class="block text-sm font-medium text-content" for="apiBaseUrl">
               API 地址
             </label>
-            <label class="flex cursor-pointer items-center gap-1.5 text-xs text-gray-500">
+            <label class="flex cursor-pointer items-center gap-1.5 text-xs text-content-muted">
               <input
                 class="h-3.5 w-3.5 cursor-pointer accent-gray-900"
                 type="checkbox"
@@ -412,11 +417,13 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
               输入完整 API Base URL
             </label>
           </div>
-          <div class="flex rounded-lg border border-gray-300 bg-white focus-within:border-gray-500">
+          <div
+            class="flex rounded-card border border-border-subtle bg-surface focus-within:border-border-subtle"
+          >
             <input
               id="apiBaseUrl"
               :value="apiBaseUrl"
-              class="min-w-0 flex-1 rounded-l-lg bg-transparent px-3 py-2 text-sm text-gray-900 outline-none"
+              class="min-w-0 flex-1 rounded-l-lg bg-transparent px-3 py-2 text-sm text-content outline-none"
               :placeholder="apiBaseUrlHint"
               type="url"
               @input="ctx.updateApiBaseUrl(($event.target as HTMLInputElement).value)"
@@ -428,12 +435,12 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
             />
             <span
               v-if="apiBaseUrlMode === 'origin'"
-              class="flex shrink-0 items-center border-l border-gray-200 px-3 text-sm font-medium text-red-500"
+              class="flex shrink-0 items-center border-l border-border-subtle px-3 text-sm font-medium text-red-500"
             >
               {{ apiSuffixLabel }}
             </span>
           </div>
-          <p class="mt-1.5 text-xs text-gray-500">
+          <p class="mt-1.5 text-xs text-content-muted">
             <template v-if="apiBaseUrlMode === 'origin'">
               输入站点根地址即可，应用会自动补上 {{ apiSuffixLabel }}。
             </template>
@@ -441,19 +448,19 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
           </p>
         </div>
 
-        <div class="rounded-xl border border-gray-200 p-4">
+        <div class="rounded-panel border border-border-subtle p-4">
           <label class="flex cursor-pointer items-start gap-3">
             <input
               class="mt-0.5 h-4 w-4 cursor-pointer accent-gray-900"
               type="checkbox"
-              :checked="streamImages && apiProvider === 'openai'"
-              :disabled="apiProvider !== 'openai'"
+              :checked="streamImages && streamingAvailable"
+              :disabled="!streamingAvailable"
               @change="ctx.updateStreamImages(($event.target as HTMLInputElement).checked)"
             />
             <span class="min-w-0">
-              <span class="block text-sm font-medium text-gray-700">流式预览</span>
-              <span class="mt-1 block text-xs text-gray-500">
-                <template v-if="apiProvider !== 'openai'">
+              <span class="block text-sm font-medium text-content">流式预览</span>
+              <span class="mt-1 block text-xs text-content-muted">
+                <template v-if="!streamingAvailable">
                   当前供应商在本应用中使用非流式 base64 返回。
                 </template>
                 <template v-else>
@@ -464,14 +471,14 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
           </label>
 
           <div class="mt-4">
-            <label class="mb-1 block text-sm font-medium text-gray-700" for="streamPartialImages">
+            <label class="mb-1 block text-sm font-medium text-content" for="streamPartialImages">
               中间图数量
             </label>
             <select
               id="streamPartialImages"
               :value="streamPartialImages"
-              class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-gray-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
-              :disabled="!streamImages || apiProvider !== 'openai'"
+              class="w-full rounded-card border border-border-subtle bg-surface px-3 py-2 text-sm text-content outline-none focus:border-border-subtle disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-content-tertiary"
+              :disabled="!streamImages || !streamingAvailable"
               @change="
                 ctx.updateStreamPartialImages(
                   Number(($event.target as HTMLSelectElement).value) as 0 | 1 | 2 | 3,
@@ -482,7 +489,7 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
                 {{ count }}
               </option>
             </select>
-            <p class="mt-1.5 text-xs text-gray-500">
+            <p class="mt-1.5 text-xs text-content-muted">
               建议保留默认值 1。设置为 0 时仍可开启流式，但不会请求中间图。
             </p>
           </div>
@@ -491,15 +498,15 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
 
       <!-- Local Companion mode -->
       <template v-if="connectionMode === 'localCompanion'">
-        <div class="rounded-lg border border-gray-200 p-4 space-y-3">
-          <div class="rounded-lg bg-gray-50 p-3 text-xs text-gray-600">
-            <div class="font-mono text-gray-800">npm install -g @honlnk/image-studio-companion</div>
-            <div class="mt-1 font-mono text-gray-800">gpt-image-studio login</div>
-            <div class="mt-1 font-mono text-gray-800">gpt-image-studio start</div>
-            <div class="mt-1 font-mono text-gray-800">gpt-image-studio pair</div>
+        <div class="rounded-card border border-border-subtle p-4 space-y-3">
+          <div class="rounded-card bg-surface-muted p-3 text-xs text-content">
+            <div class="font-mono text-content">npm install -g @honlnk/image-studio-companion</div>
+            <div class="mt-1 font-mono text-content">gpt-image-studio login</div>
+            <div class="mt-1 font-mono text-content">gpt-image-studio start</div>
+            <div class="mt-1 font-mono text-content">gpt-image-studio pair</div>
           </div>
 
-          <div class="rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
+          <div class="rounded-card bg-amber-50 p-3 text-xs text-amber-800">
             本地 Companion 当前仅支持 Images API。若要使用 Responses API
             或流式预览，请先切回浏览器直连模式。
           </div>
@@ -508,16 +515,16 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
           <div class="flex items-center gap-2">
             <span
               class="inline-block h-2 w-2 rounded-full"
-              :class="companionOnline ? 'bg-green-500' : 'bg-gray-300'"
+              :class="companionOnline ? 'bg-green-500' : 'bg-surface-hover'"
             />
-            <span class="text-sm text-gray-700">
+            <span class="text-sm text-content">
               {{ companionOnline ? "Companion 在线" : "Companion 离线" }}
             </span>
-            <span v-if="companionHealth" class="text-xs text-gray-400">
+            <span v-if="companionHealth" class="text-xs text-content-tertiary">
               v{{ companionHealth.version }}
             </span>
             <button
-              class="ml-auto text-xs text-gray-400 hover:text-gray-600 cursor-pointer"
+              class="ml-auto text-xs text-content-tertiary hover:text-content cursor-pointer"
               type="button"
               @click="checkStatus"
             >
@@ -541,22 +548,22 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
 
           <!-- Not paired, not in progress -->
           <template v-else-if="!pairingInProgress">
-            <p class="text-sm text-gray-500">
+            <p class="text-sm text-content-muted">
               <template v-if="isManagedCompanion">
                 需要与本地 Companion 配对后才能使用。请先在终端运行
-                <span class="font-mono text-gray-700">gpt-image-studio pair</span>，再点击开始配对。
+                <span class="font-mono text-content">gpt-image-studio pair</span>，再点击开始配对。
               </template>
               <template v-else>
                 需要与本地 Companion 配对后才能使用。点击开始配对后，请在当前 Companion
                 终端查看配对码。
               </template>
             </p>
-            <p v-if="!companionOnline" class="text-xs text-gray-500">
+            <p v-if="!companionOnline" class="text-xs text-content-muted">
               请先在终端启动
-              <span class="font-mono text-gray-700">gpt-image-studio start</span>，然后点击刷新。
+              <span class="font-mono text-content">gpt-image-studio start</span>，然后点击刷新。
             </p>
             <button
-              class="rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white hover:bg-gray-700 disabled:opacity-50 cursor-pointer"
+              class="rounded-md bg-accent px-3 py-1.5 text-sm text-white hover:bg-accent-pressed disabled:opacity-50 cursor-pointer"
               type="button"
               :disabled="!companionOnline"
               @click="handleStartPairing"
@@ -567,17 +574,17 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
 
           <!-- Pairing in progress -->
           <template v-if="pairingInProgress">
-            <p class="text-sm text-gray-600">请在 Companion 终端查看配对码，然后在下方输入。</p>
+            <p class="text-sm text-content">请在 Companion 终端查看配对码，然后在下方输入。</p>
             <div class="flex gap-2">
               <input
                 v-model="pairingCodeInput"
-                class="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-center tracking-widest text-gray-900 outline-none focus:border-gray-500"
+                class="flex-1 rounded-card border border-border-subtle bg-surface px-3 py-2 text-sm text-center tracking-widest text-content outline-none focus:border-border-subtle"
                 placeholder="输入 6 位配对码"
                 maxlength="6"
                 inputmode="numeric"
               />
               <button
-                class="rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white hover:bg-gray-700 disabled:opacity-50 cursor-pointer"
+                class="rounded-md bg-accent px-3 py-1.5 text-sm text-white hover:bg-accent-pressed disabled:opacity-50 cursor-pointer"
                 type="button"
                 :disabled="pairingCodeInput.length !== 6"
                 @click="handleConfirmPairing"
@@ -585,7 +592,7 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
                 确认
               </button>
               <button
-                class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 cursor-pointer"
+                class="rounded-md border border-border-subtle px-3 py-1.5 text-sm text-content hover:bg-surface-hover cursor-pointer"
                 type="button"
                 @click="cancelPairing"
               >
@@ -604,7 +611,7 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
 
           <div
             v-if="companionPaired && companionOnline"
-            class="rounded-lg bg-gray-50 p-3 text-xs text-gray-600"
+            class="rounded-card bg-surface-muted p-3 text-xs text-content"
           >
             <template v-if="companionAuthStatus">
               <span :class="companionAuthStatus.ready ? 'text-green-700' : 'text-amber-700'">

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useNow } from "../../composables/useNow";
+import { vImagePreview } from "../../composables/imagePreviewDirective";
 import { formatRelativeTime } from "../../shared/dateTime";
 import type { ImageAsset } from "../../types/studio";
 
@@ -61,22 +62,22 @@ const createdAtLabels = computed(
   <section class="mt-5 flex min-h-0 flex-1 flex-col" aria-labelledby="batchImagesTitle">
     <div class="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
       <div>
-        <h4 id="batchImagesTitle" class="text-sm font-semibold text-gray-900">图片</h4>
-        <p class="mt-0.5 text-xs text-gray-500">
+        <h4 id="batchImagesTitle" class="text-sm font-semibold text-content">图片</h4>
+        <p class="mt-0.5 text-xs text-content-muted">
           找到 {{ filteredImages.length }} 张，共 {{ images.length }} 张，已选
           {{ selectedImages.length }} 张
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-1 text-xs">
-        <span class="text-gray-400">排序</span>
+        <span class="text-content-tertiary">排序</span>
         <button
           v-for="option in imageSortOptions"
           :key="option.key"
-          class="inline-flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 transition-colors"
+          class="inline-flex cursor-pointer items-center gap-1 rounded-card px-2 py-1 transition-colors"
           :class="
             imageSortKey === option.key
-              ? 'bg-gray-100 font-medium text-gray-900'
-              : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
+              ? 'bg-surface-muted font-medium text-content'
+              : 'text-content-muted hover:bg-surface-hover hover:text-content'
           "
           type="button"
           @click="emit('setSort', option.key)"
@@ -101,14 +102,14 @@ const createdAtLabels = computed(
       </div>
       <div class="flex shrink-0 gap-1 text-xs">
         <button
-          class="cursor-pointer rounded-lg px-2 py-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
+          class="cursor-pointer rounded-card px-2 py-1 text-content-muted transition-colors hover:bg-surface-hover hover:text-content"
           type="button"
           @click="emit('selectAll')"
         >
           全选
         </button>
         <button
-          class="cursor-pointer rounded-lg px-2 py-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
+          class="cursor-pointer rounded-card px-2 py-1 text-content-muted transition-colors hover:bg-surface-hover hover:text-content"
           type="button"
           @click="emit('clearSelection')"
         >
@@ -121,33 +122,34 @@ const createdAtLabels = computed(
       <article
         v-for="image in filteredImages"
         :key="image.id"
+        v-image-preview="image"
         :class="[
-          'mb-2 flex cursor-pointer items-center gap-3 rounded-xl border p-2 transition-colors',
+          'mb-2 flex cursor-pointer items-center gap-3 rounded-panel border p-2 transition-colors',
           selectedImageIds.has(image.id)
-            ? 'border-gray-900 bg-gray-50 shadow-sm'
+            ? 'border-border-subtle bg-surface-muted shadow-sm'
             : image.previewUrl
-              ? 'border-gray-200 hover:bg-gray-50'
-              : 'border-gray-200 opacity-60',
+              ? 'border-border-subtle hover:bg-surface-hover'
+              : 'border-border-subtle opacity-60',
         ]"
-        @click="image.previewUrl && emit('toggleSelection', image.id)"
+        @click="emit('toggleSelection', image.id)"
       >
         <div
           :class="[
-            'group relative flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-xs text-gray-400',
+            'group relative flex h-12 w-12 shrink-0 items-center justify-center rounded-card bg-surface-muted text-xs text-content-tertiary',
             selectedImageIds.has(image.id) ? 'ring-2 ring-gray-900 ring-offset-1' : '',
           ]"
           @click.stop="image.previewUrl && emit('previewImage', image.id)"
         >
           <img
             v-if="image.previewUrl"
-            class="h-full w-full rounded-lg object-cover"
+            class="h-full w-full rounded-card object-cover"
             :alt="image.name"
             :src="image.previewUrl"
           />
           <span v-else>img</span>
           <button
             v-if="image.previewUrl"
-            class="absolute inset-0 flex cursor-pointer items-center justify-center rounded-lg bg-black/45 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100"
+            class="absolute inset-0 flex cursor-pointer items-center justify-center rounded-card bg-black/45 text-[11px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100"
             type="button"
             @click.stop="emit('previewImage', image.id)"
           >
@@ -155,7 +157,7 @@ const createdAtLabels = computed(
           </button>
           <span
             v-if="selectedImageIds.has(image.id)"
-            class="pointer-events-none absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-gray-900 text-[11px] font-bold text-white shadow"
+            class="pointer-events-none absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-white shadow"
             aria-hidden="true"
           >
             <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -168,10 +170,10 @@ const createdAtLabels = computed(
           </span>
         </div>
         <div>
-          <p class="truncate text-sm font-medium text-gray-800">
+          <p class="truncate text-sm font-medium text-content">
             {{ image.name }}
           </p>
-          <p class="truncate text-xs text-gray-500">
+          <p class="truncate text-xs text-content-muted">
             {{ sourceLabel(image) }} · {{ createdAtLabels.get(image.id) }} ·
             {{ imageSize(image) }}
           </p>
@@ -179,11 +181,11 @@ const createdAtLabels = computed(
       </article>
       <div
         v-if="!filteredImages.length"
-        class="rounded-xl border border-dashed border-gray-200 px-6 py-10 text-center"
+        class="rounded-panel border border-dashed border-border-subtle px-6 py-10 text-center"
       >
-        <p v-if="searchText" class="text-sm font-medium text-gray-600">没有找到匹配的图片</p>
-        <p v-else class="text-sm font-medium text-gray-600">还没有可批量处理的图片</p>
-        <p class="mt-1 text-xs leading-relaxed text-gray-400">
+        <p v-if="searchText" class="text-sm font-medium text-content">没有找到匹配的图片</p>
+        <p v-else class="text-sm font-medium text-content">还没有可批量处理的图片</p>
+        <p class="mt-1 text-xs leading-relaxed text-content-tertiary">
           {{
             searchText
               ? "换一个图片名称关键词试试。"
@@ -195,7 +197,7 @@ const createdAtLabels = computed(
 
     <div class="mt-3 flex shrink-0 gap-2">
       <button
-        class="rounded-lg bg-black px-3 py-2 text-sm font-medium text-white transition-colors enabled:cursor-pointer enabled:hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-30"
+        class="rounded-card bg-accent px-3 py-2 text-sm font-medium text-white transition-colors enabled:cursor-pointer enabled:hover:bg-accent-pressed disabled:cursor-not-allowed disabled:opacity-30"
         :disabled="!selectedImages.length"
         type="button"
         @click="emit('downloadSelected')"
@@ -203,7 +205,7 @@ const createdAtLabels = computed(
         下载 ZIP ({{ selectedImages.length }})
       </button>
       <button
-        class="rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors enabled:cursor-pointer enabled:hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
+        class="rounded-card bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors enabled:cursor-pointer enabled:hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
         :disabled="!selectedImages.length"
         type="button"
         @click="emit('deleteSelected')"
