@@ -42,7 +42,9 @@ export function buildFinalRequestPrompt(input: BuildFinalRequestPromptInput) {
   // blend them into the user's own prompt.
   const ragBlock = input.ragContext?.trim();
   const sourcePrompt = ragBlock
-    ? ["[RAG 参考开始]", ragBlock, "[RAG 参考结束]", "", "用户原始提示词：", input.prompt].join("\n")
+    ? ["[RAG 参考开始]", ragBlock, "[RAG 参考结束]", "", "用户原始提示词：", input.prompt].join(
+        "\n",
+      )
     : input.prompt;
   const modePrompt = buildImagePrompt({
     prompt: sourcePrompt,

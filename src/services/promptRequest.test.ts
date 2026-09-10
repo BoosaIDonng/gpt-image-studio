@@ -75,9 +75,9 @@ describe("buildFinalRequestPrompt provider adaptation", () => {
         provider,
       });
       expect(prompt.startsWith(`${PROMPT_REWRITE_GUARD_PREFIX}\n`)).toBe(true);
-      expect(prompt.endsWith("embellish the prompt above. Output exactly what it describes.)")).toBe(
-        true,
-      );
+      expect(
+        prompt.endsWith("embellish the prompt above. Output exactly what it describes.)"),
+      ).toBe(true);
     }
   });
 

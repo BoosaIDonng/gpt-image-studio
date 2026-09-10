@@ -112,11 +112,15 @@ describe("describeGenerationDeviation", () => {
       describeGenerationDeviation({ type: "countMismatch", requested: 4, actual: 2 }),
     ).toContain("4 张");
     expect(
-      describeGenerationDeviation({ type: "sizeDeviation", requested: "1024x1536", actual: "1024x1024" }),
+      describeGenerationDeviation({
+        type: "sizeDeviation",
+        requested: "1024x1536",
+        actual: "1024x1024",
+      }),
     ).toContain("1024x1536");
-    expect(describeGenerationDeviation({ type: "transparentIgnored", mimeType: "image/jpeg" })).toContain(
-      "透明",
-    );
+    expect(
+      describeGenerationDeviation({ type: "transparentIgnored", mimeType: "image/jpeg" }),
+    ).toContain("透明");
     expect(
       describeGenerationDeviation({
         type: "promptRewritten",

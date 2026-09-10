@@ -18,7 +18,12 @@ export async function withNetworkRetry<T>(
       // Only auto-retry when the failure is confirmed safe (the request was
       // rejected by the upstream, e.g. 429/5xx); connection interruptions are
       // surfaced to the caller instead of silently re-billing a generation.
-      if (!isNetworkError(error) || !isSafeToAutoRetry(error) || !shouldRetry() || attempt === maxAttempts - 1) {
+      if (
+        !isNetworkError(error) ||
+        !isSafeToAutoRetry(error) ||
+        !shouldRetry() ||
+        attempt === maxAttempts - 1
+      ) {
         throw error;
       }
       const delay = computeBackoffDelay(attempt);
@@ -68,9 +73,7 @@ export function isNetworkError(error: unknown): boolean {
  */
 export function isSafeToAutoRetry(error: unknown): boolean {
   return (
-    error instanceof NetworkError &&
-    error.status !== undefined &&
-    isRetryableStatus(error.status)
+    error instanceof NetworkError && error.status !== undefined && isRetryableStatus(error.status)
   );
 }
 

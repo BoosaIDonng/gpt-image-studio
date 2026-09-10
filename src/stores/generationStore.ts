@@ -868,7 +868,10 @@ export const useGenerationStore = defineStore("generation", () => {
    * Persist which wordbank terms contributed to a successful generation
    * ("个人词库"): retrieval later boosts terms with a hit history.
    */
-  function recordWordbankHitsForJob(job: GenerationJob, results: Array<{ requestPrompt?: string; revisedPrompt?: string }>) {
+  function recordWordbankHitsForJob(
+    job: GenerationJob,
+    results: Array<{ requestPrompt?: string; revisedPrompt?: string }>,
+  ) {
     const wordbanks = job.promptRequestSettings.promptWordbanks;
     if (!wordbanks) return;
 
@@ -881,11 +884,14 @@ export const useGenerationStore = defineStore("generation", () => {
 
     for (const prompt of prompts) {
       try {
-        matchPromptWordbankTerms({ prompt, mode: "adult", wordbanks, seed: prompt }).matchedTerms.forEach(
-          (term) => {
-            if (!terms.includes(term)) terms.push(term);
-          },
-        );
+        matchPromptWordbankTerms({
+          prompt,
+          mode: "adult",
+          wordbanks,
+          seed: prompt,
+        }).matchedTerms.forEach((term) => {
+          if (!terms.includes(term)) terms.push(term);
+        });
       } catch {
         // Best-effort: matching must never break a successful generation.
       }

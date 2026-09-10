@@ -46,8 +46,8 @@ const modelDiscoveryError = ref("");
 
 const isManagedCompanion = computed(() => companionHealth.value?.runMode !== "serve");
 // Streaming availability comes from the capability registry, not a provider name check.
-const streamingAvailable = computed(() =>
-  imageCapabilities(apiProvider.value, apiMode.value, model.value).streaming,
+const streamingAvailable = computed(
+  () => imageCapabilities(apiProvider.value, apiMode.value, model.value).streaming,
 );
 const providerOptions: Array<{ value: ApiProvider; label: string; description: string }> = [
   {

@@ -39,7 +39,10 @@ function toggleTagColor(nextColor: ImageAsset["tagColor"]) {
 </script>
 
 <template>
-  <div v-image-preview="image" class="border-t border-border-subtle dark:border-border-subtle px-4 py-3">
+  <div
+    v-image-preview="image"
+    class="border-t border-border-subtle dark:border-border-subtle px-4 py-3"
+  >
     <div class="mb-3 flex items-start justify-between gap-3">
       <div class="min-w-0">
         <div class="truncate text-sm font-semibold text-content dark:text-content">

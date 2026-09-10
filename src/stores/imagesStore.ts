@@ -116,7 +116,9 @@ export const useImagesStore = defineStore("images", () => {
 
     const index = imageAssets.value.findIndex((item) => item.id === id);
     // Keep the blob in memory so undo can restore the record after deletion.
-    const blob = image.blobKey ? await loadImageBlob(image.blobKey).catch(() => undefined) : undefined;
+    const blob = image.blobKey
+      ? await loadImageBlob(image.blobKey).catch(() => undefined)
+      : undefined;
     const commands = useCommandStore();
 
     try {
@@ -163,7 +165,9 @@ export const useImagesStore = defineStore("images", () => {
         deletedImages.map(async (image) => ({
           image,
           index: imageAssets.value.findIndex((item) => item.id === image.id),
-          blob: image.blobKey ? await loadImageBlob(image.blobKey).catch(() => undefined) : undefined,
+          blob: image.blobKey
+            ? await loadImageBlob(image.blobKey).catch(() => undefined)
+            : undefined,
         })),
       );
       const previousAttached = [...attachedImages.value];
@@ -359,7 +363,8 @@ export const useImagesStore = defineStore("images", () => {
       let restored: ImageAsset = { ...image, previewUrl: createObjectUrl(blob) };
       if (!restored.width || !restored.height) {
         const dimensions = await readImageDimensions(blob);
-        if (dimensions) restored = { ...restored, width: dimensions.width, height: dimensions.height };
+        if (dimensions)
+          restored = { ...restored, width: dimensions.width, height: dimensions.height };
       }
       replaceImage(restored);
       await saveImageAsset(toPlainImageAsset(restored)).catch(input.onStorageError);
