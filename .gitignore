@@ -26,6 +26,8 @@ embed-test.html
 # Agent working files
 AGENTS.md
 MEMORY.md
+.playwright-cli/
+.workbuddy/
 
 # Windows junk
 nul
