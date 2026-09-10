@@ -1,5 +1,6 @@
 import type { ApiMode, GenerationParams } from "../types/studio";
 import { isGptImageModel } from "../shared/models";
+import { resolveModelCapabilities } from "./imageCapabilityRegistry";
 import { proxyDevelopmentApiRequest } from "./devApiProxy";
 import {
   MAX_CUSTOM_ASPECT_RATIO,
@@ -66,8 +67,14 @@ function validateBackground(
   background: GenerationParams["background"],
   apiMode: ApiMode = "images",
 ) {
-  if (apiMode === "images" && model === "gpt-image-2" && background === "transparent") {
-    throw new Error("gpt-image-2 当前不支持透明背景，请选择自动或不透明背景。");
+  // OpenAI images 路径专用参数校验；能力规则统一来自 capability registry。
+  const { transparentBackground } = resolveModelCapabilities({
+    provider: "openai",
+    apiMode,
+    model,
+  });
+  if (!transparentBackground && background === "transparent") {
+    throw new Error("当前模型不支持透明背景，请选择自动或不透明背景。");
   }
 }
 

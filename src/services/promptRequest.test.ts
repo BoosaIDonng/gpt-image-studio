@@ -50,3 +50,60 @@ describe("buildFinalRequestPrompt", () => {
     expect(prompt).toContain("用户原始提示词：\n画一张雨夜街头照片");
   });
 });
+
+describe("buildFinalRequestPrompt provider adaptation", () => {
+  it("openai（默认）不加额外后缀", () => {
+    const prompt = buildFinalRequestPrompt({
+      prompt: "画一张雨夜街头照片",
+      promptMode: "default",
+      promptWordbanks: defaultPromptWordbanks,
+      promptRewriteGuardEnabled: true,
+      promptRewriteGuardText: PROMPT_REWRITE_GUARD_PREFIX,
+      provider: "openai",
+    });
+    expect(prompt).toBe(`${PROMPT_REWRITE_GUARD_PREFIX}\n画一张雨夜街头照片`);
+  });
+
+  it("grok/gemini 在防改写包装后追加强化指令", () => {
+    for (const provider of ["grok", "gemini"] as const) {
+      const prompt = buildFinalRequestPrompt({
+        prompt: "画一张雨夜街头照片",
+        promptMode: "default",
+        promptWordbanks: defaultPromptWordbanks,
+        promptRewriteGuardEnabled: true,
+        promptRewriteGuardText: PROMPT_REWRITE_GUARD_PREFIX,
+        provider,
+      });
+      expect(prompt.startsWith(`${PROMPT_REWRITE_GUARD_PREFIX}\n`)).toBe(true);
+      expect(prompt.endsWith("embellish the prompt above. Output exactly what it describes.)")).toBe(
+        true,
+      );
+    }
+  });
+
+  it("未开启防改写时不追加强化指令", () => {
+    const prompt = buildFinalRequestPrompt({
+      prompt: "画一张雨夜街头照片",
+      promptMode: "default",
+      promptWordbanks: defaultPromptWordbanks,
+      promptRewriteGuardEnabled: false,
+      promptRewriteGuardText: PROMPT_REWRITE_GUARD_PREFIX,
+      provider: "grok",
+    });
+    expect(prompt).toBe("画一张雨夜街头照片");
+  });
+
+  it("RAG 参考内容被显式分隔块包裹", () => {
+    const prompt = buildFinalRequestPrompt({
+      prompt: "画一张雨夜街头照片",
+      promptMode: "default",
+      promptWordbanks: defaultPromptWordbanks,
+      promptRewriteGuardEnabled: false,
+      promptRewriteGuardText: PROMPT_REWRITE_GUARD_PREFIX,
+      ragContext: "RAG 参考内容：\n1. cinematic rain street",
+    });
+    expect(prompt).toContain("[RAG 参考开始]");
+    expect(prompt).toContain("[RAG 参考结束]");
+    expect(prompt.indexOf("[RAG 参考开始]")).toBeLessThan(prompt.indexOf("用户原始提示词："));
+  });
+});

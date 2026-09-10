@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { computeBackoffDelay, isNetworkError, withNetworkRetry } from "./networkRetry";
+import {
+  computeBackoffDelay,
+  isNetworkError,
+  isSafeToAutoRetry,
+  withNetworkRetry,
+} from "./networkRetry";
 import { NetworkError, SERVER_DISCONNECTED_MESSAGE } from "../shared/apiErrors";
 
 beforeEach(() => {
@@ -91,11 +96,11 @@ describe("withNetworkRetry", () => {
     expect(onRetry).not.toHaveBeenCalled();
   });
 
-  it("遇到可重试错误会重试，成功后返回结果", async () => {
+  it("遇到确认安全的错误（429/5xx，上游已拒绝请求）会重试，成功后返回结果", async () => {
     const fn = vi
       .fn()
-      .mockRejectedValueOnce(new TypeError("fetch failed"))
       .mockRejectedValueOnce(new NetworkError("busy", { status: 429 }))
+      .mockRejectedValueOnce(new NetworkError("down", { status: 503 }))
       .mockResolvedValueOnce("ok");
     const onRetry = vi.fn();
 
@@ -108,43 +113,34 @@ describe("withNetworkRetry", () => {
     expect(onRetry).toHaveBeenCalledTimes(2);
   });
 
-  it("重试达到上限后抛出最后一个可重试错误", async () => {
+  it("连接中断类错误（TypeError）不再自动重试，立即抛出", async () => {
+    // 结果未知：请求可能已到达上游并开始计费，自动重发会重复生成。
     const fn = vi.fn().mockRejectedValue(new TypeError("fetch failed"));
     const onRetry = vi.fn();
 
-    const promise = withNetworkRetry(fn, () => true, onRetry);
-    // 先同步挂上 rejection 消费者，避免 flush 期间出现 unhandled rejection。
-    const expectation = expect(promise).rejects.toThrow("fetch failed");
-    await flush();
-    await expectation;
-
-    // MAX_RETRIES = 4
-    expect(fn).toHaveBeenCalledTimes(4);
-    expect(onRetry).toHaveBeenCalledTimes(3);
-  });
-
-  it("不可重试的错误（HTTP 400）立即抛出，不消耗重试次数", async () => {
-    const fn = vi.fn().mockRejectedValue(new Error("请求失败：HTTP 400"));
-    const onRetry = vi.fn();
-
-    await expect(withNetworkRetry(fn, () => true, onRetry)).rejects.toThrow("请求失败：HTTP 400");
+    await expect(withNetworkRetry(fn, () => true, onRetry)).rejects.toThrow("fetch failed");
 
     expect(fn).toHaveBeenCalledTimes(1);
     expect(onRetry).not.toHaveBeenCalled();
   });
 
-  it("companion 断网文案（非 NetworkError 实例）也能触发重试", async () => {
-    const fn = vi
-      .fn()
-      .mockRejectedValueOnce(new Error(SERVER_DISCONNECTED_MESSAGE))
-      .mockResolvedValueOnce("ok");
+  it("companion 断网文案不再自动重试，立即抛出", async () => {
+    const fn = vi.fn().mockRejectedValue(new Error(SERVER_DISCONNECTED_MESSAGE));
     const onRetry = vi.fn();
 
-    const promise = withNetworkRetry(fn, () => true, onRetry);
-    await flush();
-    const result = await promise;
+    await expect(withNetworkRetry(fn, () => true, onRetry)).rejects.toThrow(
+      SERVER_DISCONNECTED_MESSAGE,
+    );
 
-    expect(result).toBe("ok");
-    expect(fn).toHaveBeenCalledTimes(2);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(onRetry).not.toHaveBeenCalled();
+  });
+
+  it("isSafeToAutoRetry：有可重试状态码的 NetworkError 才安全", () => {
+    expect(isSafeToAutoRetry(new NetworkError("busy", { status: 429 }))).toBe(true);
+    expect(isSafeToAutoRetry(new NetworkError("down", { status: 503 }))).toBe(true);
+    expect(isSafeToAutoRetry(new NetworkError("fetch failed"))).toBe(false);
+    expect(isSafeToAutoRetry(new TypeError("fetch failed"))).toBe(false);
+    expect(isSafeToAutoRetry(new Error(SERVER_DISCONNECTED_MESSAGE))).toBe(false);
   });
 });

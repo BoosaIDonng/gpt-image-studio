@@ -1,4 +1,9 @@
-import type { PromptMode, PromptRequestSettings, PromptWordbanks } from "../types/studio";
+import type {
+  ApiProvider,
+  PromptMode,
+  PromptRequestSettings,
+  PromptWordbanks,
+} from "../types/studio";
 import { buildImagePrompt } from "./promptBuilder";
 
 export type BuildFinalRequestPromptInput = {
@@ -8,6 +13,8 @@ export type BuildFinalRequestPromptInput = {
   promptRewriteGuardEnabled?: boolean;
   promptRewriteGuardText?: string;
   ragContext?: string;
+  /** Adapts the anti-rewrite wrapping to the target provider when known. */
+  provider?: ApiProvider;
   seed?: string;
 };
 
@@ -26,9 +33,16 @@ export function applyPromptRewriteGuard(prompt: string, enabled: boolean, guardT
   return `${normalizedGuardText}\n${prompt}`;
 }
 
+/** Closing reinforcement for providers with looser instruction following. */
+const NON_OPENAI_GUARD_SUFFIX =
+  "(Do not rewrite, translate, or embellish the prompt above. Output exactly what it describes.)";
+
 export function buildFinalRequestPrompt(input: BuildFinalRequestPromptInput) {
-  const sourcePrompt = input.ragContext?.trim()
-    ? [input.ragContext.trim(), "", "用户原始提示词：", input.prompt].join("\n")
+  // Keep RAG references in an explicit, delimited block so the model cannot
+  // blend them into the user's own prompt.
+  const ragBlock = input.ragContext?.trim();
+  const sourcePrompt = ragBlock
+    ? ["[RAG 参考开始]", ragBlock, "[RAG 参考结束]", "", "用户原始提示词：", input.prompt].join("\n")
     : input.prompt;
   const modePrompt = buildImagePrompt({
     prompt: sourcePrompt,
@@ -37,11 +51,16 @@ export function buildFinalRequestPrompt(input: BuildFinalRequestPromptInput) {
     wordbanks: input.promptWordbanks,
   });
 
-  return applyPromptRewriteGuard(
+  const guarded = applyPromptRewriteGuard(
     modePrompt,
     input.promptRewriteGuardEnabled ?? false,
     input.promptRewriteGuardText,
   );
+
+  if (input.provider && input.provider !== "openai" && guarded !== modePrompt) {
+    return `${guarded}\n${NON_OPENAI_GUARD_SUFFIX}`;
+  }
+  return guarded;
 }
 
 /**
@@ -53,6 +72,7 @@ export function buildFinalRequestPrompt(input: BuildFinalRequestPromptInput) {
 export function buildPromptRequest(input: {
   prompt: string;
   promptRequestSettings: PromptRequestSettings;
+  provider?: ApiProvider;
 }) {
   return buildFinalRequestPrompt({
     prompt: input.prompt,
@@ -61,5 +81,6 @@ export function buildPromptRequest(input: {
     promptRewriteGuardEnabled: input.promptRequestSettings.promptRewriteGuardEnabled,
     promptRewriteGuardText: input.promptRequestSettings.promptRewriteGuardText,
     ragContext: input.promptRequestSettings.ragContext,
+    provider: input.provider,
   });
 }

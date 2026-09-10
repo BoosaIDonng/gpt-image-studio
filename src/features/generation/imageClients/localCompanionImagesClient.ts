@@ -32,7 +32,7 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
       const provider = input.recipe?.apiProvider ?? config.getApiProvider();
       const model = input.recipe?.model ?? config.getModel();
       validateImageParams(provider, input.recipe?.apiMode ?? "images", model, input.params);
-      const prompt = buildPromptRequest(input);
+      const prompt = buildPromptRequest({ ...input, provider });
 
       if (provider === "grok") {
         const response = await fetch(url, {
@@ -94,7 +94,7 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
       const url = `${config.getCompanionUrl()}/images/generations`;
       const model = input.recipe?.model ?? config.getModel();
       validateImageParams(provider, input.recipe?.apiMode ?? "images", model, input.params);
-      const prompt = buildPromptRequest(input);
+      const prompt = buildPromptRequest({ ...input, provider });
       const count = normalizeImageCount(input.count);
       const results: ImageClientResult[] = [];
 
@@ -126,7 +126,7 @@ export function createLocalCompanionImagesClient(config: CompanionClientConfig):
       const provider = input.recipe?.apiProvider ?? config.getApiProvider();
       const model = input.recipe?.model ?? config.getModel();
       validateImageParams(provider, input.recipe?.apiMode ?? "images", model, input.params);
-      const prompt = buildPromptRequest(input);
+      const prompt = buildPromptRequest({ ...input, provider });
 
       if (provider === "grok") {
         if (input.mask) {

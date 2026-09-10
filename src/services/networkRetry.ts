@@ -15,7 +15,10 @@ export async function withNetworkRetry<T>(
     try {
       return await fn();
     } catch (error) {
-      if (!isNetworkError(error) || !shouldRetry() || attempt === maxAttempts - 1) {
+      // Only auto-retry when the failure is confirmed safe (the request was
+      // rejected by the upstream, e.g. 429/5xx); connection interruptions are
+      // surfaced to the caller instead of silently re-billing a generation.
+      if (!isNetworkError(error) || !isSafeToAutoRetry(error) || !shouldRetry() || attempt === maxAttempts - 1) {
         throw error;
       }
       const delay = computeBackoffDelay(attempt);
@@ -51,6 +54,23 @@ export function isNetworkError(error: unknown): boolean {
   return (
     error instanceof TypeError ||
     (error instanceof Error && error.message.includes(SERVER_DISCONNECTED_MESSAGE))
+  );
+}
+
+/**
+ * 判断是否可以**自动**重试而不产生重复计费。
+ *
+ * 只有"请求已到达上游且被拒绝/失败在响应阶段之前"的错误才是安全的：
+ * 429/408/5xx 意味着服务器看到了请求并明确拒绝或报错，重试不会重复生成。
+ * 连接中断类错误（TypeError、断连文案、无状态码的 NetworkError）无法区分
+ * "还没发出"和"上游已经在生成"，自动重试可能**再生成一张**（多付一次钱，
+ * 且出图不同）——这类错误不再自动重试，由调用方标记"结果未知"交给用户决定。
+ */
+export function isSafeToAutoRetry(error: unknown): boolean {
+  return (
+    error instanceof NetworkError &&
+    error.status !== undefined &&
+    isRetryableStatus(error.status)
   );
 }
 

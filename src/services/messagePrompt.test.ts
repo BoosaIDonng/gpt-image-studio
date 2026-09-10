@@ -27,8 +27,10 @@ describe("finalPromptFromMessage", () => {
     expect(prompt).toBe(
       [
         "Use exactly:",
+        "[RAG 参考开始]",
         "Reference:",
         "cinematic neon reflection",
+        "[RAG 参考结束]",
         "",
         "用户原始提示词：",
         "rain street portrait",

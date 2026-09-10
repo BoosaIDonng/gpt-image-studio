@@ -1,14 +1,20 @@
 import type { ApiMode, ApiProvider, GenerationParams } from "../types/studio";
+import { resolveModelCapabilities } from "./imageCapabilityRegistry";
 
+/**
+ * Capability facade kept for existing consumers; the actual rules live in the
+ * data-driven capability registry so a new model only needs one declaration.
+ */
 export function imageCapabilities(provider: ApiProvider, apiMode: ApiMode, model: string) {
-  const openai = provider === "openai";
+  const capabilities = resolveModelCapabilities({ provider, apiMode, model });
 
   return {
-    background: openai,
-    customSize: openai,
-    outputFormat: openai,
-    quality: openai,
-    transparentBackground: openai && !(apiMode === "images" && model === "gpt-image-2"),
+    background: capabilities.background,
+    customSize: capabilities.customSize,
+    outputFormat: capabilities.outputFormat,
+    quality: capabilities.quality,
+    transparentBackground: capabilities.transparentBackground,
+    streaming: capabilities.streaming,
   };
 }
 
