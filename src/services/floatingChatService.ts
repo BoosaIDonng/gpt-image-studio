@@ -4,7 +4,7 @@ export type ChatMessage = {
 };
 
 const DEFAULT_WORKER_URL = "https://unlimited.354561650.workers.dev/api/chat";
-const DEFAULT_MODEL = "openai/gpt-oss-120b";
+const DEFAULT_MODEL = "openai/gpt-oss-20b";
 
 export type StreamChatReplyOptions = {
   useBuiltinPersona?: boolean;
