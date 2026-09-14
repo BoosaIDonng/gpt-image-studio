@@ -5,6 +5,7 @@ import { loadSession, isPaired } from "./pairingState.js";
 import { pairRoutes } from "./routes/pair.js";
 import { authRoutes } from "./routes/auth.js";
 import { imagesRoutes } from "./routes/images.js";
+import { chatRoutes } from "./routes/chat.js";
 import { authMiddleware } from "./middleware/auth.js";
 import type { CompanionSecurityConfig } from "./securityConfig.js";
 import { isOriginAllowed } from "./securityConfig.js";
@@ -58,6 +59,17 @@ export async function startServer(opts: {
   });
   await app.register(authRoutes);
   await app.register(imagesRoutes, { security: opts.security });
+  await app.register(chatRoutes, {
+    getUpstream: () => {
+      const apiKey = process.env.NVIDIA_API_KEY;
+      if (!apiKey) return null;
+      return {
+        baseUrl: process.env.NVIDIA_CHAT_BASE_URL || "https://integrate.api.nvidia.com/v1",
+        apiKey,
+        model: process.env.NVIDIA_CHAT_MODEL || "openai/gpt-oss-20b",
+      };
+    },
+  });
 
   app.get("/health", async (): Promise<CompanionHealthResponse> => {
     return {

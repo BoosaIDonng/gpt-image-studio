@@ -1,6 +1,14 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { streamChatReply, type ChatMessage } from "../services/floatingChatService";
+import {
+  streamChatReply,
+  FLOATING_CHAT_UNCONFIGURED_MESSAGE,
+  IMAGE_ASSISTANT_SYSTEM_PROMPT,
+  type ChatMessage,
+} from "../services/floatingChatService";
+
+/** Assistant history sent upstream is capped so long chats don't blow the context. */
+const MAX_HISTORY_MESSAGES = 16;
 
 export const useFloatingChatStore = defineStore("floatingChat", () => {
   const isOpen = ref(false);
@@ -27,7 +35,7 @@ export const useFloatingChatStore = defineStore("floatingChat", () => {
     error.value = "";
   }
 
-  async function send(projectContext?: ChatMessage) {
+  async function send() {
     const text = input.value.trim();
     if (!text || isStreaming.value) return;
 
@@ -42,16 +50,21 @@ export const useFloatingChatStore = defineStore("floatingChat", () => {
 
     try {
       await streamChatReply(
-        messages.value.slice(0, -1),
+        messages.value.slice(0, -1).slice(-MAX_HISTORY_MESSAGES),
         (delta) => {
           const msg = messages.value[assistantIdx];
           if (msg) msg.content += delta;
         },
-        projectContext,
+        IMAGE_ASSISTANT_SYSTEM_PROMPT,
+        controller.signal,
       );
     } catch (e) {
-      error.value = e instanceof Error ? e.message : "请求失败";
-      messages.value.splice(assistantIdx, 1);
+      if (controller.signal.aborted) {
+        // User-initiated stop; keep partial content, no error banner.
+      } else {
+        error.value = e instanceof Error ? e.message : "请求失败";
+        messages.value.splice(assistantIdx, 1);
+      }
     } finally {
       isStreaming.value = false;
       abortController.value = null;

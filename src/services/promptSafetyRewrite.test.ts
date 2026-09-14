@@ -1,21 +1,30 @@
+import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   cleanAssistantPromptRewrite,
   isProbablyLocalFallbackCopy,
   rewritePromptWithAssistant,
 } from "./promptSafetyRewrite";
+import { FLOATING_CHAT_UNCONFIGURED_MESSAGE } from "./floatingChatService";
 
 const mocks = vi.hoisted(() => ({
   streamChatReply: vi.fn(),
+  isBuiltinChatAvailable: vi.fn(() => true),
 }));
 
 vi.mock("./floatingChatService", () => ({
   streamChatReply: mocks.streamChatReply,
+  isBuiltinChatAvailable: mocks.isBuiltinChatAvailable,
+  FLOATING_CHAT_UNCONFIGURED_MESSAGE:
+    "内置 AI 助手需要先启动并配对本地 Companion：打开设置 → API 设置，启动 Companion 并完成配对后即可使用。",
 }));
 
 describe("rewritePromptWithAssistant", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
+    setActivePinia(createPinia());
     mocks.streamChatReply.mockReset();
+    mocks.isBuiltinChatAvailable.mockReturnValue(true);
   });
 
   it("asks the AI assistant to rewrite a failed prompt with error and risk context", async () => {
@@ -48,8 +57,7 @@ describe("rewritePromptWithAssistant", () => {
         },
       ],
       expect.any(Function),
-      undefined,
-      { useBuiltinPersona: false },
+      "",
     );
     expect(mocks.streamChatReply.mock.calls[0][0][1].content).toContain("nsfw, completely nude");
     expect(mocks.streamChatReply.mock.calls[0][0][1].content).toContain(
@@ -78,12 +86,8 @@ describe("rewritePromptWithAssistant", () => {
 
     expect(rewritten).toBe(improvedPrompt);
     expect(mocks.streamChatReply).toHaveBeenCalledTimes(2);
-    expect(mocks.streamChatReply.mock.calls[0][3]).toEqual({
-      useBuiltinPersona: false,
-    });
-    expect(mocks.streamChatReply.mock.calls[1][3]).toEqual({
-      useBuiltinPersona: false,
-    });
+    expect(mocks.streamChatReply.mock.calls[0][2]).toBe("");
+    expect(mocks.streamChatReply.mock.calls[1][2]).toBe("");
     expect(mocks.streamChatReply.mock.calls[0][0][0]).toEqual({
       role: "system",
       content: expect.stringContaining("prompt rewriting"),
@@ -94,6 +98,15 @@ describe("rewritePromptWithAssistant", () => {
     expect(mocks.streamChatReply.mock.calls[1][0].at(-1)?.content).toContain(
       "copied the local fallback",
     );
+  });
+
+  it("throws the setup hint when the companion is not available", async () => {
+    mocks.isBuiltinChatAvailable.mockReturnValue(false);
+
+    await expect(
+      rewritePromptWithAssistant({ prompt: "a girl", errorMessage: "HTTP 403" }),
+    ).rejects.toThrow(FLOATING_CHAT_UNCONFIGURED_MESSAGE);
+    expect(mocks.streamChatReply).not.toHaveBeenCalled();
   });
 });
 

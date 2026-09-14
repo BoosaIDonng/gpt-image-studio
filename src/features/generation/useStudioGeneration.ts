@@ -28,6 +28,10 @@ type UseStudioGenerationInput = {
   currentGenerationParams: () => GenerationParams;
   currentGenerationRecipe: () => GenerationRecipe;
   currentPromptRequestSettings: (prompt?: string) => PromptRequestSettings;
+  /** Async variant that fuses semantic RAG scores when the toggle is on. */
+  currentPromptRequestSettingsAsync?: (prompt?: string) => Promise<PromptRequestSettings>;
+  /** Top RAG hits for the given prompt, used as expander style references. */
+  ragExamplesForPrompt?: (prompt: string) => string[];
   customSizeError: ComputedRef<string>;
   imageAssets: Ref<ImageAsset[]>;
   imageById: (id: string) => ImageAsset | undefined;

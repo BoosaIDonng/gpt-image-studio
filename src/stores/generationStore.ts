@@ -62,6 +62,10 @@ type GenerationStoreContext = {
   currentGenerationParams: () => GenerationParams;
   currentGenerationRecipe?: () => GenerationRecipe;
   currentPromptRequestSettings: (prompt?: string) => PromptRequestSettings;
+  /** Async variant that fuses semantic RAG scores when the toggle is on. */
+  currentPromptRequestSettingsAsync?: (prompt?: string) => Promise<PromptRequestSettings>;
+  /** Top RAG hits for the given prompt, used as expander style references. */
+  ragExamplesForPrompt?: (prompt: string) => string[];
   customSizeError: ComputedRef<string>;
   imageAssets: Ref<ImageAsset[]>;
   imageById: (id: string) => ImageAsset | undefined;
@@ -185,18 +189,27 @@ export const useGenerationStore = defineStore("generation", () => {
   async function expandPromptOrOriginal(rawText: string, ctx: GenerationStoreContext) {
     isExpanding.value = true;
     try {
-      return await expandPrompt(rawText, {
-        chatApiKey: ctx.chatApiKey.value,
-        chatApiBaseUrl: ctx.chatApiBaseUrl.value,
-        chatModel: ctx.chatModel.value,
-        chatSystemPrompt: ctx.chatSystemPrompt.value,
-      });
+      return await expandPrompt(
+        rawText,
+        {
+          chatApiKey: ctx.chatApiKey.value,
+          chatApiBaseUrl: ctx.chatApiBaseUrl.value,
+          chatModel: ctx.chatModel.value,
+          chatSystemPrompt: ctx.chatSystemPrompt.value,
+        },
+        { ragExamples: ragExamplesForExpansion(rawText, ctx) },
+      );
     } catch (error) {
       console.error("[expand] failed:", error);
       return rawText;
     } finally {
       isExpanding.value = false;
     }
+  }
+
+  /** Top RAG hits feed the expander as style references (silent when off/empty). */
+  function ragExamplesForExpansion(rawText: string, ctx: GenerationStoreContext) {
+    return ctx.ragExamplesForPrompt?.(rawText) ?? [];
   }
 
   function waitForExpandPreviewChoice(rawText: string, expanded: string) {
@@ -231,7 +244,8 @@ export const useGenerationStore = defineStore("generation", () => {
     const generationParams = input.value.currentGenerationParams();
     const generationRecipe = currentGenerationRecipe();
     const imageCount = normalizeImageCount(generationParams.imageCount);
-    const promptRequestSettings = input.value.currentPromptRequestSettings(text);
+    const promptRequestSettings = await (input.value.currentPromptRequestSettingsAsync?.(text) ??
+      Promise.resolve(input.value.currentPromptRequestSettings(text)));
     const userMessage: Message = {
       id: createId("m"),
       conversationId,
@@ -317,10 +331,10 @@ export const useGenerationStore = defineStore("generation", () => {
 
     if (userMessage) {
       const prompt = promptOverride?.trim() || userMessage.content;
-      const promptRequestSettings = promptOverride?.trim()
-        ? input.value.currentPromptRequestSettings(prompt)
-        : (message.promptRequestSettings ??
-          input.value.currentPromptRequestSettings(userMessage.content));
+      const promptRequestSettings =
+        message.promptRequestSettings ??
+        (await (input.value.currentPromptRequestSettingsAsync?.(prompt) ??
+          Promise.resolve(input.value.currentPromptRequestSettings(prompt))));
 
       await runImageRequests(
         createJobs(
@@ -401,7 +415,10 @@ export const useGenerationStore = defineStore("generation", () => {
           generationRecipe,
           promptRequestSettings:
             message.promptRequestSettings ??
-            input.value.currentPromptRequestSettings(userMessage.content),
+            (await (input.value.currentPromptRequestSettingsAsync?.(userMessage.content) ??
+              Promise.resolve(
+                input.value.currentPromptRequestSettings(userMessage.content),
+              ))),
           prompt: userMessage.content,
           referencedImageIds: message.referencedImageIds,
           editSourceImageId: message.editSourceImageId,

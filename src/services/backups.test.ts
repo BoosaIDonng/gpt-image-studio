@@ -86,6 +86,7 @@ const settings: AppSettings = {
   favoritePrompts: [],
   ragEnabled: false,
   ragTopK: 4,
+  ragSemanticEnabled: false,
   promptExpandEnabled: false,
   chatApiKey: "sk-chat-secret",
   chatApiBaseUrl: "",
@@ -152,6 +153,7 @@ describe("studio backups", () => {
       favoritePrompts: settings.favoritePrompts,
       ragEnabled: settings.ragEnabled,
       ragTopK: settings.ragTopK,
+      ragSemanticEnabled: settings.ragSemanticEnabled,
       promptExpandEnabled: settings.promptExpandEnabled,
       chatApiBaseUrl: settings.chatApiBaseUrl,
       chatModel: settings.chatModel,
@@ -222,6 +224,7 @@ describe("studio backups", () => {
           promptWordbanks: settings.promptWordbanks,
           ragEnabled: settings.ragEnabled,
           ragTopK: settings.ragTopK,
+          ragSemanticEnabled: settings.ragSemanticEnabled,
           promptExpandEnabled: settings.promptExpandEnabled,
           chatApiBaseUrl: settings.chatApiBaseUrl,
           chatModel: settings.chatModel,
@@ -290,6 +293,7 @@ describe("studio backups", () => {
       expect.objectContaining({
         ragEnabled: false,
         ragTopK: 4,
+  ragSemanticEnabled: false,
       }),
     );
   });

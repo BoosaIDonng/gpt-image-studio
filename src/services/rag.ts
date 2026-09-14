@@ -1,6 +1,8 @@
 import type { FavoritePrompt, ImageAsset, Message, PromptWordbanks } from "../types/studio";
 import { matchPromptWordbankTerms } from "./promptWordbankMatcher";
 import { synonymExpansions } from "./ragSynonyms";
+import { bilingualExpansions } from "./ragBilingualTerms";
+import { getSemanticSearcher } from "./ragSemantic";
 import { wordbankTermBoost } from "./wordbankWeights";
 
 export type RagDocumentSource = "wordbank" | "image" | "favorite" | "history";
@@ -46,6 +48,13 @@ type RetrieveRagContextInput = {
   minScore?: number;
   /** Persisted per-term hit weights ("个人词库") that boost wordbank documents. */
   termWeights?: Record<string, number>;
+};
+
+type RetrieveRagContextEnhancedInput = RetrieveRagContextInput & {
+  /** Enables the transformers.js semantic pass; falls back silently when off. */
+  semanticEnabled?: boolean;
+  /** Floor for a semantic match to fuse into the score (cosine similarity). */
+  semanticMinScore?: number;
 };
 
 const SOURCE_WEIGHTS: Record<RagDocumentSource, number> = {
@@ -148,6 +157,45 @@ function pushUnique(items: string[], item: string) {
 }
 
 export function retrieveRagContext(input: RetrieveRagContextInput) {
+  return retrieveRagContextCore(input, undefined);
+}
+
+/**
+ * Retrieval with the optional transformers.js semantic pass fused in.
+ *
+ * The lexical score and the semantic cosine are combined with max() so a
+ * strong signal from either surfaces. Semantic-only hits still carry their
+ * source weight; a failed/unloaded model simply yields an empty semantic map
+ * and the result equals the synchronous lexical retrieval.
+ */
+export async function retrieveRagContextEnhanced(input: RetrieveRagContextEnhancedInput) {
+  if (!input.semanticEnabled) return retrieveRagContext(input);
+
+  const semanticMinScore = input.semanticMinScore ?? 0.45;
+  let semanticScores: Map<string, number> | undefined;
+  try {
+    const searcher = await getSemanticSearcher();
+    if (searcher) {
+      const matches = await searcher.search({
+        query: input.query,
+        documents: input.documents.map((document) => ({ id: document.id, text: document.text })),
+      });
+      semanticScores = new Map(
+        matches.filter((match) => match.score >= semanticMinScore).map((match) => [match.documentId, match.score]),
+      );
+    }
+  } catch {
+    // Degrade to lexical-only retrieval; semantic output is optional by design.
+    semanticScores = undefined;
+  }
+
+  return retrieveRagContextCore(input, semanticScores);
+}
+
+function retrieveRagContextCore(
+  input: RetrieveRagContextInput,
+  semanticScores: Map<string, number> | undefined,
+) {
   const topK = normalizeTopK(input.topK);
   const minScore = input.minScore ?? 0.12;
   const excludedIds = new Set(input.excludedIds ?? []);
@@ -162,7 +210,10 @@ export function retrieveRagContext(input: RetrieveRagContextInput) {
     .filter((document) => !excludedIds.has(document.id))
     .filter((document) => !matchesExcludedText(document, excludedTexts))
     .map((document) => {
-      const rawScore = scoreRagDocument(input.query, document);
+      const lexicalScore = scoreRagDocument(input.query, document);
+      const semanticScore = semanticScores?.get(document.id);
+      // max-fusion: a strong signal from either channel wins.
+      const rawScore = semanticScore === undefined ? lexicalScore : Math.max(lexicalScore, semanticScore);
       const sourceWeight = SOURCE_WEIGHTS[document.source];
       // Successful-generation hit history only boosts wordbank terms.
       const weightBoost =
@@ -274,8 +325,13 @@ function matchesExcludedText(document: RagDocument, excludedTexts: Set<string>) 
 }
 
 function vectorize(text: string) {
+  const normalized = normalizeText(text);
   const vector = new Map<string, number>();
-  for (const token of expandWithSynonyms(tokenize(text))) {
+  const tokens = [
+    ...expandWithSynonyms(tokenize(normalized)),
+    ...bilingualExpansionsForText(normalized),
+  ];
+  for (const token of tokens) {
     vector.set(token, (vector.get(token) ?? 0) + 1);
   }
   return vector;
@@ -293,7 +349,9 @@ function scoreRagDocument(query: string, document: RagDocument) {
 }
 
 function tokenCoverageScore(query: string, documentText: string) {
-  const queryTokens = uniqueTokens(expandWithSynonyms(tokenize(query)));
+  const queryTokens = uniqueTokens(
+    [...expandWithSynonyms(tokenize(query)), ...bilingualExpansionsForText(normalizeText(query))],
+  );
   if (!queryTokens.length) return 0;
 
   const documentTokens = new Set(expandWithSynonyms(tokenize(documentText)));
@@ -366,6 +424,32 @@ function expandWithSynonyms(tokens: string[]): string[] {
     }
   }
   return expanded;
+}
+
+/**
+ * Bridge Chinese queries to English documents.
+ *
+ * The bilingual map is keyed by whole words, but Han runs are tokenized into
+ * bigrams, so lookups run against reconstructed runs from the original text.
+ * Returns English terms (lowercased) for every mapped Chinese phrase present.
+ */
+function bilingualExpansionsForText(normalized: string): string[] {
+  const hanRuns = normalized.match(/\p{Script=Han}+/gu) ?? [];
+  const expansions: string[] = [];
+  const seen = new Set<string>();
+  for (const run of hanRuns) {
+    for (let length = Math.min(run.length, 4); length >= 2; length -= 1) {
+      for (let index = 0; index + length <= run.length; index += 1) {
+        for (const term of bilingualExpansions(run.slice(index, index + length))) {
+          if (!seen.has(term)) {
+            seen.add(term);
+            expansions.push(term);
+          }
+        }
+      }
+    }
+  }
+  return expansions;
 }
 
 function normalizeToken(token: string) {

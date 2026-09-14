@@ -43,6 +43,7 @@ const fullSettings: AppSettings = {
   favoritePrompts: [],
   ragEnabled: false,
   ragTopK: 4,
+  ragSemanticEnabled: false,
   promptExpandEnabled: false,
   chatApiKey: "",
   chatApiBaseUrl: "",

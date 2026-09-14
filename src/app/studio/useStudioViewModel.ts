@@ -14,7 +14,7 @@ import { useStudioImages } from "../../features/images";
 import { useStudioSettings } from "../../features/settings";
 import { withNetworkRetry } from "../../services/networkRetry";
 import { clonePromptWordbanks } from "../../services/promptWordbanks";
-import { collectRagDocuments, retrieveRagContext } from "../../services/rag";
+import { collectRagDocuments, retrieveRagContext, retrieveRagContextEnhanced } from "../../services/rag";
 import { saveSettings } from "../../services/settings";
 import {
   applyUrlSettings,
@@ -87,6 +87,7 @@ export function useStudioViewModel() {
     promptMode: settings.promptMode,
     ragEnabled: settings.ragEnabled,
     ragTopK: settings.ragTopK,
+    ragSemanticEnabled: settings.ragSemanticEnabled,
     savePromptWordbank: (section, terms) => settings.savePromptWordbank(section, terms),
     restoreDefaultPromptWordbank: (section) => settings.restoreDefaultPromptWordbank(section),
     savePromptRewriteGuardText: (text) => settings.savePromptRewriteGuardText(text),
@@ -249,6 +250,13 @@ export function useStudioViewModel() {
     };
   }
 
+  async function currentPromptRequestSettingsAsync(prompt?: string): Promise<PromptRequestSettings> {
+    return {
+      ...currentPromptRequestSettings(),
+      ragContext: await ragContextForPromptAsync(prompt),
+    };
+  }
+
   function ragContextForPrompt(prompt?: string) {
     const query = prompt?.trim();
     if (!settings.ragEnabled.value || !query) return undefined;
@@ -269,6 +277,46 @@ export function useStudioViewModel() {
     );
   }
 
+  /** Generation-path retrieval: fuses semantic scores when the toggle is on. */
+  async function ragContextForPromptAsync(prompt?: string) {
+    const query = prompt?.trim();
+    if (!settings.ragEnabled.value || !query) return undefined;
+
+    const result = await retrieveRagContextEnhanced({
+      query,
+      documents: collectRagDocuments({
+        wordbanks: settings.promptWordbanks.value,
+        imageAssets: images.imageAssets.value,
+        favoritePrompts: settings.favoritePrompts.value,
+        messages: conversations.messages.value,
+      }),
+      excludedIds: ragExcludedMatchIds.value,
+      topK: settings.ragTopK.value,
+      termWeights: settings.wordbankTermWeights.value,
+      semanticEnabled: settings.ragSemanticEnabled.value,
+    });
+    return result.context || undefined;
+  }
+
+  /** Top RAG hit texts, injected into prompt expansion as style references. */
+  function ragExamplesForPrompt(prompt: string) {
+    const query = prompt.trim();
+    if (!settings.ragEnabled.value || !query) return [];
+
+    return retrieveRagContext({
+      query,
+      documents: collectRagDocuments({
+        wordbanks: settings.promptWordbanks.value,
+        imageAssets: images.imageAssets.value,
+        favoritePrompts: settings.favoritePrompts.value,
+        messages: conversations.messages.value,
+      }),
+      excludedIds: ragExcludedMatchIds.value,
+      topK: 3,
+      termWeights: settings.wordbankTermWeights.value,
+    }).items.map((item) => item.text);
+  }
+
   // ── Generation ──
   const generation = useStudioGeneration({
     activeConversationId: conversations.activeConversationId,
@@ -281,6 +329,8 @@ export function useStudioViewModel() {
     currentGenerationParams: settings.currentGenerationParams,
     currentGenerationRecipe: settings.currentGenerationRecipe,
     currentPromptRequestSettings,
+    currentPromptRequestSettingsAsync,
+    ragExamplesForPrompt,
     customSizeError: settings.customSizeError,
     imageAssets: images.imageAssets,
     imageById: images.imageById,
@@ -525,9 +575,11 @@ export function useStudioViewModel() {
     promptWordbanks: settings.promptWordbanks,
     ragEnabled: settings.ragEnabled,
     ragTopK: settings.ragTopK,
+    ragSemanticEnabled: settings.ragSemanticEnabled,
     updatePromptMode: settingsSync.setPromptMode,
     updateRagEnabled: settingsSync.setRagEnabled,
     updateRagTopK: settingsSync.setRagTopK,
+    updateRagSemanticEnabled: settingsSync.setRagSemanticEnabled,
     saveWordbank: settingsSync.savePromptWordbank,
     restoreDefaultWordbank: settingsSync.restoreDefaultPromptWordbank,
 

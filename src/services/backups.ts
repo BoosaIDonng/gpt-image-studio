@@ -48,6 +48,7 @@ type StoredBackupSettings = Omit<
   | "favoritePrompts"
   | "ragEnabled"
   | "ragTopK"
+  | "ragSemanticEnabled"
 > & {
   promptRewriteGuardEnabled?: boolean;
   promptRewriteGuardText?: string;
@@ -55,6 +56,7 @@ type StoredBackupSettings = Omit<
   favoritePrompts?: unknown;
   ragEnabled?: boolean;
   ragTopK?: unknown;
+  ragSemanticEnabled?: boolean;
   promptMode?: AppSettings["promptMode"];
   promptWordbanks?: unknown;
   defaults: StoredGenerationParams;
@@ -124,6 +126,7 @@ export async function restoreStudioBackup(file: File) {
         favoritePrompts: normalizeFavoritePrompts(data.settings.favoritePrompts),
         ragEnabled: data.settings.ragEnabled ?? false,
         ragTopK: normalizeRagTopK(data.settings.ragTopK),
+        ragSemanticEnabled: data.settings.ragSemanticEnabled ?? false,
         defaults: normalizeGenerationParams(data.settings.defaults),
         autoRetryOnNetworkError: data.settings.autoRetryOnNetworkError ?? false,
       }

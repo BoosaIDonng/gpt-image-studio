@@ -24,6 +24,7 @@ export function useStudioSettingsSync(ctx: {
   promptMode: Ref<PromptMode>;
   ragEnabled: Ref<boolean>;
   ragTopK: Ref<number>;
+  ragSemanticEnabled: Ref<boolean>;
   savePromptWordbank: (section: PromptWordbankSectionKey, terms: string[]) => void;
   restoreDefaultPromptWordbank: (section: PromptWordbankSectionKey) => void;
   savePromptRewriteGuardText: (text: string) => void;
@@ -117,6 +118,10 @@ export function useStudioSettingsSync(ctx: {
     ctx.ragTopK.value = value;
   }
 
+  function setRagSemanticEnabled(value: boolean) {
+    ctx.ragSemanticEnabled.value = value;
+  }
+
   function savePromptWordbank(section: PromptWordbankSectionKey, terms: string[]) {
     ctx.savePromptWordbank(section, terms);
   }
@@ -174,6 +179,7 @@ export function useStudioSettingsSync(ctx: {
     setPromptMode,
     setRagEnabled,
     setRagTopK,
+    setRagSemanticEnabled,
     savePromptWordbank,
     restoreDefaultPromptWordbank,
     savePromptRewriteGuardText,

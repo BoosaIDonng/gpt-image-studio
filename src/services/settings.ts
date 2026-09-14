@@ -55,6 +55,7 @@ type StoredAppSettings = Omit<
   | "favoritePrompts"
   | "ragEnabled"
   | "ragTopK"
+  | "ragSemanticEnabled"
   | "promptExpandEnabled"
   | "chatApiKey"
   | "chatApiBaseUrl"
@@ -78,6 +79,7 @@ type StoredAppSettings = Omit<
   favoritePrompts?: unknown;
   ragEnabled?: boolean;
   ragTopK?: unknown;
+  ragSemanticEnabled?: boolean;
   promptMode?: PromptMode;
   promptWordbanks?: unknown;
   defaults: StoredGenerationParams;
@@ -114,6 +116,7 @@ function normalizeSettings(settings: StoredAppSettings): AppSettings {
     chatSystemPrompt: settings.chatSystemPrompt ?? "",
     ragEnabled: settings.ragEnabled ?? false,
     ragTopK: normalizeRagTopK(settings.ragTopK),
+    ragSemanticEnabled: settings.ragSemanticEnabled ?? false,
     defaults: normalizeGenerationParams(settings.defaults),
   };
 }

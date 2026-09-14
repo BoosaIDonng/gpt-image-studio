@@ -148,6 +148,8 @@ export type AppSettings = {
   favoritePrompts: FavoritePrompt[];
   ragEnabled: boolean;
   ragTopK: number;
+  /** Optional transformers.js semantic retrieval on top of lexical matching. */
+  ragSemanticEnabled: boolean;
   autoRetryOnNetworkError: boolean;
   defaults: GenerationParams;
   storageMode: "indexeddb";

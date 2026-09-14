@@ -1,5 +1,14 @@
+import { createPinia, setActivePinia } from "pinia";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { streamChatReply, type ChatMessage } from "./floatingChatService";
+import { streamChatReply, isBuiltinChatAvailable, type ChatMessage } from "./floatingChatService";
+import { IMAGE_ASSISTANT_SYSTEM_PROMPT } from "./imageAssistantPrompt";
+import { useSettingsStore } from "../stores/settingsStore";
+
+function configureCompanion() {
+  const settings = useSettingsStore();
+  settings.companionUrl = "http://127.0.0.1:19750";
+  settings.companionSessionToken = "session-token";
+}
 
 function streamResponse(text = "ok") {
   const encoder = new TextEncoder();
@@ -23,39 +32,62 @@ function streamResponse(text = "ok") {
 describe("floating chat service", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    setActivePinia(createPinia());
   });
 
-  it("prepends hidden project context before visible messages", async () => {
+  it("posts to the companion chat endpoint with the pairing token and local persona", async () => {
+    setActivePinia(createPinia());
+    configureCompanion();
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(streamResponse());
-    const context: ChatMessage = {
-      role: "user",
-      content: "项目上下文",
-    };
 
-    await streamChatReply([{ role: "user", content: "帮我改 prompt" }], vi.fn(), context);
+    await streamChatReply([{ role: "user", content: "帮我改 prompt" }], vi.fn());
 
-    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
-    expect(body.messages).toEqual([context, { role: "user", content: "帮我改 prompt" }]);
-    expect(body.use_builtin_persona).toBe(true);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://127.0.0.1:19750/chat/completions");
+    expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer session-token");
+    const body = JSON.parse(String(init?.body));
+    // Model and API key never leave the companion: the client sends messages only.
+    expect(body.model).toBeUndefined();
+    expect(body.api_key).toBeUndefined();
+    expect(body.messages).toEqual([
+      { role: "system", content: IMAGE_ASSISTANT_SYSTEM_PROMPT },
+      { role: "user", content: "帮我改 prompt" },
+    ]);
+    expect(body.stream).toBe(true);
   });
 
-  it("keeps the current payload shape when no project context is provided", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(streamResponse());
+  it("omits the system message when an empty system prompt is passed", async () => {
+    setActivePinia(createPinia());
+    configureCompanion();
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(streamResponse());
 
-    await streamChatReply([{ role: "user", content: "你好" }], vi.fn());
+    await streamChatReply([{ role: "user", content: "rewrite this" }], vi.fn(), "");
 
-    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
-    expect(body.messages).toEqual([{ role: "user", content: "你好" }]);
+    const body = JSON.parse(String(vi.mocked(globalThis.fetch).mock.calls[0][1]?.body));
+    expect(body.messages).toEqual([{ role: "user", content: "rewrite this" }]);
   });
 
-  it("can disable the worker builtin persona for tool requests", async () => {
+  it("reports availability from companion url + pairing token", () => {
+    setActivePinia(createPinia());
+    expect(isBuiltinChatAvailable()).toBe(false);
+
+    configureCompanion();
+    expect(isBuiltinChatAvailable()).toBe(true);
+  });
+
+  it("accepts an abort signal", async () => {
+    setActivePinia(createPinia());
+    configureCompanion();
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(streamResponse());
+    const controller = new AbortController();
 
-    await streamChatReply([{ role: "user", content: "rewrite this prompt" }], vi.fn(), undefined, {
-      useBuiltinPersona: false,
-    });
+    await streamChatReply(
+      [{ role: "user", content: "hi" }],
+      vi.fn(),
+      IMAGE_ASSISTANT_SYSTEM_PROMPT,
+      controller.signal,
+    );
 
-    const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
-    expect(body.use_builtin_persona).toBe(false);
+    expect(fetchMock.mock.calls[0][1]?.signal).toBe(controller.signal);
   });
 });

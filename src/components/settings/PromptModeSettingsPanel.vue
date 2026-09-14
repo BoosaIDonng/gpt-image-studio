@@ -9,9 +9,11 @@ const {
   promptWordbanks: wordbanks,
   ragEnabled,
   ragTopK,
+  ragSemanticEnabled,
   updatePromptMode: updateModelValue,
   updateRagEnabled,
   updateRagTopK: ctxUpdateRagTopK,
+  updateRagSemanticEnabled,
   saveWordbank,
   restoreDefaultWordbank,
 } = ctx;
@@ -205,6 +207,28 @@ function getWordbankTerms(wordbanks: PromptWordbanks, section: PromptWordbankSec
           @change="handleRagTopKChange(($event.target as HTMLInputElement).value)"
         />
       </label>
+
+      <div class="mt-3 flex items-center justify-between gap-3 border-t border-border-subtle pt-3">
+        <div>
+          <p class="text-xs font-medium text-content">语义检索</p>
+          <p class="mt-1 text-xs leading-relaxed text-content-muted">
+            用本地多语言模型补充跨语言与意译匹配（首次开启需下载约 100MB 模型，之后缓存在浏览器内）。
+          </p>
+        </div>
+        <button
+          class="shrink-0 cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors"
+          :class="
+            ragSemanticEnabled
+              ? 'bg-accent text-white'
+              : 'bg-surface-muted text-content-muted hover:bg-surface-hover'
+          "
+          :disabled="!ragEnabled"
+          type="button"
+          @click="updateRagSemanticEnabled(!ragSemanticEnabled)"
+        >
+          {{ ragSemanticEnabled ? "已开启" : "已关闭" }}
+        </button>
+      </div>
     </div>
 
     <div class="border-t border-border-subtle pt-5">

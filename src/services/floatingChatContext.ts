@@ -46,6 +46,10 @@ const MAX_CONTEXT_MESSAGES = 6;
 const MAX_CONTEXT_IMAGES = 4;
 const MAX_RAG_MATCHES = 4;
 
+/**
+ * Builds the hidden project-context block. The caller prepends it to the
+ * first user message, so the assistant sees context and question in one turn.
+ */
 export function buildFloatingChatProjectContext(
   input: FloatingChatProjectContextInput,
 ): FloatingChatProjectContextMessage {

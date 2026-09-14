@@ -119,6 +119,7 @@ export const useSettingsStore = defineStore("settings", () => {
   const favoritePrompts = ref<FavoritePrompt[]>([]);
   const ragEnabled = ref(false);
   const ragTopK = ref(4);
+  const ragSemanticEnabled = ref(false);
   const wordbankTermWeights = ref<Record<string, number>>({});
   const promptRewriteGuardHistory = ref<PromptRewriteGuardHistoryItem[]>([
     {
@@ -250,6 +251,7 @@ export const useSettingsStore = defineStore("settings", () => {
     autoRetryOnNetworkError.value = settings.autoRetryOnNetworkError ?? false;
     ragEnabled.value = settings.ragEnabled ?? false;
     ragTopK.value = normalizeRagTopK(settings.ragTopK);
+    ragSemanticEnabled.value = settings.ragSemanticEnabled ?? false;
     wordbankTermWeights.value = normalizeWordbankTermWeights(settings.wordbankTermWeights);
     promptExpandEnabled.value = settings.promptExpandEnabled ?? false;
     chatApiKey.value = settings.chatApiKey ?? "";
@@ -301,6 +303,7 @@ export const useSettingsStore = defineStore("settings", () => {
       favoritePrompts: favoritePrompts.value.map(toPlainFavoritePrompt),
       ragEnabled: ragEnabled.value,
       ragTopK: normalizeRagTopK(ragTopK.value),
+      ragSemanticEnabled: ragSemanticEnabled.value,
       wordbankTermWeights: { ...wordbankTermWeights.value },
       promptExpandEnabled: promptExpandEnabled.value,
       chatApiKey: chatApiKey.value.trim(),
@@ -547,6 +550,7 @@ export const useSettingsStore = defineStore("settings", () => {
     favoritePrompts,
     ragEnabled,
     ragTopK,
+    ragSemanticEnabled,
     wordbankTermWeights,
     imageCount,
     imageCountMode,

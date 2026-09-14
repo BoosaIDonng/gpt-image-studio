@@ -62,9 +62,11 @@ export type SettingsModalContext = {
   promptWordbanks: Ref<PromptWordbanks>;
   ragEnabled: Ref<boolean>;
   ragTopK: Ref<number>;
+  ragSemanticEnabled: Ref<boolean>;
   updatePromptMode: (value: PromptMode) => void;
   updateRagEnabled: (value: boolean) => void;
   updateRagTopK: (value: number) => void;
+  updateRagSemanticEnabled: (value: boolean) => void;
   saveWordbank: (section: PromptWordbankSectionKey, terms: string[]) => void;
   restoreDefaultWordbank: (section: PromptWordbankSectionKey) => void;
 

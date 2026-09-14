@@ -3,30 +3,58 @@ export type ChatMessage = {
   content: string;
 };
 
-const DEFAULT_WORKER_URL = "https://unlimited.354561650.workers.dev/api/chat";
-const DEFAULT_MODEL = "openai/gpt-oss-20b";
+import { useSettingsStore } from "../stores/settingsStore";
 
-export type StreamChatReplyOptions = {
-  useBuiltinPersona?: boolean;
-};
+/** The builtin chat persona lives in this repo, not upstream of the proxy. */
+export { IMAGE_ASSISTANT_SYSTEM_PROMPT } from "./imageAssistantPrompt";
+import { IMAGE_ASSISTANT_SYSTEM_PROMPT } from "./imageAssistantPrompt";
+
+export const FLOATING_CHAT_UNCONFIGURED_MESSAGE =
+  "内置 AI 助手需要先启动并配对本地 Companion：打开设置 → API 设置，启动 Companion 并完成配对后即可使用。";
+
+function companionEndpoint(): { url: string; token: string } | null {
+  const settings = useSettingsStore();
+  if (!settings.companionUrl || !settings.companionSessionToken) return null;
+  return { url: settings.companionUrl, token: settings.companionSessionToken };
+}
+
+/** True when companion url + pairing token are both configured. */
+export function isBuiltinChatAvailable(): boolean {
+  return companionEndpoint() !== null;
+}
+
+function useCompanionAvailable(): boolean {
+  return isBuiltinChatAvailable();
+}
 
 export async function streamChatReply(
   messages: ChatMessage[],
   onDelta: (delta: string) => void,
-  projectContext?: ChatMessage,
-  options: StreamChatReplyOptions = {},
+  systemPrompt: string = IMAGE_ASSISTANT_SYSTEM_PROMPT,
   signal?: AbortSignal,
 ): Promise<string> {
-  const outgoingMessages = projectContext ? [projectContext, ...messages] : messages;
-  const useBuiltinPersona = options.useBuiltinPersona ?? true;
+  const endpoint = companionEndpoint();
+  if (!endpoint) {
+    throw new Error(FLOATING_CHAT_UNCONFIGURED_MESSAGE);
+  }
 
-  const response = await fetch(DEFAULT_WORKER_URL, {
+  const systemMessage: ChatMessage | undefined = systemPrompt.trim()
+    ? { role: "system", content: systemPrompt.trim() }
+    : undefined;
+  const outgoingMessages: ChatMessage[] = [
+    ...(systemMessage ? [systemMessage] : []),
+    ...messages,
+  ];
+
+  const response = await fetch(`${endpoint.url.replace(/\/+$/, "")}/chat/completions`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${endpoint.token}`,
+    },
     body: JSON.stringify({
-      model: DEFAULT_MODEL,
-      use_builtin_persona: useBuiltinPersona,
       messages: outgoingMessages,
+      stream: true,
     }),
     signal,
   });

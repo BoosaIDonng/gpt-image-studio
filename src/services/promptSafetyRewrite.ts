@@ -1,4 +1,9 @@
-import { streamChatReply, type ChatMessage } from "./floatingChatService";
+import {
+  streamChatReply,
+  isBuiltinChatAvailable,
+  FLOATING_CHAT_UNCONFIGURED_MESSAGE,
+  type ChatMessage,
+} from "./floatingChatService";
 import type { PromptRiskMatch } from "./moderationAdvice";
 
 export type PromptSafetyRewriteInput = {
@@ -9,6 +14,11 @@ export type PromptSafetyRewriteInput = {
 };
 
 export async function rewritePromptWithAssistant(input: PromptSafetyRewriteInput) {
+  // Keep parity with the floating chat so the failure message is identical.
+  if (!isBuiltinChatAvailable()) {
+    throw new Error(FLOATING_CHAT_UNCONFIGURED_MESSAGE);
+  }
+
   const messages: ChatMessage[] = [
     {
       role: "system",
@@ -20,9 +30,7 @@ export async function rewritePromptWithAssistant(input: PromptSafetyRewriteInput
       content: buildSafetyRewritePrompt(input, false),
     },
   ];
-  const response = await streamChatReply(messages, () => undefined, undefined, {
-    useBuiltinPersona: false,
-  });
+  const response = await streamChatReply(messages, () => undefined, "");
   const cleaned = cleanAssistantPromptRewrite(response);
   if (!isProbablyLocalFallbackCopy(cleaned, input.fallbackPrompt)) {
     return cleaned;
@@ -36,9 +44,7 @@ export async function rewritePromptWithAssistant(input: PromptSafetyRewriteInput
       content: buildFallbackCopyRetryPrompt(input),
     },
   ];
-  const retryResponse = await streamChatReply(retryMessages, () => undefined, undefined, {
-    useBuiltinPersona: false,
-  });
+  const retryResponse = await streamChatReply(retryMessages, () => undefined, "");
   return cleanAssistantPromptRewrite(retryResponse);
 }
 

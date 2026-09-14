@@ -3,6 +3,11 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { FocusTrap } from "focus-trap-vue";
 import { DESKTOP_MIN_WIDTH, useDesktopLayout } from "../../composables/useDesktopLayout";
 import { buildFloatingChatProjectContext } from "../../services/floatingChatContext";
+import {
+  parseAssistantApplyAction,
+  stripAssistantApplyBlock,
+  type AssistantApplyAction,
+} from "../../services/assistantApplyAction";
 import { useFloatingChatStore } from "../../stores/floatingChatStore";
 import { useComposerStore } from "../../stores/composerStore";
 import { useConversationsStore } from "../../stores/conversationsStore";
@@ -216,8 +221,43 @@ function insertToComposer(content: string) {
   composer.composerText = content;
 }
 
+/** Display text: hide the ```studio apply block from the bubble body. */
+function displayContent(content: string) {
+  return stripAssistantApplyBlock(content);
+}
+
+function parseApplyAction(content: string): AssistantApplyAction | null {
+  return parseAssistantApplyAction(content);
+}
+
+function applyAssistantAction(action: AssistantApplyAction) {
+  composer.composerText = action.prompt;
+  if (action.size) {
+    if (action.size === "auto") {
+      // "auto" has no dedicated preset here; keep current size.
+    } else if (/^\d{3,4}x\d{3,4}$/.test(action.size)) {
+      const [width, height] = action.size.split("x").map(Number);
+      if (width && height) {
+        settings.imageWidth = width;
+        settings.imageHeight = height;
+      }
+    }
+  }
+  if (action.imageCount) settings.imageCount = action.imageCount;
+  if (action.quality) settings.quality = action.quality as typeof settings.quality;
+  if (action.background) settings.background = action.background as typeof settings.background;
+  if (action.outputFormat) {
+    settings.outputFormat = action.outputFormat as typeof settings.outputFormat;
+  }
+}
+
 function sendWithProjectContext() {
-  chat.send(buildProjectContext());
+  const context = buildProjectContext();
+  const question = chat.input.trim();
+  // Context and question go upstream as one user turn so the answer is
+  // grounded in the current creation state without a separate injected role.
+  chat.input = context ? `${context}\n\n---\n\n用户问题：${question}` : question;
+  chat.send();
 }
 
 function buildProjectContext() {
@@ -249,7 +289,7 @@ function buildProjectContext() {
       messages: conversations.activeMessages,
       excludedIds: composer.ragExcludedMatchIds,
     },
-  });
+  }).content;
 }
 </script>
 
@@ -372,18 +412,30 @@ function buildProjectContext() {
                 : 'bg-surface-muted dark:bg-surface text-content dark:text-content',
             ]"
           >
-            {{ msg.content || (chat.isStreaming && i === chat.messages.length - 1 ? "..." : "") }}
+            {{ displayContent(msg.content) || (chat.isStreaming && i === chat.messages.length - 1 ? "..." : "") }}
             <button
               v-if="
                 msg.role === 'assistant' &&
-                msg.content &&
+                displayContent(msg.content) &&
                 !(chat.isStreaming && i === chat.messages.length - 1)
               "
               class="mt-2 block text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
               type="button"
-              @click="insertToComposer(msg.content)"
+              @click="insertToComposer(displayContent(msg.content))"
             >
               插入到输入框
+            </button>
+            <button
+              v-if="
+                msg.role === 'assistant' &&
+                !(chat.isStreaming && i === chat.messages.length - 1) &&
+                parseApplyAction(msg.content)
+              "
+              class="mt-2 block cursor-pointer rounded-full bg-accent px-3 py-1 text-xs font-medium text-white hover:bg-accent-pressed"
+              type="button"
+              @click="applyAssistantAction(parseApplyAction(msg.content)!)"
+            >
+              应用 prompt{{ parseApplyAction(msg.content)?.size ? "和参数" : "" }}
             </button>
           </div>
         </div>
