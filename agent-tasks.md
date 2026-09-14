@@ -78,3 +78,20 @@
 部署注意:Companion 需以 `NVIDIA_API_KEY=<key> gpt-image-studio start`(或 serve)方式启动;未设置该环境变量时,图片配对功能不受影响,仅内置聊天/安全改写返回 503 引导文案。
 
 ## 全部任务已完成 ✅(第二轮 + 第三轮)
+
+---
+
+## 第四轮:线上部署零配置内置 chat(2026-09-14,全部完成 ✅)
+
+需求:https://image.idurspace.cn/(GitHub Pages 静态站)的访客打开链接即可使用内置 chat,key 由站点持有。
+
+安全决策:Pages 是纯静态托管,key 不能进前端 bundle(可被任何访客提取)。方案 = 新建专用中继 Worker。
+
+- [x] D1. `chat-relay/worker.mjs`:独立 Cloudflare Worker(不动带密码门的 unlimited)。`POST /chat/completions` 持 NVIDIA_API_KEY 转发 NVIDIA(gpt-oss-20b, temperature 1 / top_p 1 / max_tokens 4096, SSE 透传);`GET /health`;Origin 白名单(image.idurspace.cn + 本地 dev);每 IP 20 次/分钟限流;消息 ≤40 条/单条 ≤24k 字符
+- [x] D2. 部署:`https://chat-relay.354561650.workers.dev`(wrangler secret put NVIDIA_API_KEY + deploy,版本 513f9a22);验证 health ✓ / 恶意 origin 403 ✓ / 流式真实推理 ✓(正确回答 9.8 更大)
+- [x] D3. 前端 `floatingChatService.ts` 双通道:默认走内置 relay(访客零配置);配对 Companion 仍优先(本地低延迟)。请求体只含 messages+stream,key/model 不出服务端
+- [x] D4. CI 修复:serviceworker globals(chat-relay 独立运行时)+ unused imports + prettier;四步(lint/format/typecheck/test)本地全绿后 CI 通过(c895774)
+- [x] D5. 线上 E2E:以全新访客(无 Companion/无 localStorage)在 https://image.idurspace.cn/ 打开助手发消息 → 流式回复符合本地人设(「我是 GPT Image Studio 的生图创作助手…」)→「插入到输入框」可用
+- [x] D6. 文档:MEMORY.md 已更新
+
+部署资产:Worker `chat-relay`(secret: NVIDIA_API_KEY);前端 relay 地址硬编码于 `floatingChatService.ts` 的 `BUILTIN_RELAY_URL`。
