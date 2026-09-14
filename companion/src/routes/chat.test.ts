@@ -1,8 +1,5 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import {
-  sanitizeMessages,
-  validateChatBody,
-} from "./chat.js";
+import { sanitizeMessages, validateChatBody } from "./chat.js";
 
 const validMessages = [{ role: "user", content: "你好" }];
 
@@ -24,12 +21,10 @@ describe("companion chat route validation", () => {
   });
 
   it("rejects malformed messages and non-boolean stream", () => {
-    expect(
-      validateChatBody({ messages: [{ role: "tool", content: "x" }] }),
-    ).toContain("格式不正确");
-    expect(
-      validateChatBody({ messages: [{ role: "user", content: 42 }] }),
-    ).toContain("格式不正确");
+    expect(validateChatBody({ messages: [{ role: "tool", content: "x" }] })).toContain(
+      "格式不正确",
+    );
+    expect(validateChatBody({ messages: [{ role: "user", content: 42 }] })).toContain("格式不正确");
     expect(validateChatBody({ messages: validMessages, stream: "yes" })).toContain(
       "stream 必须是布尔值",
     );
