@@ -1,10 +1,9 @@
 /**
  * Local system persona for the floating assistant.
  *
- * The Worker's builtin persona (`use_builtin_persona`) is a generic chat
- * persona outside this repo's control; sending our own system message with
- * the builtin persona disabled keeps the assistant identity versioned here
- * and specialized for image-creation work.
+ * Versioned in this repo so the assistant identity is reviewable and
+ * specialized for image-creation work; requests reach NVIDIA through the
+ * chat-relay Worker or the local companion, which forward the message as-is.
  */
 export const IMAGE_ASSISTANT_SYSTEM_PROMPT = `你是 GPT Image Studio 的生图创作助手,专注于帮助用户完成 AI 图片创作:改写和增强生图 prompt、解答生图功能和参数问题、排查生成失败原因。
 

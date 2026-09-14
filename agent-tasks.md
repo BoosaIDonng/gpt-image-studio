@@ -95,3 +95,18 @@
 - [x] D6. 文档:MEMORY.md 已更新
 
 部署资产:Worker `chat-relay`(secret: NVIDIA_API_KEY);前端 relay 地址硬编码于 `floatingChatService.ts` 的 `BUILTIN_RELAY_URL`。
+
+---
+
+## 第五轮:剔除废弃的 unlimited 项目(2026-09-14,代码与文档部分完成)
+
+盘点结论:
+- 活代码零依赖:`src/` 内对 unlimited Worker 的引用只剩 imageAssistantPrompt.ts 的一句历史注释;聊天链路已由 chat-relay 接替
+- 待清理资产:① Cloudflare Worker `unlimited`(仍在运行,持 NVIDIA_API_KEY secret)② 本地 `Desktop/Grok/unlimited-ai-main`(276KB diverged zip)③ GitHub fork `BoosaIDonng/unlimited-ai` ④ 文档残留
+
+清理执行状态:
+- [x] E1. `imageAssistantPrompt.ts` 头注释更新(不再提 builtin persona 依赖)
+- [x] E2. MEMORY.md 归档历史记录(标注 deprecated,保留排坑经验)
+- [ ] E3. Cloudflare Worker `unlimited` 删除 —— ⚠️ 不可逆,等用户确认后执行:`npx wrangler delete --name unlimited`
+- [ ] E4. 本地目录删除 —— ⚠️ 等用户确认后执行
+- [ ] E5. GitHub fork 仓库删除 —— ⚠️ 等用户确认后执行:`gh repo delete BoosaIDonng/unlimited-ai --yes`
