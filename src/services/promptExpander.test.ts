@@ -49,13 +49,11 @@ describe("expandPrompt", () => {
   });
 
   it("falls back to the default system prompt when none is configured", async () => {
-    const fetchMock = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(
-        new Response(JSON.stringify({ choices: [{ message: { content: "x" } }] }), {
-          status: 200,
-        }),
-      );
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ choices: [{ message: { content: "x" } }] }), {
+        status: 200,
+      }),
+    );
 
     await expandPrompt("a cat", {
       chatApiKey: "key",

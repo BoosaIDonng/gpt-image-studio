@@ -212,7 +212,8 @@ function getWordbankTerms(wordbanks: PromptWordbanks, section: PromptWordbankSec
         <div>
           <p class="text-xs font-medium text-content">语义检索</p>
           <p class="mt-1 text-xs leading-relaxed text-content-muted">
-            用本地多语言模型补充跨语言与意译匹配（首次开启需下载约 100MB 模型，之后缓存在浏览器内）。
+            用本地多语言模型补充跨语言与意译匹配（首次开启需下载约 100MB
+            模型，之后缓存在浏览器内）。
           </p>
         </div>
         <button

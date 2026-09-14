@@ -416,9 +416,7 @@ export const useGenerationStore = defineStore("generation", () => {
           promptRequestSettings:
             message.promptRequestSettings ??
             (await (input.value.currentPromptRequestSettingsAsync?.(userMessage.content) ??
-              Promise.resolve(
-                input.value.currentPromptRequestSettings(userMessage.content),
-              ))),
+              Promise.resolve(input.value.currentPromptRequestSettings(userMessage.content)))),
           prompt: userMessage.content,
           referencedImageIds: message.referencedImageIds,
           editSourceImageId: message.editSourceImageId,

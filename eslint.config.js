@@ -52,6 +52,20 @@ export default [
     },
   },
   {
+    // Cloudflare Workers runtime: service-worker globals come from the
+    // deployment target, not the repo lint environment.
+    files: ["chat-relay/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        ...globals.serviceworker,
+        ...globals.es2024,
+      },
+    },
+    rules: {
+      "no-console": "off",
+    },
+  },
+  {
     files: ["tools/**/*.{js,mjs}"],
     languageOptions: {
       ecmaVersion: "latest",

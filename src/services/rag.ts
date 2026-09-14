@@ -181,7 +181,9 @@ export async function retrieveRagContextEnhanced(input: RetrieveRagContextEnhanc
         documents: input.documents.map((document) => ({ id: document.id, text: document.text })),
       });
       semanticScores = new Map(
-        matches.filter((match) => match.score >= semanticMinScore).map((match) => [match.documentId, match.score]),
+        matches
+          .filter((match) => match.score >= semanticMinScore)
+          .map((match) => [match.documentId, match.score]),
       );
     }
   } catch {
@@ -213,7 +215,8 @@ function retrieveRagContextCore(
       const lexicalScore = scoreRagDocument(input.query, document);
       const semanticScore = semanticScores?.get(document.id);
       // max-fusion: a strong signal from either channel wins.
-      const rawScore = semanticScore === undefined ? lexicalScore : Math.max(lexicalScore, semanticScore);
+      const rawScore =
+        semanticScore === undefined ? lexicalScore : Math.max(lexicalScore, semanticScore);
       const sourceWeight = SOURCE_WEIGHTS[document.source];
       // Successful-generation hit history only boosts wordbank terms.
       const weightBoost =
@@ -349,9 +352,10 @@ function scoreRagDocument(query: string, document: RagDocument) {
 }
 
 function tokenCoverageScore(query: string, documentText: string) {
-  const queryTokens = uniqueTokens(
-    [...expandWithSynonyms(tokenize(query)), ...bilingualExpansionsForText(normalizeText(query))],
-  );
+  const queryTokens = uniqueTokens([
+    ...expandWithSynonyms(tokenize(query)),
+    ...bilingualExpansionsForText(normalizeText(query)),
+  ]);
   if (!queryTokens.length) return 0;
 
   const documentTokens = new Set(expandWithSynonyms(tokenize(documentText)));

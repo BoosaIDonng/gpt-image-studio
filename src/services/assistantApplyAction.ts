@@ -17,12 +17,7 @@ export type AssistantApplyAction = {
 };
 
 /** Values the UI accepts for parameter fields (kept in sync with settingsStore). */
-const KNOWN_SIZES = new Set([
-  "1024x1024",
-  "1536x1024",
-  "1024x1536",
-  "auto",
-]);
+const KNOWN_SIZES = new Set(["1024x1024", "1536x1024", "1024x1536", "auto"]);
 const QUALITY_VALUES = new Set(["auto", "high", "medium", "low"]);
 const BACKGROUND_VALUES = new Set(["auto", "transparent", "opaque"]);
 const OUTPUT_FORMAT_VALUES = new Set(["png", "jpeg", "webp"]);
@@ -62,7 +57,10 @@ function parseLooseJson(block: string): Record<string, unknown> | null {
 
 /** Clamps and whitelists every field; invalid values are dropped, not rejected. */
 function sanitizeApplyAction(parsed: Record<string, unknown>): AssistantApplyAction {
-  const action: AssistantApplyAction = { action: "apply_prompt", prompt: String(parsed.prompt).trim() };
+  const action: AssistantApplyAction = {
+    action: "apply_prompt",
+    prompt: String(parsed.prompt).trim(),
+  };
 
   const size = parsed.size;
   if (typeof size === "string") {

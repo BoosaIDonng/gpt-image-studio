@@ -412,7 +412,10 @@ function buildProjectContext() {
                 : 'bg-surface-muted dark:bg-surface text-content dark:text-content',
             ]"
           >
-            {{ displayContent(msg.content) || (chat.isStreaming && i === chat.messages.length - 1 ? "..." : "") }}
+            {{
+              displayContent(msg.content) ||
+              (chat.isStreaming && i === chat.messages.length - 1 ? "..." : "")
+            }}
             <button
               v-if="
                 msg.role === 'assistant' &&

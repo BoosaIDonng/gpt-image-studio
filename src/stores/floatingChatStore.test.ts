@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useFloatingChatStore } from "./floatingChatStore";
 import { useSettingsStore } from "./settingsStore";
-import { FLOATING_CHAT_UNCONFIGURED_MESSAGE, type ChatMessage } from "../services/floatingChatService";
+import type { ChatMessage } from "../services/floatingChatService";
 
 const mocks = vi.hoisted(() => ({
   streamChatReply: vi.fn(),

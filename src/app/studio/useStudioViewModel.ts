@@ -14,7 +14,11 @@ import { useStudioImages } from "../../features/images";
 import { useStudioSettings } from "../../features/settings";
 import { withNetworkRetry } from "../../services/networkRetry";
 import { clonePromptWordbanks } from "../../services/promptWordbanks";
-import { collectRagDocuments, retrieveRagContext, retrieveRagContextEnhanced } from "../../services/rag";
+import {
+  collectRagDocuments,
+  retrieveRagContext,
+  retrieveRagContextEnhanced,
+} from "../../services/rag";
 import { saveSettings } from "../../services/settings";
 import {
   applyUrlSettings,
@@ -250,7 +254,9 @@ export function useStudioViewModel() {
     };
   }
 
-  async function currentPromptRequestSettingsAsync(prompt?: string): Promise<PromptRequestSettings> {
+  async function currentPromptRequestSettingsAsync(
+    prompt?: string,
+  ): Promise<PromptRequestSettings> {
     return {
       ...currentPromptRequestSettings(),
       ragContext: await ragContextForPromptAsync(prompt),

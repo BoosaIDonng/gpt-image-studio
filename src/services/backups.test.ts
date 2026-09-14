@@ -293,7 +293,7 @@ describe("studio backups", () => {
       expect.objectContaining({
         ragEnabled: false,
         ragTopK: 4,
-  ragSemanticEnabled: false,
+        ragSemanticEnabled: false,
       }),
     );
   });

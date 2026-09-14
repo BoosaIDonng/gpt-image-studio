@@ -2,7 +2,6 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import {
   streamChatReply,
-  FLOATING_CHAT_UNCONFIGURED_MESSAGE,
   IMAGE_ASSISTANT_SYSTEM_PROMPT,
   type ChatMessage,
 } from "../services/floatingChatService";

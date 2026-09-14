@@ -38,10 +38,7 @@ export async function streamChatReply(
   const systemMessage: ChatMessage | undefined = systemPrompt.trim()
     ? { role: "system", content: systemPrompt.trim() }
     : undefined;
-  const outgoingMessages: ChatMessage[] = [
-    ...(systemMessage ? [systemMessage] : []),
-    ...messages,
-  ];
+  const outgoingMessages: ChatMessage[] = [...(systemMessage ? [systemMessage] : []), ...messages];
 
   const companion = companionEndpoint();
   const url = companion

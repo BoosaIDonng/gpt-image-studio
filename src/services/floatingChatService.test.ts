@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from "pinia";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { streamChatReply, isBuiltinChatAvailable, type ChatMessage } from "./floatingChatService";
+import { streamChatReply, isBuiltinChatAvailable } from "./floatingChatService";
 import { IMAGE_ASSISTANT_SYSTEM_PROMPT } from "./imageAssistantPrompt";
 import { useSettingsStore } from "../stores/settingsStore";
 

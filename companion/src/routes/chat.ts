@@ -1,12 +1,9 @@
-import type { FastifyInstance, FastifyReply } from "fastify";
+import type { FastifyInstance } from "fastify";
 
 type ChatRoutesOptions = {
   /** Resolves the upstream chat credential; null when the env var is absent. */
   getUpstream: () => { baseUrl: string; apiKey: string; model: string } | null;
 };
-
-const DEFAULT_UPSTREAM_BASE_URL = "https://integrate.api.nvidia.com/v1";
-const DEFAULT_UPSTREAM_MODEL = "openai/gpt-oss-20b";
 /** Hard cap so a runaway history cannot request unbounded upstream tokens. */
 const MAX_REQUEST_MESSAGES = 40;
 const MAX_MESSAGE_CHARS = 24_000;
@@ -70,7 +67,9 @@ export async function chatRoutes(app: FastifyInstance, opts: ChatRoutesOptions) 
   });
 }
 
-export function validateChatBody(body: { messages?: IncomingChatMessage[]; stream?: unknown } | null) {
+export function validateChatBody(
+  body: { messages?: IncomingChatMessage[]; stream?: unknown } | null,
+) {
   if (!body || !Array.isArray(body.messages) || body.messages.length === 0) {
     return "请求缺少 messages";
   }

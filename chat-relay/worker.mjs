@@ -167,7 +167,10 @@ function validateChatBody(body) {
   }
   for (const message of body.messages) {
     const role = message?.role;
-    if ((role !== "user" && role !== "assistant" && role !== "system") || typeof message?.content !== "string") {
+    if (
+      (role !== "user" && role !== "assistant" && role !== "system") ||
+      typeof message?.content !== "string"
+    ) {
       return "消息格式不正确";
     }
     if (message.content.length > MAX_MESSAGE_CHARS) {

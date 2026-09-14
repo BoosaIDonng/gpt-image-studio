@@ -5,7 +5,9 @@ const fenced = (json: string) => `这是改写后的 prompt:\n\n\`\`\`studio\n${
 
 describe("parseAssistantApplyAction", () => {
   it("parses a fenced studio block with prompt only", () => {
-    const action = parseAssistantApplyAction(fenced('{"action":"apply_prompt","prompt":"a girl in rain"}'));
+    const action = parseAssistantApplyAction(
+      fenced('{"action":"apply_prompt","prompt":"a girl in rain"}'),
+    );
 
     expect(action).toEqual({ action: "apply_prompt", prompt: "a girl in rain" });
   });
