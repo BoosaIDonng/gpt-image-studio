@@ -110,3 +110,4 @@
 - [ ] E3. Cloudflare Worker `unlimited` 删除 —— ⚠️ 不可逆,等用户确认后执行:`npx wrangler delete --name unlimited`
 - [ ] E4. 本地目录删除 —— ⚠️ 等用户确认后执行
 - [ ] E5. GitHub fork 仓库删除 —— ⚠️ 等用户确认后执行:`gh repo delete BoosaIDonng/unlimited-ai --yes`
+- [x] E3. Cloudflare Worker `unlimited` 已删除(2026-09-14,用户授权;secret 随 Worker 一并销毁;域名返回 404,chat-relay health 正常)。剩余待定:E4 本地目录 `Desktop\Grok\unlimited-ai-main`、E5 GitHub fork `BoosaIDonng/unlimited-ai`(用户未授权,保留)。
