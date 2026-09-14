@@ -35,18 +35,17 @@ describe("floating chat service", () => {
     setActivePinia(createPinia());
   });
 
-  it("posts to the companion chat endpoint with the pairing token and local persona", async () => {
+  it("uses the builtin relay by default so static-site visitors need no setup", async () => {
     setActivePinia(createPinia());
-    configureCompanion();
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(streamResponse());
 
     await streamChatReply([{ role: "user", content: "帮我改 prompt" }], vi.fn());
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://127.0.0.1:19750/chat/completions");
-    expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer session-token");
+    expect(url).toBe("https://chat-relay.354561650.workers.dev/chat/completions");
+    expect((init?.headers as Record<string, string>).Authorization).toBeUndefined();
     const body = JSON.parse(String(init?.body));
-    // Model and API key never leave the companion: the client sends messages only.
+    // Model and API key never leave the relay: the client sends messages only.
     expect(body.model).toBeUndefined();
     expect(body.api_key).toBeUndefined();
     expect(body.messages).toEqual([
@@ -56,9 +55,20 @@ describe("floating chat service", () => {
     expect(body.stream).toBe(true);
   });
 
-  it("omits the system message when an empty system prompt is passed", async () => {
+  it("prefers the paired companion endpoint when available", async () => {
     setActivePinia(createPinia());
     configureCompanion();
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(streamResponse());
+
+    await streamChatReply([{ role: "user", content: "hi" }], vi.fn());
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://127.0.0.1:19750/chat/completions");
+    expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer session-token");
+  });
+
+  it("omits the system message when an empty system prompt is passed", async () => {
+    setActivePinia(createPinia());
     vi.spyOn(globalThis, "fetch").mockResolvedValue(streamResponse());
 
     await streamChatReply([{ role: "user", content: "rewrite this" }], vi.fn(), "");
@@ -67,9 +77,9 @@ describe("floating chat service", () => {
     expect(body.messages).toEqual([{ role: "user", content: "rewrite this" }]);
   });
 
-  it("reports availability from companion url + pairing token", () => {
+  it("reports availability even without companion (relay fallback)", () => {
     setActivePinia(createPinia());
-    expect(isBuiltinChatAvailable()).toBe(false);
+    expect(isBuiltinChatAvailable()).toBe(true);
 
     configureCompanion();
     expect(isBuiltinChatAvailable()).toBe(true);
@@ -77,7 +87,6 @@ describe("floating chat service", () => {
 
   it("accepts an abort signal", async () => {
     setActivePinia(createPinia());
-    configureCompanion();
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(streamResponse());
     const controller = new AbortController();
 
