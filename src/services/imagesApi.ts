@@ -8,6 +8,7 @@ import {
   imageApiParams,
   normalizeStreamPartialImages,
 } from "./imageApiRequest";
+import { DIRECT_MODE_FALLBACK_HINT, downloadImageUrlAsBase64 } from "./imageUrlDownload";
 export {
   PROMPT_REWRITE_GUARD_PREFIX,
   applyPromptRewriteGuard,
@@ -54,6 +55,7 @@ type EditImageInput = GenerateImageInput & {
 type ImageApiResponse = {
   data?: Array<{
     b64_json?: string;
+    url?: string;
     revised_prompt?: string;
   }>;
   error?: {
@@ -76,6 +78,7 @@ type ResponsesApiResponse = {
 
 type StreamCompletedImageItem = {
   b64_json?: string;
+  url?: string;
   revised_prompt?: string;
 };
 
@@ -83,6 +86,11 @@ export type ImageApiResult = {
   b64Json: string;
   requestPrompt?: string;
   revisedPrompt?: string;
+  /**
+   * URL 下载路径由 magic bytes 嗅探提供，generationStore 据此赋值 ImageAsset.mimeType，
+   * 优于按 outputFormat 的猜测。
+   */
+  mimeType?: string;
 };
 
 export async function generateImage(input: GenerateImageInput) {
@@ -453,36 +461,92 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
   return (text ? JSON.parse(text) : {}) as T;
 }
 
-function extractImageResult(payload: ImageApiResponse): ImageApiResult {
+/**
+ * 从 Images API 载荷里抽出最终图片结果。
+ *
+ * 优先取 data[0].b64_json（标准形状）；缺失时取 data[0].url 在浏览器内
+ * 下载转 base64——部分中转无视 response_format=b64_json 只返回图片链接。
+ */
+async function extractImageResult(payload: ImageApiResponse): Promise<ImageApiResult> {
   const item = payload.data?.[0];
   const imageData = item?.b64_json;
 
-  if (!imageData) {
-    throw new Error("响应中没有 data[0].b64_json。");
+  if (imageData) {
+    return {
+      b64Json: imageData,
+      revisedPrompt: item.revised_prompt,
+    };
   }
 
-  return {
-    b64Json: imageData,
-    revisedPrompt: item.revised_prompt,
-  };
+  const url = item?.url;
+  if (url) {
+    const { b64Json, mimeType } = await downloadImageUrlAsBase64(url);
+    return {
+      b64Json,
+      mimeType,
+      revisedPrompt: item.revised_prompt,
+    };
+  }
+
+  throw new Error(
+    `服务商返回的数据不标准：响应中没有 data[0].b64_json 或 data[0].url。${DIRECT_MODE_FALLBACK_HINT}`,
+  );
 }
 
-function extractResponsesImageResult(payload: ResponsesApiResponse): ImageApiResult {
-  const item = payload.output?.find((outputItem) => outputItem?.type === "image_generation_call");
-  const imageData = getResponsesImageResultBase64(item?.result);
+/**
+ * 从 Responses API 载荷里抽出最终图片结果（output[type=image_generation_call]）。
+ */
+async function extractResponsesImageResult(payload: ResponsesApiResponse): Promise<ImageApiResult> {
+  const item = payload.output?.find(
+    (outputItem) =>
+      getResponsesImageResultBase64(outputItem?.result) || getResponsesImageUrl(outputItem?.result),
+  );
 
-  if (!imageData) {
-    throw new Error("响应中没有 image_generation_call 结果。");
+  const result = await resolveResponsesImageItemResult(item);
+  if (!result) {
+    throw new Error(
+      `服务商返回的数据不标准：响应中没有 image_generation_call 结果。${DIRECT_MODE_FALLBACK_HINT}`,
+    );
+  }
+  return result;
+}
+
+/**
+ * 从单个 image_generation_call 项里解析最终图片：b64 优先，URL 下载兜底。
+ *
+ * 返回 null 表示该项既无 base64 也无链接，由调用方决定报错文案。
+ */
+async function resolveResponsesImageItemResult(
+  item: ResponsesOutputItem | undefined,
+): Promise<ImageApiResult | null> {
+  const b64Json = getResponsesImageResultBase64(item?.result);
+  if (b64Json) {
+    return {
+      b64Json,
+      revisedPrompt: item?.revised_prompt,
+    };
   }
 
-  return {
-    b64Json: imageData,
-    revisedPrompt: item?.revised_prompt,
-  };
+  const url = getResponsesImageUrl(item?.result);
+  if (url) {
+    const { b64Json: downloaded, mimeType } = await downloadImageUrlAsBase64(url);
+    return {
+      b64Json: downloaded,
+      mimeType,
+      revisedPrompt: item?.revised_prompt,
+    };
+  }
+
+  return null;
 }
 
 function getResponsesImageResultBase64(result: unknown): string {
-  if (typeof result === "string" && result.trim()) return result;
+  if (typeof result === "string" && result.trim()) {
+    // base64 不可能包含 "://"；形如 http(s) 链接说明中转把 result 换成了图片地址，
+    // 不是 base64——返回空串，让调用方走 getResponsesImageUrl 的下载兜底。
+    if (isHttpUrlString(result.trim())) return "";
+    return result;
+  }
   if (Array.isArray(result)) {
     for (const item of result) {
       const b64: string = getResponsesImageResultBase64(item);
@@ -502,6 +566,36 @@ function getResponsesImageResultBase64(result: unknown): string {
         : typeof record.data === "string"
           ? record.data
           : getResponsesImageResultBase64(record.data);
+}
+
+/**
+ * 从 image_generation_call.result 里递归找 http(s) 图片链接。
+ *
+ * 与 getResponsesImageResultBase64 对称：b64 找不到时用它定位链接，
+ * 由调用方在浏览器内下载转 base64。
+ */
+function getResponsesImageUrl(result: unknown): string {
+  if (typeof result === "string") {
+    return isHttpUrlString(result.trim()) ? result.trim() : "";
+  }
+  if (Array.isArray(result)) {
+    for (const item of result) {
+      const url = getResponsesImageUrl(item);
+      if (url) return url;
+    }
+    return "";
+  }
+  if (!result || typeof result !== "object") return "";
+
+  const record = result as Record<string, unknown>;
+  if (typeof record.url === "string" && isHttpUrlString(record.url.trim())) {
+    return record.url.trim();
+  }
+  return getResponsesImageUrl(record.data);
+}
+
+function isHttpUrlString(value: string): boolean {
+  return /^https?:\/\//i.test(value);
 }
 
 async function getApiErrorMessage(response: Response) {
@@ -643,6 +737,7 @@ async function parseImagesApiStreamResponse(
     if (type === "image_generation.completed" || type === "image_edit.completed") {
       completedItems.push({
         b64_json: getStringValue(event, "b64_json"),
+        url: getStringValue(event, "url"),
         revised_prompt: getStringValue(event, "revised_prompt"),
       });
     }
@@ -652,15 +747,28 @@ async function parseImagesApiStreamResponse(
     return extractImageResult(resultPayload);
   }
 
-  const item = completedItems.find((entry) => entry.b64_json);
-  if (!item?.b64_json) {
-    throw new Error("流式接口未返回最终图片数据。");
+  const b64Item = completedItems.find((entry) => entry.b64_json);
+  if (b64Item?.b64_json) {
+    return {
+      b64Json: b64Item.b64_json,
+      revisedPrompt: b64Item.revised_prompt,
+    };
   }
 
-  return {
-    b64Json: item.b64_json,
-    revisedPrompt: item.revised_prompt,
-  };
+  // 部分中转的 completed 事件只带链接：浏览器内下载转 base64。
+  const urlItem = completedItems.find((entry) => entry.url);
+  if (urlItem?.url) {
+    const { b64Json, mimeType } = await downloadImageUrlAsBase64(urlItem.url);
+    return {
+      b64Json,
+      mimeType,
+      revisedPrompt: urlItem.revised_prompt,
+    };
+  }
+
+  throw new Error(
+    `流式接口未返回最终图片数据，服务商返回的数据可能不标准。${DIRECT_MODE_FALLBACK_HINT}`,
+  );
 }
 
 async function parseResponsesApiStreamResponse(
@@ -699,20 +807,18 @@ async function parseResponsesApiStreamResponse(
     throw new Error("流式接口未返回最终图片数据。");
   }
 
-  const imageItem = payload.output?.find((item) => getResponsesImageResultBase64(item.result));
+  const imageItem = payload.output?.find(
+    (item) => getResponsesImageResultBase64(item.result) || getResponsesImageUrl(item.result),
+  );
   if (!imageItem) {
     throw new Error("流式接口未返回 image_generation_call 结果。");
   }
 
-  const b64Json = getResponsesImageResultBase64(imageItem.result);
-  if (!b64Json) {
+  const result = await resolveResponsesImageItemResult(imageItem);
+  if (!result) {
     throw new Error("流式接口未返回最终图片数据。");
   }
-
-  return {
-    b64Json,
-    revisedPrompt: imageItem.revised_prompt,
-  };
+  return result;
 }
 
 function getResponsesStreamPayload(event: Record<string, unknown>): ResponsesApiResponse | null {
