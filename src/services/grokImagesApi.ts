@@ -2,6 +2,7 @@ import type { ApiBaseUrlMode, GenerationParams } from "../types/studio";
 import { blobToDataUrl } from "../shared/blobUtils";
 import { NetworkError, isRetryableStatus, SERVER_DISCONNECTED_MESSAGE } from "../shared/apiErrors";
 import { normalizeImageCount } from "./generationParams";
+import { DIRECT_MODE_FALLBACK_HINT, downloadImageUrlAsBase64 } from "./imageUrlDownload";
 
 type GrokImageInput = {
   apiBaseUrl: string;
@@ -31,6 +32,7 @@ type GrokEditInput = GrokImageInput & {
 type GrokImageApiResponse = {
   data?: Array<{
     b64_json?: string;
+    url?: string;
     revised_prompt?: string;
     mime_type?: string;
   }>;
@@ -233,15 +235,30 @@ async function parseGrokImageResponses(response: Response): Promise<GrokImageApi
     throw new Error(message);
   }
 
-  const results = (payload.data ?? [])
-    .filter((item) => Boolean(item?.b64_json))
-    .map((item) => ({
-      b64Json: item.b64_json!,
-      revisedPrompt: item.revised_prompt,
-      mimeType: item.mime_type,
-    }));
+  // b64 优先；部分中转无视 response_format=b64_json 只返回图片链接（data[].url），
+  // 此时在浏览器内下载转 base64，与 imagesApi 直连模式行为对齐。
+  const results: GrokImageApiResult[] = [];
+  for (const item of payload.data ?? []) {
+    if (item?.b64_json) {
+      results.push({
+        b64Json: item.b64_json,
+        revisedPrompt: item.revised_prompt,
+        mimeType: item.mime_type,
+      });
+      continue;
+    }
+
+    if (item?.url) {
+      const { b64Json, mimeType } = await downloadImageUrlAsBase64(item.url);
+      results.push({
+        b64Json,
+        revisedPrompt: item.revised_prompt,
+        mimeType,
+      });
+    }
+  }
   if (!results.length) {
-    throw new Error("Grok 响应中没有 data[0].b64_json。");
+    throw new Error(`Grok 响应中没有 data[0].b64_json。${DIRECT_MODE_FALLBACK_HINT}`);
   }
 
   return results;

@@ -242,6 +242,67 @@ describe("Grok image API", () => {
   });
 });
 
+describe("Grok provider URL responses (direct mode downloads)", () => {
+  // PNG 签名 + 填充字节，足够 magic bytes 嗅探判定格式。
+  const pngBytes = new Uint8Array([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
+  ]);
+  const pngBase64 = btoa(String.fromCharCode(...pngBytes));
+
+  function imageResponse(bytes: Uint8Array<ArrayBuffer>, contentType = "image/png") {
+    return new Response(new Blob([bytes]), {
+      status: 200,
+      headers: { "Content-Type": contentType },
+    });
+  }
+
+  it("downloads data[].url images when b64_json is missing", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        jsonResponse({
+          data: [{ url: "https://cdn.example.test/grok.png", revised_prompt: "grok url rewrite" }],
+        }),
+      )
+      .mockResolvedValueOnce(imageResponse(pngBytes));
+
+    await expect(
+      generateGrokImage({
+        apiBaseUrl: "https://api.x.ai/v1",
+        apiBaseUrlMode: "full",
+        apiKey: "xai-test",
+        model: "grok-imagine-image-quality",
+        prompt: "画一张图",
+        params: generationParams,
+      }),
+    ).resolves.toEqual({
+      b64Json: pngBase64,
+      mimeType: "image/png",
+      revisedPrompt: "grok url rewrite",
+      requestPrompt: "画一张图",
+    });
+
+    expect(fetchMock.mock.calls[1]?.[0]).toBe("https://cdn.example.test/grok.png");
+  });
+
+  it("keeps the fallback hint when the Grok URL download is blocked by CORS", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(jsonResponse({ data: [{ url: "https://cdn.example.test/grok.png" }] }))
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"));
+
+    await expect(
+      generateGrokImage({
+        apiBaseUrl: "https://api.x.ai/v1",
+        apiBaseUrlMode: "full",
+        apiKey: "xai-test",
+        model: "grok-imagine-image-quality",
+        prompt: "画一张图",
+        params: generationParams,
+      }),
+    ).rejects.toThrow("建议切换到 Companion 模式");
+  });
+});
+
 function jsonResponse(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload), {
     status,
