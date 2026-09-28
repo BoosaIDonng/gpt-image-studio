@@ -182,11 +182,7 @@ function getWordbankTerms(wordbanks: PromptWordbanks, section: PromptWordbankSec
             从项目词库、收藏 Prompt、历史 Prompt 中检索相近内容，并只作为最终请求 Prompt 的参考。
           </p>
         </div>
-        <Switch
-          label="RAG 参考"
-          :model-value="ragEnabled"
-          @update:model-value="updateRagEnabled"
-        />
+        <Switch label="RAG 参考" :model-value="ragEnabled" @update:model-value="updateRagEnabled" />
       </div>
 
       <label class="mt-3 flex max-w-xs items-center gap-3 text-xs text-content-muted">

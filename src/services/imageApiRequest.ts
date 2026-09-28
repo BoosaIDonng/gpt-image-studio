@@ -67,11 +67,7 @@ export function imageApiParams(
   };
 }
 
-function validateBackground(
-  model: string,
-  params: GenerationParams,
-  apiMode: ApiMode = "images",
-) {
+function validateBackground(model: string, params: GenerationParams, apiMode: ApiMode = "images") {
   // OpenAI images 路径专用参数校验；能力规则统一来自 capability registry。
   const { transparentBackground } = resolveModelCapabilities({
     provider: "openai",

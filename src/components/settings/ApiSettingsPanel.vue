@@ -291,7 +291,9 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
 
       <!-- Direct mode -->
       <template v-if="connectionMode === 'direct'">
-        <div class="rounded-card bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+        <div
+          class="rounded-card bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+        >
           API key 会保存在当前浏览器本地环境。共享电脑或公共环境中请谨慎使用。
         </div>
 
@@ -525,7 +527,9 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
             <div class="mt-1 font-mono text-content">gpt-image-studio pair</div>
           </div>
 
-          <div class="rounded-card bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+          <div
+            class="rounded-card bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-200"
+          >
             本地 Companion 当前仅支持 Images API。若要使用 Responses API
             或流式预览，请先切回浏览器直连模式。
           </div>
