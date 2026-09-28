@@ -1,7 +1,12 @@
 import type { ApiMode, GenerationParams, PromptMode, PromptWordbanks } from "../types/studio";
 import { buildFinalRequestPrompt } from "./promptRequest";
 import { blobToDataUrl } from "../shared/blobUtils";
-import { NetworkError, isRetryableStatus, SERVER_DISCONNECTED_MESSAGE } from "../shared/apiErrors";
+import {
+  extractUpstreamErrorDetail,
+  NetworkError,
+  isRetryableStatus,
+  SERVER_DISCONNECTED_MESSAGE,
+} from "../shared/apiErrors";
 import {
   apiSize,
   buildApiEndpoint,
@@ -603,12 +608,8 @@ async function getApiErrorMessage(response: Response) {
   if (!text) return `请求失败：HTTP ${response.status}`;
 
   try {
-    const payload = JSON.parse(text) as {
-      error?: { message?: string } | string;
-      message?: string;
-    };
-    const detail =
-      typeof payload.error === "string" ? payload.error : payload.error?.message || payload.message;
+    const payload = JSON.parse(text) as unknown;
+    const detail = extractUpstreamErrorDetail(payload);
     return detail
       ? `请求失败：HTTP ${response.status}：${detail}`
       : `请求失败：HTTP ${response.status}`;

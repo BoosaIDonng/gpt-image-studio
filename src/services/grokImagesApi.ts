@@ -1,6 +1,11 @@
 import type { ApiBaseUrlMode, GenerationParams } from "../types/studio";
 import { blobToDataUrl } from "../shared/blobUtils";
-import { NetworkError, isRetryableStatus, SERVER_DISCONNECTED_MESSAGE } from "../shared/apiErrors";
+import {
+  extractUpstreamErrorDetail,
+  NetworkError,
+  isRetryableStatus,
+  SERVER_DISCONNECTED_MESSAGE,
+} from "../shared/apiErrors";
 import { normalizeImageCount } from "./generationParams";
 import { DIRECT_MODE_FALLBACK_HINT, downloadImageUrlAsBase64 } from "./imageUrlDownload";
 
@@ -265,8 +270,7 @@ async function parseGrokImageResponses(response: Response): Promise<GrokImageApi
 }
 
 function grokErrorMessage(status: number, payload: GrokImageApiResponse) {
-  const detail =
-    typeof payload.error === "string" ? payload.error : payload.error?.message || payload.message;
+  const detail = extractUpstreamErrorDetail(payload);
   if (isGrokBillingError(status, detail)) {
     return [
       "Grok 请求失败：HTTP 403：xAI/Grok 账号没有可用额度，或当前 API key 所属账号没有可用订阅权限。",

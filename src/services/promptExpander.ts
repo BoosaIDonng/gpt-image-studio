@@ -1,3 +1,6 @@
+import { extractUpstreamErrorDetail } from "../shared/apiErrors";
+import { isTimeoutError, withTimeoutSignal } from "../shared/fetchTimeout";
+
 export type PromptExpandSettings = {
   chatApiKey: string;
   chatApiBaseUrl: string;
@@ -13,6 +16,10 @@ export type PromptExpandOptions = {
   ragExamples?: string[];
   signal?: AbortSignal;
 };
+
+/** 拉模型列表是短交互；扩写是单轮小请求，60s 足够覆盖慢速推理。 */
+const CHAT_MODEL_LIST_TIMEOUT_MS = 15_000;
+const PROMPT_EXPAND_TIMEOUT_MS = 60_000;
 
 export const DEFAULT_CHAT_SYSTEM_PROMPT = `You are a professional image generation prompt engineer with expert visual knowledge across photography, product design, graphic design, anime, 3D CGI, and illustration.
 
@@ -54,14 +61,25 @@ export async function fetchChatModels(
   const baseUrl = buildChatBaseUrl(chatApiBaseUrl);
   const response = await fetch(`${baseUrl}/v1/models`, {
     headers: { Authorization: `Bearer ${chatApiKey}` },
+    signal: withTimeoutSignal(CHAT_MODEL_LIST_TIMEOUT_MS),
+  }).catch((error: unknown) => {
+    throw new Error(
+      isTimeoutError(error)
+        ? "获取模型超时（15 秒），请检查 Chat API 地址是否可达。"
+        : "无法连接 Chat API，请检查地址和网络。",
+    );
   });
-  if (!response.ok) throw new Error(`获取模型失败 (${response.status})`);
-  const data = await response.json();
-  const models: string[] = (data?.data ?? [])
-    .map((m: { id: string }) => m.id)
-    .filter((id: string) => typeof id === "string" && id.length > 0)
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const detail = extractUpstreamErrorDetail(payload);
+    throw new Error(`获取模型失败：HTTP ${response.status}${detail ? `，${detail}` : ""}`);
+  }
+  const data = payload?.data;
+  if (!Array.isArray(data)) return [];
+  return data
+    .map((m: { id?: unknown }) => (typeof m?.id === "string" ? m.id : ""))
+    .filter((id: string) => id.length > 0)
     .sort();
-  return models;
 }
 
 export async function expandPrompt(
@@ -90,12 +108,13 @@ export async function expandPrompt(
       max_tokens: 800,
       temperature: 0.7,
     }),
-    signal: options.signal,
+    signal: withTimeoutSignal(PROMPT_EXPAND_TIMEOUT_MS, options.signal),
   });
 
   if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(`提示词扩展失败：HTTP ${response.status}：${text}`);
+    const payload = (await response.json().catch(() => null)) as unknown;
+    const detail = payload ? extractUpstreamErrorDetail(payload) : "";
+    throw new Error(`提示词扩展失败：HTTP ${response.status}${detail ? `：${detail}` : ""}`);
   }
 
   const data = await response.json();

@@ -80,19 +80,35 @@ const RULES: CapabilityRule[] = [
     },
   },
   {
-    id: "openai-other",
-    // Dall-e-style / OpenAI-compatible catch-all. Mirrors the historical
-    // behavior: optional params like quality were only ever sent to
-    // gpt-image-N, so unknown models keep them off.
-    match: ({ provider }) => provider === "openai",
+    id: "openai-responses-tool",
+    // Responses API 的 image_generation 工具按 gpt-image 语义接受
+    // background/output_format 等参数，与请求体里的 model 名无关。
+    match: ({ provider, apiMode }) => provider === "openai" && apiMode === "responses",
     capabilities: {
       background: true,
       customSize: true,
       outputFormat: true,
-      quality: false,
+      quality: true,
       transparentBackground: true,
-      responseFormatParam: true,
+      responseFormatParam: false,
       streaming: true,
+    },
+  },
+  {
+    id: "openai-images-dalle-like",
+    // Images API 上的 dall-e 系列 / 未知中转模型只接受
+    // model/prompt/n/size/response_format；background、output_format、quality、
+    // stream 是 gpt-image 专属，传了会被严格上游以 HTTP 400 拒绝。
+    match: ({ provider, apiMode, model }) =>
+      provider === "openai" && apiMode === "images" && !GPT_IMAGE_MODEL_PATTERN.test(model.trim()),
+    capabilities: {
+      background: false,
+      customSize: true,
+      outputFormat: false,
+      quality: false,
+      transparentBackground: false,
+      responseFormatParam: true,
+      streaming: false,
     },
   },
 ];

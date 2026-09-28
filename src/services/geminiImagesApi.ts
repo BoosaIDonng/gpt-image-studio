@@ -1,6 +1,11 @@
 import type { ApiBaseUrlMode, GenerationParams } from "../types/studio";
 import { blobToBase64 } from "../shared/blobUtils";
-import { NetworkError, isRetryableStatus, SERVER_DISCONNECTED_MESSAGE } from "../shared/apiErrors";
+import {
+  extractUpstreamErrorDetail,
+  NetworkError,
+  isRetryableStatus,
+  SERVER_DISCONNECTED_MESSAGE,
+} from "../shared/apiErrors";
 import { isSizeRatio } from "./generationParams";
 
 type GeminiImageInput = {
@@ -196,7 +201,6 @@ function readInlineMimeType(
 }
 
 function geminiErrorMessage(status: number, payload: GeminiGenerateContentResponse) {
-  const detail =
-    typeof payload.error === "string" ? payload.error : payload.error?.message || payload.message;
+  const detail = extractUpstreamErrorDetail(payload);
   return detail ? `Gemini 请求失败：HTTP ${status}：${detail}` : `Gemini 请求失败：HTTP ${status}`;
 }

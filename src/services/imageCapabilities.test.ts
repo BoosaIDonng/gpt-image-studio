@@ -41,11 +41,24 @@ describe("capability registry integration", () => {
     expect(imageCapabilities("openai", "images", "gpt-image-1").transparentBackground).toBe(true);
   });
 
-  it("未知模型保持历史基线行为（不发 quality，其余与原 openai 全支持一致）", () => {
+  it("未知模型（Images API）按 dall-e 兼容基线：不发 gpt-image 专属参数", () => {
     const capabilities = imageCapabilities("openai", "images", "totally-new-model");
-    // quality 参数历史上只发给 gpt-image-N（isGptImageModel 门控），未知模型同样不发。
+    // Images API 上的未知模型（dall-e / 中转自定义名）只保证
+    // model/prompt/n/size/response_format；background、output_format、quality、
+    // stream 是 gpt-image 专属，传了会被严格上游以 HTTP 400 拒绝。
     expect(capabilities.quality).toBe(false);
+    expect(capabilities.background).toBe(false);
+    expect(capabilities.outputFormat).toBe(false);
+    expect(capabilities.transparentBackground).toBe(false);
+    expect(capabilities.streaming).toBe(false);
     expect(capabilities.customSize).toBe(true);
+  });
+
+  it("未知模型（Responses API）走 image_generation 工具，参数全量支持", () => {
+    const capabilities = imageCapabilities("openai", "responses", "totally-new-model");
+    expect(capabilities.background).toBe(true);
+    expect(capabilities.outputFormat).toBe(true);
+    expect(capabilities.quality).toBe(true);
     expect(capabilities.transparentBackground).toBe(true);
     expect(capabilities.streaming).toBe(true);
   });

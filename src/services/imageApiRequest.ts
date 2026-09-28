@@ -50,21 +50,26 @@ export function imageApiParams(
   params: GenerationParams,
   apiMode: ApiMode = "images",
 ) {
-  validateBackground(model, params.background, apiMode);
+  validateBackground(model, params, apiMode);
+
+  // OpenAI Images API 里 background / output_format / quality 是 gpt-image 系列
+  // 专属参数，dall-e 系列传了会被严格上游以 HTTP 400 Unknown parameter 拒绝；
+  // dall-e 需要靠 response_format 切 b64_json。Responses API 的
+  // image_generation 工具按 gpt-image 语义接受这组参数，与 model 名无关。
+  const gptImageOnlyParams = apiMode === "responses" || isGptImageModel(model);
 
   return {
     size: apiSize(params),
-    ...(isGptImageModel(model) ? { quality: params.quality } : {}),
-    background: params.background,
-    output_format: params.outputFormat,
-    // gpt-image 系列不支持 response_format，会报 HTTP 400；dall-e 系列需要它。
-    ...(isGptImageModel(model) ? {} : { response_format: "b64_json" }),
+    ...(gptImageOnlyParams ? { quality: params.quality } : {}),
+    ...(gptImageOnlyParams ? { background: params.background } : {}),
+    ...(gptImageOnlyParams ? { output_format: params.outputFormat } : {}),
+    ...(gptImageOnlyParams ? {} : { response_format: "b64_json" }),
   };
 }
 
 function validateBackground(
   model: string,
-  background: GenerationParams["background"],
+  params: GenerationParams,
   apiMode: ApiMode = "images",
 ) {
   // OpenAI images 路径专用参数校验；能力规则统一来自 capability registry。
@@ -73,8 +78,12 @@ function validateBackground(
     apiMode,
     model,
   });
-  if (!transparentBackground && background === "transparent") {
+  if (!transparentBackground && params.background === "transparent") {
     throw new Error("当前模型不支持透明背景，请选择自动或不透明背景。");
+  }
+  // 透明背景依赖 alpha 通道，JPEG 输出会被上游以 HTTP 400 拒绝。
+  if (params.background === "transparent" && params.outputFormat === "jpeg") {
+    throw new Error("透明背景仅支持 PNG 或 WebP 输出格式，请先调整输出格式。");
   }
 }
 
