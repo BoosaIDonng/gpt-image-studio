@@ -160,7 +160,7 @@ const updatedAtLabels = computed(
 
     <div class="mt-3 shrink-0">
       <button
-        class="rounded-card bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors enabled:cursor-pointer enabled:hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
+        class="rounded-card bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors enabled:cursor-pointer enabled:hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-30"
         :disabled="!selectedConversations.length"
         type="button"
         @click="emit('deleteSelected')"

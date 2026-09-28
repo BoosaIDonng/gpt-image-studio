@@ -37,3 +37,23 @@ export class NetworkError extends Error {
 export function isRetryableStatus(status: number): boolean {
   return status === 408 || status === 429 || (status >= 500 && status <= 599);
 }
+
+/**
+ * 从各种上游错误体里提取人类可读的信息。
+ *
+ * 覆盖 OpenAI {error: {message}}、{error: "string"}、通用 {message}，
+ * 以及 FastAPI 风格 {detail: "..."}（共享号/中转站常见）。返回空串表示没有可读信息。
+ */
+export function extractUpstreamErrorDetail(payload: unknown): string {
+  if (!payload || typeof payload !== "object") return "";
+  const record = payload as Record<string, unknown>;
+  const error = record.error;
+  if (typeof error === "string") return error;
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as Record<string, unknown>).message;
+    if (typeof message === "string" && message.trim()) return message;
+  }
+  if (typeof record.message === "string" && record.message.trim()) return record.message;
+  if (typeof record.detail === "string" && record.detail.trim()) return record.detail;
+  return "";
+}

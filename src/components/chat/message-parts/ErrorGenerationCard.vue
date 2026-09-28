@@ -235,13 +235,13 @@ function retryAiRewritePrompt() {
               :disabled="isAiRewriteLoading || !canAiRewrite"
               @click="requestAiRewrite"
             >
-              {{ isAiRewriteLoading ? "改写中..." : "AI 改写 prompt" }}
+              {{ isAiRewriteLoading ? "改写中…" : "AI 改写 prompt" }}
             </button>
           </div>
 
           <div
             v-if="aiRewriteError"
-            class="rounded-card border border-red-100 bg-red-50 px-2.5 py-2 text-xs leading-relaxed text-red-600"
+            class="rounded-card border border-red-100 bg-red-50 px-2.5 py-2 text-xs leading-relaxed text-red-600 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300"
           >
             {{ aiRewriteError }}
           </div>

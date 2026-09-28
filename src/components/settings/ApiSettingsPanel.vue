@@ -11,7 +11,7 @@ import {
   unpairCompanion,
 } from "../../services/companionApi";
 import type { CompanionAuthStatus, CompanionHealthResponse } from "../../types/companion";
-import { fetchImageModels } from "../../services/imageModelDiscovery";
+import { fetchImageModels, partitionImageModels } from "../../services/imageModelDiscovery";
 import { imageCapabilities } from "../../services/imageCapabilities";
 import { useSettingsModalContext } from "./settingsModalContext";
 
@@ -43,6 +43,7 @@ const availableModels = ref<string[]>([]);
 const fetchingModels = ref(false);
 const modelDiscoveryMessage = ref("");
 const modelDiscoveryError = ref("");
+const modelGroups = computed(() => partitionImageModels(availableModels.value));
 
 const isManagedCompanion = computed(() => companionHealth.value?.runMode !== "serve");
 // Streaming availability comes from the capability registry, not a provider name check.
@@ -199,6 +200,7 @@ async function discoverModels() {
   fetchingModels.value = true;
   modelDiscoveryMessage.value = "";
   modelDiscoveryError.value = "";
+  const startedAt = performance.now();
   try {
     availableModels.value = await fetchImageModels({
       apiProvider: apiProvider.value,
@@ -207,11 +209,15 @@ async function discoverModels() {
       apiMode: apiMode.value,
       apiKey: apiKey.value,
     });
+    const elapsedSeconds = ((performance.now() - startedAt) / 1000).toFixed(1);
     if (model.value && !availableModels.value.includes(model.value)) {
       ctx.updateModel("");
     }
+    const { imageModels } = partitionImageModels(availableModels.value);
     modelDiscoveryMessage.value = availableModels.value.length
-      ? `连接成功，发现 ${availableModels.value.length} 个模型。`
+      ? imageModels.length
+        ? `连接成功，共 ${availableModels.value.length} 个模型，其中 ${imageModels.length} 个图片模型已置顶（耗时 ${elapsedSeconds} 秒）。`
+        : `连接成功，共 ${availableModels.value.length} 个模型（耗时 ${elapsedSeconds} 秒）。`
       : "连接成功，但上游没有返回模型列表。";
   } catch (error) {
     modelDiscoveryError.value = error instanceof Error ? error.message : "连接失败。";
@@ -285,7 +291,7 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
 
       <!-- Direct mode -->
       <template v-if="connectionMode === 'direct'">
-        <div class="rounded-card bg-amber-50 p-3 text-sm text-amber-800">
+        <div class="rounded-card bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
           API key 会保存在当前浏览器本地环境。共享电脑或公共环境中请谨慎使用。
         </div>
 
@@ -349,57 +355,6 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
 
         <div>
           <div class="mb-1 flex items-center justify-between gap-3">
-            <label class="block text-sm font-medium text-content" for="apiModel"> 模型 </label>
-            <div class="flex items-center gap-3">
-              <button
-                class="cursor-pointer text-xs text-content-muted transition-colors hover:text-content disabled:cursor-not-allowed disabled:text-content-tertiary"
-                type="button"
-                :disabled="fetchingModels || !apiKey || !apiBaseUrl"
-                @click="discoverModels"
-              >
-                {{ fetchingModels ? "获取中..." : "获取模型" }}
-              </button>
-              <button
-                class="cursor-pointer text-xs text-content-muted transition-colors hover:text-content disabled:cursor-not-allowed disabled:text-content-tertiary"
-                type="button"
-                :disabled="fetchingModels || !apiKey || !apiBaseUrl"
-                @click="discoverModels"
-              >
-                测试连接
-              </button>
-            </div>
-          </div>
-          <select
-            v-if="availableModels.length"
-            id="apiModel"
-            :value="model"
-            class="w-full rounded-card border border-border-subtle bg-surface px-3 py-2 text-sm text-content outline-none focus:border-border-subtle"
-            @change="ctx.updateModel(($event.target as HTMLSelectElement).value)"
-          >
-            <option value="" disabled>请选择上游模型</option>
-            <option v-if="!availableModels.includes(model)" :value="model">{{ model }}</option>
-            <option v-for="item in availableModels" :key="item" :value="item">{{ item }}</option>
-          </select>
-          <input
-            v-else
-            id="apiModel"
-            :value="model"
-            class="w-full rounded-card border border-border-subtle bg-surface px-3 py-2 text-sm text-content outline-none focus:border-border-subtle"
-            placeholder="先获取模型，或输入上游模型 ID"
-            spellcheck="false"
-            type="text"
-            @input="ctx.updateModel(($event.target as HTMLInputElement).value)"
-          />
-          <p v-if="modelDiscoveryMessage" class="mt-1.5 text-xs text-green-700">
-            {{ modelDiscoveryMessage }}
-          </p>
-          <p v-if="modelDiscoveryError" class="mt-1.5 text-xs text-red-500">
-            {{ modelDiscoveryError }}
-          </p>
-        </div>
-
-        <div>
-          <div class="mb-1 flex items-center justify-between gap-3">
             <label class="block text-sm font-medium text-content" for="apiBaseUrl">
               API 地址
             </label>
@@ -435,7 +390,7 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
             />
             <span
               v-if="apiBaseUrlMode === 'origin'"
-              class="flex shrink-0 items-center border-l border-border-subtle px-3 text-sm font-medium text-red-500"
+              class="flex shrink-0 items-center border-l border-border-subtle px-3 text-sm font-medium text-content-tertiary"
             >
               {{ apiSuffixLabel }}
             </span>
@@ -445,6 +400,70 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
               输入站点根地址即可，应用会自动补上 {{ apiSuffixLabel }}。
             </template>
             <template v-else> 已按完整 API Base URL 处理，不会自动补路径。 </template>
+          </p>
+        </div>
+
+        <div>
+          <div class="mb-1 flex items-center justify-between gap-3">
+            <label class="block text-sm font-medium text-content" for="apiModel"> 模型 </label>
+            <button
+              class="shrink-0 cursor-pointer rounded-md border border-border-subtle bg-surface px-2.5 py-1 text-xs font-medium text-content transition-colors hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
+              type="button"
+              :disabled="fetchingModels || !apiKey || !apiBaseUrl"
+              :title="
+                !apiKey || !apiBaseUrl
+                  ? '先填写上方 API Key 和 API 地址'
+                  : '请求上游模型列表，同时验证连接是否可用'
+              "
+              @click="discoverModels"
+            >
+              {{ fetchingModels ? "获取中…" : "获取模型" }}
+            </button>
+          </div>
+          <select
+            v-if="availableModels.length"
+            id="apiModel"
+            :value="model"
+            class="w-full rounded-card border border-border-subtle bg-surface px-3 py-2 text-sm text-content outline-none focus:border-border-subtle"
+            @change="ctx.updateModel(($event.target as HTMLSelectElement).value)"
+          >
+            <option value="" disabled>请选择上游模型</option>
+            <option v-if="model && !availableModels.includes(model)" :value="model">
+              {{ model }}
+            </option>
+            <template v-if="modelGroups.imageModels.length">
+              <optgroup label="图片模型">
+                <option v-for="item in modelGroups.imageModels" :key="item" :value="item">
+                  {{ item }}
+                </option>
+              </optgroup>
+              <optgroup v-if="modelGroups.otherModels.length" label="其他模型">
+                <option v-for="item in modelGroups.otherModels" :key="item" :value="item">
+                  {{ item }}
+                </option>
+              </optgroup>
+            </template>
+            <template v-else>
+              <option v-for="item in modelGroups.otherModels" :key="item" :value="item">
+                {{ item }}
+              </option>
+            </template>
+          </select>
+          <input
+            v-else
+            id="apiModel"
+            :value="model"
+            class="w-full rounded-card border border-border-subtle bg-surface px-3 py-2 text-sm text-content outline-none focus:border-border-subtle"
+            placeholder="先获取模型，或输入上游模型 ID"
+            spellcheck="false"
+            type="text"
+            @input="ctx.updateModel(($event.target as HTMLInputElement).value)"
+          />
+          <p v-if="modelDiscoveryMessage" class="mt-1.5 text-xs text-green-700 dark:text-green-400">
+            {{ modelDiscoveryMessage }}
+          </p>
+          <p v-if="modelDiscoveryError" class="mt-1.5 text-xs text-red-500 dark:text-red-400">
+            {{ modelDiscoveryError }}
           </p>
         </div>
 
@@ -506,7 +525,7 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
             <div class="mt-1 font-mono text-content">gpt-image-studio pair</div>
           </div>
 
-          <div class="rounded-card bg-amber-50 p-3 text-xs text-amber-800">
+          <div class="rounded-card bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
             本地 Companion 当前仅支持 Images API。若要使用 Responses API
             或流式预览，请先切回浏览器直连模式。
           </div>
@@ -535,9 +554,9 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
           <!-- Paired state -->
           <template v-if="companionPaired && !pairingInProgress">
             <div class="flex items-center justify-between">
-              <span class="text-sm text-green-700">已配对</span>
+              <span class="text-sm text-green-700 dark:text-green-400">已配对</span>
               <button
-                class="text-xs text-red-500 hover:text-red-700 cursor-pointer"
+                class="text-xs text-red-500 hover:text-red-700 cursor-pointer dark:text-red-400 dark:hover:text-red-300"
                 type="button"
                 @click="handleDisconnect"
               >
@@ -602,7 +621,7 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
           </template>
 
           <!-- Error -->
-          <p v-if="pairingError" class="text-xs text-red-600">
+          <p v-if="pairingError" class="text-xs text-red-600 dark:text-red-400">
             {{ pairingError }}
             <template v-if="isManagedCompanion && pairingError.includes('gpt-image-studio pair')">
               ；请确认 pair 命令仍在等待中，然后再点击开始配对。
@@ -614,7 +633,13 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
             class="rounded-card bg-surface-muted p-3 text-xs text-content"
           >
             <template v-if="companionAuthStatus">
-              <span :class="companionAuthStatus.ready ? 'text-green-700' : 'text-amber-700'">
+              <span
+                :class="
+                  companionAuthStatus.ready
+                    ? 'text-green-700 dark:text-green-400'
+                    : 'text-amber-700 dark:text-amber-300'
+                "
+              >
                 {{ companionAuthStatus.ready ? "凭据已配置" : "凭据未配置" }}
               </span>
               <span v-if="companionAuthStatus.accountLabel">

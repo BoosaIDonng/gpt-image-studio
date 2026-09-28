@@ -128,7 +128,9 @@ async function handleFetchModels() {
               placeholder="deepseek-chat"
               @input="ctx.updateChatModel(($event.target as HTMLInputElement).value)"
             />
-            <p v-if="fetchModelsError" class="mt-1 text-xs text-red-500">{{ fetchModelsError }}</p>
+            <p v-if="fetchModelsError" class="mt-1 text-xs text-red-500 dark:text-red-400">
+              {{ fetchModelsError }}
+            </p>
           </div>
           <div>
             <div class="mb-1 flex items-center justify-between">

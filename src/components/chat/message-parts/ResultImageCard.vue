@@ -88,13 +88,13 @@ function attachActionLabel() {
           <div
             v-for="text in deviationTexts"
             :key="text"
-            class="rounded-card border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-700"
+            class="rounded-card border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-amber-700 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-300"
           >
             ⚠ {{ text }}
           </div>
           <button
             v-if="revisedPrompt"
-            class="cursor-pointer rounded-card border border-amber-300 px-2 py-1 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100"
+            class="cursor-pointer rounded-card border border-amber-300 px-2 py-1 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:border-amber-700/70 dark:text-amber-300 dark:hover:bg-amber-900/40"
             type="button"
             @click="emit('retryRevised', message, revisedPrompt)"
           >

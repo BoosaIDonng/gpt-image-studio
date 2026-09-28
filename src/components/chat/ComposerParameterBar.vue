@@ -106,7 +106,7 @@ function ragWeightedScoreLabel(score: number) {
     <span
       class="cursor-not-allowed rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-content-tertiary"
     >
-      模型: {{ settings.model }}
+      模型: {{ settings.model || "未选择" }}
     </span>
     <span
       class="cursor-not-allowed rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-content-tertiary"

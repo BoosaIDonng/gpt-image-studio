@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import type { PromptMode, PromptWordbankSectionKey, PromptWordbanks } from "../../types/studio";
+import Switch from "../ui/Switch.vue";
 import { useSettingsModalContext } from "./settingsModalContext";
 
 const ctx = useSettingsModalContext();
@@ -181,24 +182,17 @@ function getWordbankTerms(wordbanks: PromptWordbanks, section: PromptWordbankSec
             从项目词库、收藏 Prompt、历史 Prompt 中检索相近内容，并只作为最终请求 Prompt 的参考。
           </p>
         </div>
-        <button
-          class="cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors"
-          :class="
-            ragEnabled
-              ? 'bg-accent text-white'
-              : 'bg-surface-muted text-content-muted hover:bg-surface-hover'
-          "
-          type="button"
-          @click="updateRagEnabled(!ragEnabled)"
-        >
-          {{ ragEnabled ? "已开启" : "已关闭" }}
-        </button>
+        <Switch
+          label="RAG 参考"
+          :model-value="ragEnabled"
+          @update:model-value="updateRagEnabled"
+        />
       </div>
 
       <label class="mt-3 flex max-w-xs items-center gap-3 text-xs text-content-muted">
         <span class="shrink-0">参考条数</span>
         <input
-          class="h-8 w-20 rounded-md border border-border-subtle px-2 text-sm text-content outline-none transition-colors focus:border-border-subtle disabled:bg-surface-muted disabled:text-content-tertiary"
+          class="h-8 w-20 rounded-md border border-border-subtle px-2 text-sm text-content outline-none transition-colors focus:border-border-subtle disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-content-tertiary disabled:opacity-60"
           :disabled="!ragEnabled"
           max="12"
           min="1"
@@ -216,19 +210,12 @@ function getWordbankTerms(wordbanks: PromptWordbanks, section: PromptWordbankSec
             模型，之后缓存在浏览器内）。
           </p>
         </div>
-        <button
-          class="shrink-0 cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors"
-          :class="
-            ragSemanticEnabled
-              ? 'bg-accent text-white'
-              : 'bg-surface-muted text-content-muted hover:bg-surface-hover'
-          "
+        <Switch
+          label="语义检索"
           :disabled="!ragEnabled"
-          type="button"
-          @click="updateRagSemanticEnabled(!ragSemanticEnabled)"
-        >
-          {{ ragSemanticEnabled ? "已开启" : "已关闭" }}
-        </button>
+          :model-value="ragSemanticEnabled"
+          @update:model-value="updateRagSemanticEnabled"
+        />
       </div>
     </div>
 

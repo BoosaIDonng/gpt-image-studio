@@ -30,14 +30,14 @@ function importBackupFromInput(event: Event) {
 
     <div class="mt-5 flex flex-wrap gap-2">
       <button
-        class="cursor-pointer rounded-card border border-border-subtle bg-surface px-3 py-2 text-sm font-medium text-content transition-colors hover:bg-surface-hover"
+        class="cursor-pointer rounded-card bg-accent px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-pressed"
         type="button"
         @click="exportBackup()"
       >
         导出备份
       </button>
       <button
-        class="cursor-pointer rounded-card bg-accent px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-pressed"
+        class="cursor-pointer rounded-card border border-border-subtle bg-surface px-3 py-2 text-sm font-medium text-content transition-colors hover:bg-surface-hover"
         type="button"
         @click="chooseBackupFile"
       >

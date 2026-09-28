@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useComposerStore } from "../../stores/composerStore";
 import { useGenerationStore } from "../../stores/generationStore";
 import { useImagesStore } from "../../stores/imagesStore";
@@ -47,9 +47,33 @@ function applyTemplate(template: CreativeTemplate) {
 
 function statusToneClass(tone: "ok" | "warning") {
   return tone === "ok"
-    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-    : "border-amber-200 bg-amber-50 text-amber-700";
+    ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-300"
+    : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-300";
 }
+
+// 模板行横向溢出时在右缘显示渐隐提示；滚动到末尾后隐藏。
+const templateRowRef = ref<HTMLElement | null>(null);
+const templateRowScrollable = ref(false);
+let templateRowResizeObserver: ResizeObserver | null = null;
+
+function updateTemplateRowScrollState() {
+  const el = templateRowRef.value;
+  templateRowScrollable.value = !!el && el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+}
+
+onMounted(() => {
+  updateTemplateRowScrollState();
+  templateRowRef.value?.addEventListener("scroll", updateTemplateRowScrollState, { passive: true });
+  if (typeof ResizeObserver !== "undefined" && templateRowRef.value) {
+    templateRowResizeObserver = new ResizeObserver(updateTemplateRowScrollState);
+    templateRowResizeObserver.observe(templateRowRef.value);
+  }
+});
+
+onBeforeUnmount(() => {
+  templateRowResizeObserver?.disconnect();
+  templateRowResizeObserver = null;
+});
 </script>
 
 <template>
@@ -85,19 +109,30 @@ function statusToneClass(tone: "ok" | "warning") {
         </div>
       </div>
 
-      <div class="flex gap-2 overflow-x-auto pb-1">
-        <button
-          v-for="template in creativeTemplates"
-          :key="template.id"
-          class="min-w-35 shrink-0 cursor-pointer rounded-card border border-border-subtle bg-surface px-3 py-2 text-left transition-colors hover:border-border-subtle hover:bg-surface-hover"
-          type="button"
-          @click="applyTemplate(template)"
+      <div class="relative">
+        <div
+          ref="templateRowRef"
+          class="flex gap-2 overflow-x-auto pb-1"
+          @scroll="updateTemplateRowScrollState"
         >
-          <div class="text-sm font-semibold text-content">{{ template.label }}</div>
-          <div class="mt-0.5 line-clamp-2 text-xs leading-relaxed text-content-muted">
-            {{ hasReferences ? "按引用图生成编辑提示" : template.description }}
-          </div>
-        </button>
+          <button
+            v-for="template in creativeTemplates"
+            :key="template.id"
+            class="min-w-35 shrink-0 cursor-pointer rounded-card border border-border-subtle bg-surface px-3 py-2 text-left transition-colors hover:border-border-subtle hover:bg-surface-hover"
+            type="button"
+            @click="applyTemplate(template)"
+          >
+            <div class="text-sm font-semibold text-content">{{ template.label }}</div>
+            <div class="mt-0.5 line-clamp-2 text-xs leading-relaxed text-content-muted">
+              {{ hasReferences ? "按引用图生成编辑提示" : template.description }}
+            </div>
+          </button>
+        </div>
+        <div
+          v-if="templateRowScrollable"
+          class="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-[var(--cupertino-background)] to-transparent"
+          aria-hidden="true"
+        />
       </div>
     </div>
   </section>
