@@ -208,7 +208,7 @@ async function editImageViaImagesApi(
   body.append("model", input.model);
   body.append("prompt", input.prompt);
   input.images.forEach((image) => {
-    body.append("image[]", image.blob, image.name);
+    body.append(input.images.length === 1 ? "image" : "image[]", image.blob, image.name);
   });
   if (input.mask) {
     body.append("mask", input.mask.blob, input.mask.name);
