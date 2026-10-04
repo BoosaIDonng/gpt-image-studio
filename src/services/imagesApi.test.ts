@@ -255,12 +255,16 @@ describe("images API requests", () => {
     expect(requestBody.size).toBe("1920x1088");
   });
 
-  it("requests base64 JSON for image edits", async () => {
+  it("copies image edit blobs before building multipart form data", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       jsonResponse({
         data: [{ b64_json: "edited-image", revised_prompt: "rewritten edit" }],
       }),
     );
+    const sourceImage = new Blob(["image"], { type: "image/png" });
+    const sourceMask = new Blob(["mask"], { type: "image/png" });
+    const readSourceImage = vi.spyOn(sourceImage, "arrayBuffer");
+    const readSourceMask = vi.spyOn(sourceMask, "arrayBuffer");
 
     await expect(
       editImage({
@@ -270,12 +274,8 @@ describe("images API requests", () => {
         model: "gpt-image-2",
         prompt: "改一下图",
         params: generationParams,
-        images: [
-          {
-            blob: new Blob(["image"], { type: "image/png" }),
-            name: "image.png",
-          },
-        ],
+        images: [{ blob: sourceImage, name: "image.png" }],
+        mask: { blob: sourceMask, name: "mask.png" },
       }),
     ).resolves.toEqual({
       b64Json: "edited-image",
@@ -291,6 +291,9 @@ describe("images API requests", () => {
     expect((requestBody as FormData).get("model")).toBe("gpt-image-2");
     expect((requestBody as FormData).get("image")).toMatchObject({ name: "image.png" });
     expect((requestBody as FormData).getAll("image[]")).toHaveLength(0);
+    expect((requestBody as FormData).get("mask")).toMatchObject({ name: "mask.png" });
+    expect(readSourceImage).toHaveBeenCalledOnce();
+    expect(readSourceMask).toHaveBeenCalledOnce();
   });
 
   it("sends multiple edit images as an image array", async () => {

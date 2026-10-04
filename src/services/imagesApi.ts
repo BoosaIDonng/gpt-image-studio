@@ -207,11 +207,13 @@ async function editImageViaImagesApi(
   const body = new FormData();
   body.append("model", input.model);
   body.append("prompt", input.prompt);
-  input.images.forEach((image) => {
-    body.append(input.images.length === 1 ? "image" : "image[]", image.blob, image.name);
-  });
+  for (const image of input.images) {
+    const blob = new Blob([await image.blob.arrayBuffer()], { type: image.blob.type });
+    body.append(input.images.length === 1 ? "image" : "image[]", blob, image.name);
+  }
   if (input.mask) {
-    body.append("mask", input.mask.blob, input.mask.name);
+    const blob = new Blob([await input.mask.blob.arrayBuffer()], { type: input.mask.blob.type });
+    body.append("mask", blob, input.mask.name);
   }
   Object.entries(input.requestParams).forEach(([key, value]) => {
     body.append(key, value);
