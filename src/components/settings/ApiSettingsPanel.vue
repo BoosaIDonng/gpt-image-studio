@@ -265,45 +265,22 @@ watch([apiProvider, apiBaseUrl, apiBaseUrlMode, apiMode, apiKey], () => {
             {{ fetchingModels ? "获取中…" : "获取模型" }}
           </button>
         </div>
-        <select
-          v-if="availableModels.length"
-          id="apiModel"
-          :value="model"
-          class="w-full rounded-card border border-border-subtle bg-surface px-3 py-2 text-sm text-content outline-none focus:border-border-subtle"
-          @change="ctx.updateModel(($event.target as HTMLSelectElement).value)"
-        >
-          <option value="" disabled>请选择上游模型</option>
-          <option v-if="model && !availableModels.includes(model)" :value="model">
-            {{ model }}
-          </option>
-          <template v-if="modelGroups.imageModels.length">
-            <optgroup label="图片模型">
-              <option v-for="item in modelGroups.imageModels" :key="item" :value="item">
-                {{ item }}
-              </option>
-            </optgroup>
-            <optgroup v-if="modelGroups.otherModels.length" label="其他模型">
-              <option v-for="item in modelGroups.otherModels" :key="item" :value="item">
-                {{ item }}
-              </option>
-            </optgroup>
-          </template>
-          <template v-else>
-            <option v-for="item in modelGroups.otherModels" :key="item" :value="item">
-              {{ item }}
-            </option>
-          </template>
-        </select>
         <input
-          v-else
           id="apiModel"
           :value="model"
-          class="w-full rounded-card border border-border-subtle bg-surface px-3 py-2 text-sm text-content outline-none focus:border-border-subtle"
-          placeholder="先获取模型，或输入上游模型 ID"
+          list="apiModelOptions"
+          class="h-11 w-full rounded-card border border-border-subtle bg-surface px-3 text-sm text-content outline-none focus:border-border-subtle"
+          :placeholder="
+            availableModels.length ? '输入或选择上游模型 ID' : '先获取模型，或输入上游模型 ID'
+          "
           spellcheck="false"
           type="text"
           @input="ctx.updateModel(($event.target as HTMLInputElement).value)"
         />
+        <datalist id="apiModelOptions">
+          <option v-for="item in modelGroups.imageModels" :key="item" :value="item" />
+          <option v-for="item in modelGroups.otherModels" :key="item" :value="item" />
+        </datalist>
         <p v-if="modelDiscoveryMessage" class="mt-1.5 text-xs text-green-700 dark:text-green-400">
           {{ modelDiscoveryMessage }}
         </p>
