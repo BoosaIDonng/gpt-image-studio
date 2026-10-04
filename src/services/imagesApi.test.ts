@@ -288,8 +288,9 @@ describe("images API requests", () => {
     // gpt-image 系列不支持 response_format 参数，传了会报 HTTP 400。
     expect((requestBody as FormData).has("response_format")).toBe(false);
     expect((requestBody as FormData).get("quality")).toBe("auto");
-    expect((requestBody as FormData).get("image")).toMatchObject({ name: "image.png" });
-    expect((requestBody as FormData).getAll("image[]")).toHaveLength(0);
+    expect((requestBody as FormData).get("image")).toBeNull();
+    expect((requestBody as FormData).getAll("image[]")).toHaveLength(1);
+    expect((requestBody as FormData).getAll("image[]")[0]).toMatchObject({ name: "image.png" });
   });
 
   it("sends multiple edit images as an image array", async () => {
