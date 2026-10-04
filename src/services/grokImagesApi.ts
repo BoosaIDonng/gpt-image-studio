@@ -7,7 +7,7 @@ import {
   SERVER_DISCONNECTED_MESSAGE,
 } from "../shared/apiErrors";
 import { normalizeImageCount } from "./generationParams";
-import { DIRECT_MODE_FALLBACK_HINT, downloadImageUrlAsBase64 } from "./imageUrlDownload";
+import { IMAGE_URL_FALLBACK_HINT, downloadImageUrlAsBase64 } from "./imageUrlDownload";
 
 type GrokImageInput = {
   apiBaseUrl: string;
@@ -263,7 +263,7 @@ async function parseGrokImageResponses(response: Response): Promise<GrokImageApi
     }
   }
   if (!results.length) {
-    throw new Error(`Grok 响应中没有 data[0].b64_json。${DIRECT_MODE_FALLBACK_HINT}`);
+    throw new Error(`Grok 响应中没有 data[0].b64_json。${IMAGE_URL_FALLBACK_HINT}`);
   }
 
   return results;

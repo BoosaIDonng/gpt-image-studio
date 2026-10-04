@@ -17,11 +17,16 @@ import { IMAGE_TAG_COLORS, imageTagDotColor } from "./imageTagColors";
 const props = defineProps<{
   image: ImageAsset;
   isAttached: boolean;
+  imageById: (id: string) => ImageAsset | undefined;
+  attachedImageIds: string[];
 }>();
 
 const emit = defineEmits<{
+  attachImage: [id: string];
   clearSelection: [];
   deleteImage: [id: string];
+  loadImageConfig: [image: ImageAsset];
+  previewImage: [id: string];
   renameImage: [id: string];
   setTagColor: [id: string, color: ImageAsset["tagColor"] | undefined];
 }>();
@@ -36,12 +41,16 @@ function toggleTagColor(nextColor: ImageAsset["tagColor"]) {
   }
   emit("setTagColor", props.image.id, nextColor);
 }
+
+function referenceImage(id: string) {
+  return props.imageById(id);
+}
 </script>
 
 <template>
   <div
     v-image-preview="image"
-    class="border-t border-border-subtle dark:border-border-subtle px-4 py-3"
+    class="max-h-[55%] overflow-y-auto border-t border-border-subtle px-4 py-3"
   >
     <div class="mb-3 flex items-start justify-between gap-3">
       <div class="min-w-0">
@@ -129,6 +138,107 @@ function toggleTagColor(nextColor: ImageAsset["tagColor"]) {
         </dd>
       </div>
     </dl>
+
+    <button
+      v-if="image.source === 'generated' && !image.isEditMask"
+      class="mt-3 inline-flex w-full cursor-pointer items-center justify-center rounded-card border border-border-subtle bg-surface px-3 py-2 text-xs font-medium text-content transition-colors hover:bg-surface-hover"
+      title="载入提示词、引用图和画面参数"
+      type="button"
+      @click="emit('loadImageConfig', image)"
+    >
+      载入本次生成输入
+    </button>
+
+    <section v-if="image.referencedImageIds?.length" class="mt-3">
+      <div class="mb-1.5 flex items-center justify-between gap-2">
+        <span class="text-xs font-medium text-content">本次使用的参考图</span>
+        <span class="text-xs text-content-tertiary">{{ image.referencedImageIds.length }} 张</span>
+      </div>
+      <ul class="space-y-1.5">
+        <li
+          v-for="referenceId in image.referencedImageIds"
+          :key="referenceId"
+          v-image-preview="referenceImage(referenceId)"
+          class="flex min-w-0 items-center gap-2 rounded-card border border-border-subtle p-1.5"
+        >
+          <button
+            class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left disabled:cursor-not-allowed"
+            type="button"
+            :disabled="!referenceImage(referenceId)"
+            @click="emit('previewImage', referenceId)"
+          >
+            <img
+              v-if="referenceImage(referenceId)?.previewUrl"
+              class="h-9 w-9 shrink-0 rounded-card bg-surface-muted object-contain"
+              decoding="async"
+              loading="lazy"
+              :alt="referenceImage(referenceId)?.name"
+              :src="referenceImage(referenceId)?.previewUrl"
+            />
+            <span
+              v-else
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-card bg-surface-muted text-[10px] text-content-tertiary"
+            >
+              {{ referenceImage(referenceId) ? "加载中" : "已删除" }}
+            </span>
+            <span class="truncate text-xs text-content">
+              {{ referenceImage(referenceId)?.name || "引用图片已删除" }}
+            </span>
+          </button>
+          <Tooltip
+            :text="
+              !referenceImage(referenceId)
+                ? '引用图片已删除'
+                : attachedImageIds.includes(referenceId)
+                  ? '已加入当前引用'
+                  : '加入当前引用'
+            "
+            preferred-placement="top"
+          >
+            <button
+              :class="[
+                'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-card transition-colors disabled:cursor-not-allowed disabled:opacity-40',
+                attachedImageIds.includes(referenceId)
+                  ? 'bg-surface-muted text-content-tertiary'
+                  : 'cursor-pointer text-content hover:bg-surface-hover',
+              ]"
+              type="button"
+              :disabled="!referenceImage(referenceId) || attachedImageIds.includes(referenceId)"
+              :aria-label="`加入参考图 ${referenceImage(referenceId)?.name || ''}`"
+              @click="emit('attachImage', referenceId)"
+            >
+              <svg
+                v-if="attachedImageIds.includes(referenceId)"
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+              <svg
+                v-else
+                class="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 5v14" />
+                <path d="M5 12h14" />
+              </svg>
+            </button>
+          </Tooltip>
+        </li>
+      </ul>
+    </section>
 
     <div class="mt-3 grid gap-x-3 gap-y-2 sm:grid-cols-3">
       <div class="min-w-0">

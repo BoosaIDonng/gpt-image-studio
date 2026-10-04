@@ -2,23 +2,24 @@
  * 浏览器直连模式：下载服务商返回的图片 URL，并转成 base64 结果。
  *
  * 部分中转/厂商无视 response_format=b64_json，只返回有时效的图片链接
- * （data[0].url，或 Responses API 里被换成链接的 result）。Companion 模式
- * 在服务端下载（urlToB64，带出网地址策略）；本模块是直连模式在浏览器内的
- * 对应实现——能否成功取决于对方 CDN 的 CORS 策略，失败时抛带行动建议的错误。
+ * （data[0].url，或 Responses API 里被换成链接的 result）。能否成功取决于
+ * 对方 CDN 的 CORS 策略，失败时抛带行动建议的错误。
  *
- * 安全边界（与 Companion 对齐）：
+ * 安全边界：
  * - 仅接受 http/https 链接；
  * - 响应体流式读取，超过大小上限立即中止；
  * - 用 magic bytes 嗅探真实格式（PNG/JPEG/WebP），嗅探不出图片签名一律拒绝，
  *   防止把 HTML/脚本等内容当图片存入库。
  */
 
-/** 直连模式解析/下载失败时的统一行动建议。 */
-export const DIRECT_MODE_FALLBACK_HINT =
-  "建议切换到 Companion 模式（服务端下载图片，不受浏览器跨域限制），或直接下载桌面应用。";
+import { isTimeoutError, withTimeoutSignal } from "../shared/fetchTimeout";
 
-/** 单张图片允许下载的最大字节数（与 Companion urlToB64 的上限一致）。 */
+/** 直连模式解析/下载失败时的统一行动建议。 */
+export const IMAGE_URL_FALLBACK_HINT = "请检查上游返回的图片格式、下载权限和响应大小。";
+
+/** 单张图片允许下载的最大字节数。 */
 const MAX_IMAGE_BYTES = 32 * 1024 * 1024;
+const IMAGE_URL_DOWNLOAD_TIMEOUT_MS = 60_000;
 
 /** 下载链接图片的结果：base64（不含 data: 前缀）+ 嗅探出的真实 MIME。 */
 export type DownloadedImage = {
@@ -33,21 +34,34 @@ export async function downloadImageUrlAsBase64(url: string): Promise<DownloadedI
   try {
     response = await fetch(target.href, {
       headers: { Accept: "image/png,image/jpeg,image/webp" },
+      signal: withTimeoutSignal(IMAGE_URL_DOWNLOAD_TIMEOUT_MS),
     });
   } catch (error) {
     throw new Error(
-      `下载图片链接失败（可能是浏览器跨域限制）：${errorMessage(error)}。${DIRECT_MODE_FALLBACK_HINT}`,
+      isTimeoutError(error)
+        ? `下载图片链接超时（${IMAGE_URL_DOWNLOAD_TIMEOUT_MS / 1000} 秒）。${IMAGE_URL_FALLBACK_HINT}`
+        : `下载图片链接失败（可能是浏览器跨域限制）：${errorMessage(error)}。${IMAGE_URL_FALLBACK_HINT}`,
     );
   }
 
   if (!response.ok) {
-    throw new Error(`下载图片链接失败：HTTP ${response.status}。${DIRECT_MODE_FALLBACK_HINT}`);
+    throw new Error(`下载图片链接失败：HTTP ${response.status}。${IMAGE_URL_FALLBACK_HINT}`);
   }
 
-  const bytes = await readBoundedBody(response);
+  let bytes: Uint8Array;
+  try {
+    bytes = await readBoundedBody(response);
+  } catch (error) {
+    if (isTimeoutError(error)) {
+      throw new Error(
+        `下载图片链接超时（${IMAGE_URL_DOWNLOAD_TIMEOUT_MS / 1000} 秒）。${IMAGE_URL_FALLBACK_HINT}`,
+      );
+    }
+    throw error;
+  }
   const mimeType = sniffImageMimeType(bytes);
   if (!mimeType) {
-    throw new Error(`下载的链接内容不是有效的 PNG/JPEG/WebP 图片。${DIRECT_MODE_FALLBACK_HINT}`);
+    throw new Error(`下载的链接内容不是有效的 PNG/JPEG/WebP 图片。${IMAGE_URL_FALLBACK_HINT}`);
   }
 
   return { b64Json: bytesToBase64(bytes), mimeType };
@@ -58,12 +72,12 @@ function parseImageUrl(url: string): URL {
   try {
     parsed = new URL(url);
   } catch {
-    throw new Error(`服务商返回的图片链接格式无效。${DIRECT_MODE_FALLBACK_HINT}`);
+    throw new Error(`服务商返回的图片链接格式无效。${IMAGE_URL_FALLBACK_HINT}`);
   }
 
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
     throw new Error(
-      `服务商返回的图片链接协议不受支持（仅允许 http/https）。${DIRECT_MODE_FALLBACK_HINT}`,
+      `服务商返回的图片链接协议不受支持（仅允许 http/https）。${IMAGE_URL_FALLBACK_HINT}`,
     );
   }
 
@@ -74,7 +88,7 @@ async function readBoundedBody(response: Response): Promise<Uint8Array> {
   const contentLength = Number(response.headers.get("Content-Length"));
   if (Number.isSafeInteger(contentLength) && contentLength > MAX_IMAGE_BYTES) {
     throw new Error(
-      `图片响应超过大小上限 ${Math.ceil(MAX_IMAGE_BYTES / (1024 * 1024))} MiB。${DIRECT_MODE_FALLBACK_HINT}`,
+      `图片响应超过大小上限 ${Math.ceil(MAX_IMAGE_BYTES / (1024 * 1024))} MiB。${IMAGE_URL_FALLBACK_HINT}`,
     );
   }
 
@@ -82,7 +96,7 @@ async function readBoundedBody(response: Response): Promise<Uint8Array> {
     const buffer = await response.arrayBuffer();
     if (buffer.byteLength > MAX_IMAGE_BYTES) {
       throw new Error(
-        `图片响应超过大小上限 ${Math.ceil(MAX_IMAGE_BYTES / (1024 * 1024))} MiB。${DIRECT_MODE_FALLBACK_HINT}`,
+        `图片响应超过大小上限 ${Math.ceil(MAX_IMAGE_BYTES / (1024 * 1024))} MiB。${IMAGE_URL_FALLBACK_HINT}`,
       );
     }
     return new Uint8Array(buffer);
@@ -98,7 +112,7 @@ async function readBoundedBody(response: Response): Promise<Uint8Array> {
     if (totalBytes > MAX_IMAGE_BYTES) {
       await reader.cancel().catch(() => {});
       throw new Error(
-        `图片响应超过大小上限 ${Math.ceil(MAX_IMAGE_BYTES / (1024 * 1024))} MiB。${DIRECT_MODE_FALLBACK_HINT}`,
+        `图片响应超过大小上限 ${Math.ceil(MAX_IMAGE_BYTES / (1024 * 1024))} MiB。${IMAGE_URL_FALLBACK_HINT}`,
       );
     }
     chunks.push(value);

@@ -73,10 +73,15 @@ async function forwardApiRequest(req: IncomingMessage, res: ServerResponse) {
   }
 
   try {
-    // Node's stream types differ from the DOM stream types used by fetch.
-    const requestBody =
-      req.method === "GET" || req.method === "HEAD"
-        ? undefined
+    const isReadOnlyRequest = req.method === "GET" || req.method === "HEAD";
+    const isMultipart = headers
+      .get("content-type")
+      ?.toLowerCase()
+      .startsWith("multipart/form-data");
+    const requestBody = isReadOnlyRequest
+      ? undefined
+      : isMultipart
+        ? await bufferRequestBody(req)
         : (Readable.toWeb(req) as unknown as BodyInit);
     const requestInit: RequestInit & { duplex: "half" } = {
       method: req.method,
@@ -102,4 +107,10 @@ async function forwardApiRequest(req: IncomingMessage, res: ServerResponse) {
       .writeHead(502, { "Content-Type": "application/json" })
       .end('{"error":"Upstream unavailable"}');
   }
+}
+
+async function bufferRequestBody(req: IncomingMessage): Promise<Uint8Array<ArrayBuffer>> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) chunks.push(Buffer.from(chunk));
+  return new Uint8Array(Buffer.concat(chunks));
 }

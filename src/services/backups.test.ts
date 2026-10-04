@@ -63,7 +63,6 @@ const imageAsset: ImageAsset = {
 };
 
 const settings: AppSettings = {
-  connectionMode: "direct",
   apiProvider: "openai",
   apiKey: "sk-secret",
   apiBaseUrl: "https://api.example.test/v1/images",
@@ -137,7 +136,6 @@ describe("studio backups", () => {
       excludes: ["apiKey", "chatApiKey"],
     });
     expect(data.settings).toEqual({
-      connectionMode: settings.connectionMode,
       apiProvider: settings.apiProvider,
       apiBaseUrl: settings.apiBaseUrl,
       apiBaseUrlMode: settings.apiBaseUrlMode,
@@ -212,7 +210,6 @@ describe("studio backups", () => {
         messages: [message],
         imageAssets: [{ ...imageAsset, previewUrl: undefined }],
         settings: {
-          connectionMode: settings.connectionMode,
           apiProvider: settings.apiProvider,
           apiBaseUrl: settings.apiBaseUrl,
           apiBaseUrlMode: settings.apiBaseUrlMode,
@@ -269,7 +266,6 @@ describe("studio backups", () => {
         messages: [message],
         imageAssets: [{ ...imageAsset, previewUrl: undefined }],
         settings: {
-          connectionMode: settings.connectionMode,
           apiProvider: settings.apiProvider,
           apiBaseUrl: settings.apiBaseUrl,
           apiBaseUrlMode: settings.apiBaseUrlMode,

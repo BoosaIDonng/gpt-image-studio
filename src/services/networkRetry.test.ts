@@ -46,7 +46,7 @@ describe("isNetworkError", () => {
     expect(isNetworkError(new NetworkError("forbidden", { status: 403 }))).toBe(false);
   });
 
-  it("识别 companion 502 抛出的 SERVER_DISCONNECTED_MESSAGE 文案", () => {
+  it("识别网关断连时的 SERVER_DISCONNECTED_MESSAGE 文案", () => {
     expect(isNetworkError(new Error(SERVER_DISCONNECTED_MESSAGE))).toBe(true);
   });
 
@@ -124,7 +124,7 @@ describe("withNetworkRetry", () => {
     expect(onRetry).not.toHaveBeenCalled();
   });
 
-  it("companion 断网文案不再自动重试，立即抛出", async () => {
+  it("断网文案不再自动重试，立即抛出", async () => {
     const fn = vi.fn().mockRejectedValue(new Error(SERVER_DISCONNECTED_MESSAGE));
     const onRetry = vi.fn();
 

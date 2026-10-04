@@ -8,7 +8,6 @@ import type {
   ApiBaseUrlMode,
   ApiProvider,
   AppSettings,
-  ConnectionMode,
   PromptMode,
   PromptRewriteGuardHistoryItem,
 } from "../types/studio";
@@ -41,7 +40,6 @@ export function saveSettings(settings: AppSettings) {
 
 type StoredAppSettings = Omit<
   AppSettings,
-  | "connectionMode"
   | "apiProvider"
   | "apiBaseUrlMode"
   | "apiMode"
@@ -62,7 +60,7 @@ type StoredAppSettings = Omit<
   | "chatModel"
   | "chatSystemPrompt"
 > & {
-  connectionMode?: ConnectionMode;
+  connectionMode?: unknown;
   apiProvider?: ApiProvider;
   promptExpandEnabled?: boolean;
   chatApiKey?: string;
@@ -86,11 +84,11 @@ type StoredAppSettings = Omit<
 };
 
 function normalizeSettings(settings: StoredAppSettings): AppSettings {
+  const { connectionMode: _legacyConnectionMode, ...currentSettings } = settings;
   const apiProvider = normalizeApiProvider(settings.apiProvider);
   const promptRewriteGuardText = normalizePromptRewriteGuardText(settings.promptRewriteGuardText);
   return {
-    ...settings,
-    connectionMode: settings.connectionMode ?? "direct",
+    ...currentSettings,
     apiProvider,
     apiBaseUrlMode: settings.apiBaseUrlMode === "full" ? "full" : "origin",
     apiMode: settings.apiMode === "responses" ? "responses" : "images",

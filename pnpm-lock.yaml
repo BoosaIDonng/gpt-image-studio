@@ -79,34 +79,6 @@ importers:
         specifier: ^3.2.7
         version: 3.2.7(typescript@6.0.3)
 
-  companion:
-    dependencies:
-      '@fastify/cors':
-        specifier: ^11.0.0
-        version: 11.2.0
-      commander:
-        specifier: ^13.1.0
-        version: 13.1.0
-      fastify:
-        specifier: ^5.3.3
-        version: 5.8.5
-    devDependencies:
-      '@types/node':
-        specifier: ^22.15.0
-        version: 22.19.19
-      eslint-config-prettier:
-        specifier: ^10.1.8
-        version: 10.1.8(eslint@10.4.1(jiti@2.6.1))
-      prettier:
-        specifier: ^3.8.4
-        version: 3.8.4
-      tsx:
-        specifier: ^4.19.0
-        version: 4.22.3
-      typescript:
-        specifier: ^6.0.3
-        version: 6.0.3
-
 packages:
 
   '@asamuzakjp/css-color@5.1.11':

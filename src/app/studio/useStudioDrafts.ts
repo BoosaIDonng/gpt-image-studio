@@ -34,6 +34,7 @@ export function useStudioDrafts(ctx: {
   imageById: (id: string) => ImageAsset | undefined;
   messages: Ref<Message[]>;
   currentGenerationParams: () => GenerationParams;
+  applyImageCount: (count: number) => void;
   applySizeResolution: (resolution: SizeResolution) => void;
   applySizePreset: (size: GenerationParams["size"]) => void;
   imageWidth: Ref<number>;
@@ -92,6 +93,7 @@ export function useStudioDrafts(ctx: {
   function applyGenerationParams(params: GenerationParams) {
     ctx.applySizeResolution(params.resolution);
     ctx.applySizePreset(params.size);
+    ctx.applyImageCount(params.imageCount);
     ctx.imageWidth.value = params.width;
     ctx.imageHeight.value = params.height;
     ctx.quality.value = params.quality;
@@ -114,16 +116,30 @@ export function useStudioDrafts(ctx: {
   }
 
   function loadMessageConfig(message: Message) {
-    ctx.composerText.value = message.content;
-    ctx.attachedImages.value = message.referencedImageIds.filter((id) =>
+    loadComposerConfig(message.content, message.referencedImageIds, message.generationParams);
+  }
+
+  function loadImageConfig(image: ImageAsset) {
+    loadComposerConfig(
+      image.prompt,
+      image.referencedImageIds ?? [],
+      image.generationRecipe?.params,
+    );
+  }
+
+  function loadComposerConfig(
+    prompt: string,
+    referencedImageIds: string[],
+    generationParams?: GenerationParams,
+  ) {
+    ctx.composerText.value = prompt;
+    ctx.attachedImages.value = [...new Set(referencedImageIds)].filter((id) =>
       Boolean(ctx.imageById(id)),
     );
     ctx.clearEditSelection();
     ctx.editModeEnabled.value = false;
 
-    if (message.generationParams) {
-      applyGenerationParams(message.generationParams);
-    }
+    if (generationParams) applyGenerationParams(generationParams);
 
     const conversationId = ctx.activeConversationId.value;
     if (conversationId) {
@@ -251,6 +267,7 @@ export function useStudioDrafts(ctx: {
     applyConversationDraft,
     applyGenerationParams,
     copyText,
+    loadImageConfig,
     loadMessageConfig,
     loadAndApplyDraft,
     selectConversationWithDraft,

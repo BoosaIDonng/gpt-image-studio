@@ -7,13 +7,7 @@ import eslintConfigPrettier from "eslint-config-prettier";
 
 export default [
   {
-    ignores: [
-      "companion/dist/**",
-      "coverage/**",
-      "dist/**",
-      "docs/superpowers/**",
-      "node_modules/**",
-    ],
+    ignores: ["coverage/**", "dist/**", "docs/superpowers/**", "node_modules/**"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

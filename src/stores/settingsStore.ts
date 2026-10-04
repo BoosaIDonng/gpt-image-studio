@@ -37,7 +37,6 @@ import type {
   ApiMode,
   ApiProvider,
   AppSettings,
-  ConnectionMode,
   FavoritePrompt,
   GenerationParams,
   PromptMode,
@@ -51,8 +50,6 @@ import type {
 const SETTINGS_STORAGE_KEYS = {
   apiKey: "gpt-image-studio:api-key",
   apiBaseUrl: "gpt-image-studio:api-base-url",
-  companionUrl: "gpt-image-studio:companion-url",
-  companionSessionToken: "gpt-image-studio:companion-session-token",
   modelSelectionMigration: "gpt-image-studio:model-selection-v2",
 } as const;
 const LEGACY_DEFAULT_MODELS = new Set([
@@ -89,7 +86,6 @@ const IMAGE_COUNT_PRESETS = [1, 2, 3, 4, 6, 8, 10, 12] as const;
 type ImageCountMode = "preset" | "custom";
 
 export const useSettingsStore = defineStore("settings", () => {
-  const connectionMode = ref<ConnectionMode>("direct");
   const apiProvider = ref<ApiProvider>("openai");
   const needsModelSelectionMigration = ref(
     readStorage(SETTINGS_STORAGE_KEYS.modelSelectionMigration, "") !== "1",
@@ -128,11 +124,6 @@ export const useSettingsStore = defineStore("settings", () => {
       createdAt: isoTimestamp(0),
     },
   ]);
-  const companionUrl = ref(
-    readStorage(SETTINGS_STORAGE_KEYS.companionUrl, "http://127.0.0.1:19750"),
-  );
-  const companionSessionToken = ref(readStorage(SETTINGS_STORAGE_KEYS.companionSessionToken, ""));
-  const companionPaired = computed(() => companionSessionToken.value !== "");
   const imageWidth = ref(1024);
   const imageHeight = ref(1024);
   const imageCount = ref(1);
@@ -235,7 +226,6 @@ export const useSettingsStore = defineStore("settings", () => {
     const defaults = normalizeGenerationParams(settings.defaults);
     skipProviderRestoreForValue.value =
       settings.apiProvider !== apiProvider.value ? settings.apiProvider : null;
-    connectionMode.value = settings.connectionMode;
     apiProvider.value = settings.apiProvider;
     apiKey.value = settings.apiKey;
     apiBaseUrlMode.value = settings.apiBaseUrlMode;
@@ -284,7 +274,6 @@ export const useSettingsStore = defineStore("settings", () => {
 
   function currentSettings(): AppSettings {
     return {
-      connectionMode: connectionMode.value,
       apiProvider: apiProvider.value,
       apiKey: apiKey.value.trim(),
       apiBaseUrl: apiBaseUrl.value.trim(),
@@ -331,7 +320,6 @@ export const useSettingsStore = defineStore("settings", () => {
 
   function currentGenerationRecipe() {
     return {
-      connectionMode: connectionMode.value,
       apiProvider: apiProvider.value,
       apiBaseUrl: apiBaseUrl.value.trim(),
       apiBaseUrlMode: apiBaseUrlMode.value,
@@ -489,8 +477,6 @@ export const useSettingsStore = defineStore("settings", () => {
     );
   }
 
-  watch(companionUrl, (v) => writeStorage(SETTINGS_STORAGE_KEYS.companionUrl, v));
-  watch(companionSessionToken, (v) => writeStorage(SETTINGS_STORAGE_KEYS.companionSessionToken, v));
   watch(
     [apiKey, apiBaseUrl, apiBaseUrlMode, apiMode, model],
     () => {
@@ -527,10 +513,6 @@ export const useSettingsStore = defineStore("settings", () => {
     apiKey,
     apiKeyForProvider,
     autoRetryOnNetworkError,
-    companionPaired,
-    companionSessionToken,
-    companionUrl,
-    connectionMode,
     applySettings,
     applyImageCount,
     applyImageCountMode,

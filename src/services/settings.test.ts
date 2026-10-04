@@ -20,7 +20,6 @@ vi.mock("./db", async (importOriginal) => {
 });
 
 const fullSettings: AppSettings = {
-  connectionMode: "direct",
   apiProvider: "openai",
   apiKey: "sk-test",
   apiBaseUrl: "https://api.packyapi.com/v1/images",
@@ -68,7 +67,7 @@ describe("settings service", () => {
     vi.clearAllMocks();
   });
 
-  it("loads settings with connection mode", async () => {
+  it("loads current settings", async () => {
     mocks.getFromStore.mockResolvedValue({
       key: "app",
       value: fullSettings,
@@ -80,9 +79,8 @@ describe("settings service", () => {
     expect(result).toEqual(fullSettings);
   });
 
-  it("defaults old settings to direct connection mode and enabled prompt guard", async () => {
+  it("ignores legacy connection mode and defaults older settings", async () => {
     const {
-      connectionMode: _ignoredConnectionMode,
       apiBaseUrlMode: _ignoredApiBaseUrlMode,
       apiMode: _ignoredApiMode,
       streamImages: _ignoredStreamImages,
@@ -104,12 +102,12 @@ describe("settings service", () => {
     } = fullSettings;
     mocks.getFromStore.mockResolvedValue({
       key: "app",
-      value: legacySettings,
+      value: { ...legacySettings, connectionMode: "localCompanion" },
     });
 
     const result = await loadSettings();
 
-    expect(result?.connectionMode).toBe("direct");
+    expect(result).not.toHaveProperty("connectionMode");
     expect(result?.apiBaseUrlMode).toBe("origin");
     expect(result?.apiMode).toBe("images");
     expect(result?.streamImages).toBe(false);

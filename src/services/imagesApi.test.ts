@@ -288,6 +288,31 @@ describe("images API requests", () => {
     // gpt-image 系列不支持 response_format 参数，传了会报 HTTP 400。
     expect((requestBody as FormData).has("response_format")).toBe(false);
     expect((requestBody as FormData).get("quality")).toBe("auto");
+    expect((requestBody as FormData).get("image")).toMatchObject({ name: "image.png" });
+    expect((requestBody as FormData).getAll("image[]")).toHaveLength(0);
+  });
+
+  it("sends multiple edit images as an image array", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(jsonResponse({ data: [{ b64_json: "edited-image" }] }));
+
+    await editImage({
+      apiBaseUrl: "https://api.example.test/v1/images",
+      apiBaseUrlMode: "full",
+      apiKey: "sk-test",
+      model: "gpt-image-2",
+      prompt: "合并两张图",
+      params: generationParams,
+      images: [
+        { blob: new Blob(["image-1"], { type: "image/png" }), name: "one.png" },
+        { blob: new Blob(["image-2"], { type: "image/png" }), name: "two.png" },
+      ],
+    });
+
+    const requestBody = fetchMock.mock.calls[0]?.[1]?.body as FormData;
+    expect(requestBody.get("image")).toBeNull();
+    expect(requestBody.getAll("image[]")).toHaveLength(2);
   });
 
   it("calls the Responses API with the image_generation tool", async () => {
@@ -673,7 +698,7 @@ describe("provider URL responses (direct mode downloads)", () => {
         prompt: "画一张图",
         params: generationParams,
       }),
-    ).rejects.toThrow("建议切换到 Companion 模式");
+    ).rejects.toThrow("请检查上游返回的图片格式");
   });
 
   it("rejects image URLs with unsupported protocols", async () => {

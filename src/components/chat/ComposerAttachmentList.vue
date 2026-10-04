@@ -27,6 +27,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   previewImage: [id: string];
   removeAttachment: [id: string];
+  insertReference: [index: number];
 }>();
 
 const attachmentRows = computed(() =>
@@ -36,6 +37,14 @@ const attachmentRows = computed(() =>
     props.activeEditMaskImageId,
   ),
 );
+const referenceImageIds = computed(() => {
+  const ids = props.activeAttachments
+    .filter((image) => image.id !== props.activeEditMaskImageId)
+    .map((image) => image.id);
+  return props.activeEditSourceImageId && ids.includes(props.activeEditSourceImageId)
+    ? [props.activeEditSourceImageId, ...ids.filter((id) => id !== props.activeEditSourceImageId)]
+    : ids;
+});
 
 function createAttachmentRows(
   attachments: ImageAsset[],
@@ -90,6 +99,18 @@ function handleRemove(event: Event, item: AttachmentRow) {
   emit("removeAttachment", item.id);
 }
 
+function referenceNumber(item: AttachmentRow) {
+  const id = item.kind === "editingPair" ? item.source.id : item.image.id;
+  const index = referenceImageIds.value.indexOf(id);
+  return index < 0 ? 0 : index + 1;
+}
+
+function handleInsertReference(event: Event, item: AttachmentRow) {
+  event.stopPropagation();
+  const index = referenceNumber(item);
+  if (index) emit("insertReference", index);
+}
+
 const totalSizeBytes = computed(() =>
   props.activeAttachments.reduce((sum, img) => sum + (img.sizeBytes ?? 0), 0),
 );
@@ -121,6 +142,17 @@ const totalSizeLabel = computed(() => {
           :alt="attachmentName(item)"
           :src="attachmentPreviewUrl(item)"
         />
+        <button
+          v-if="referenceNumber(item)"
+          class="absolute bottom-1 left-1 min-w-6 rounded bg-black/65 px-1 py-0.5 text-[10px] leading-none text-white"
+          type="button"
+          :aria-label="`在提示词中引用图${referenceNumber(item)}`"
+          :title="`插入引用图 ${referenceNumber(item)}`"
+          @mousedown.stop
+          @click.stop="handleInsertReference($event, item)"
+        >
+          @图{{ referenceNumber(item) }}
+        </button>
         <!-- 左上角编辑三角标识 -->
         <span v-if="item.kind === 'editingPair'" class="absolute left-0 top-0">
           <svg class="h-7 w-7" viewBox="0 0 28 28" aria-hidden="true">

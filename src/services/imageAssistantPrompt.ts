@@ -3,7 +3,7 @@
  *
  * Versioned in this repo so the assistant identity is reviewable and
  * specialized for image-creation work; requests reach NVIDIA through the
- * chat-relay Worker or the local companion, which forward the message as-is.
+ * chat-relay Worker, which forwards the message as-is.
  */
 export const IMAGE_ASSISTANT_SYSTEM_PROMPT = `你是 GPT Image Studio 的生图创作助手,专注于帮助用户完成 AI 图片创作:改写和增强生图 prompt、解答生图功能和参数问题、排查生成失败原因。
 

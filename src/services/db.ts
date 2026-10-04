@@ -19,19 +19,12 @@ export function resetDbCache() {
   dbPromise = null;
 }
 
-/**
- * 打开 IndexedDB 数据库。
- * 如果打开失败（数据库损坏、版本冲突等），自动删除后重建。
- * 重建后数据会丢失，但用户可以通过备份恢复。
- */
+/** 打开失败时保留用户数据，并在下次调用时允许重试。 */
 export function getStudioDb() {
   if (!dbPromise) {
-    dbPromise = openDb().catch(async (error) => {
-      console.error("[db] 数据库打开失败，尝试重建...", error);
-      // 不要将 dbPromise 设为 null，否则并发调用会各自启动独立的 openDb()。
-      // 直接返回重建 Promise，让所有等待者共享同一个重建流程。
-      await deleteDb();
-      return openDb();
+    dbPromise = openDb().catch((error) => {
+      dbPromise = null;
+      throw error;
     });
   }
 
@@ -100,18 +93,6 @@ function openDb(): Promise<IDBDatabase> {
   });
 }
 
-function deleteDb(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.deleteDatabase(DB_NAME);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-    request.onblocked = () => {
-      console.warn("[db] 数据库删除被阻塞，其他标签页可能仍在使用");
-      resolve(); // 继续尝试重建
-    };
-  });
-}
-
 function replaceIndex(
   transaction: IDBTransaction | null,
   db: IDBDatabase,
@@ -142,6 +123,15 @@ export async function getFromStore<T>(storeName: StoreName, key: IDBValidKey) {
   const transaction = db.transaction(storeName, "readonly");
   const store = transaction.objectStore(storeName);
   return requestToPromise<T | undefined>(store.get(key));
+}
+
+export async function getManyFromStore<T>(storeName: StoreName, keys: readonly IDBValidKey[]) {
+  if (!keys.length) return [];
+
+  const db = await getStudioDb();
+  const transaction = db.transaction(storeName, "readonly");
+  const store = transaction.objectStore(storeName);
+  return Promise.all(keys.map((key) => requestToPromise<T | undefined>(store.get(key))));
 }
 
 export async function putInStore<T>(storeName: StoreName, value: T) {

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { timestampFromCreatedAt, timestampFromUpdatedAt } from "../../shared/dateTime";
+import { formatError } from "../../shared/errors";
 import { createObjectUrl, revokeObjectUrl } from "../../shared/objectUrls";
+import { loadImageBlob } from "../../services/imageAssets";
 import { createZipArchive } from "../../services/zipArchive";
-import { useImagesStore } from "../../stores/imagesStore";
+import { useFeedbackStore } from "../../stores/feedbackStore";
 import type { Conversation, ImageAsset, Message } from "../../types/studio";
 import ConfirmInputModal from "../ui/ConfirmInputModal.vue";
 import BatchConversationsPanel from "./BatchConversationsPanel.vue";
@@ -17,6 +19,7 @@ type ImageSortKey = "name" | "size" | "time";
 type ConversationSortKey = "name" | "time";
 
 const ctx = useSettingsModalContext();
+const feedback = useFeedbackStore();
 const { conversations, images, messages, deleteConversations, deleteImages, previewImage } = ctx;
 
 // BatchOperationsPanel 还需要 initialBatchPanel 和 isOpen，这两个来自 SettingsModal 的本地状态
@@ -258,31 +261,32 @@ function confirmPendingAction() {
 }
 
 async function downloadSelectedImages() {
-  if (!selectedImages.value.length) return;
+  const imagesToDownload = [...selectedImages.value];
+  if (!imagesToDownload.length) return;
 
-  // Previews load lazily; make sure every selected image has its blob before
-  // fetching the object URLs.
-  const imageStore = useImagesStore();
-  await Promise.all(selectedImages.value.map((image) => imageStore.ensureImagePreview(image.id)));
+  try {
+    const entries = await Promise.all(
+      imagesToDownload.map(async (image, index) => {
+        const blob =
+          image.transientBlob ?? (image.blobKey ? await loadImageBlob(image.blobKey) : undefined);
+        if (!blob) throw new Error(`无法读取图片“${image.name}”的原始文件。`);
 
-  const entries = await Promise.all(
-    selectedImages.value.map(async (image, index) => {
-      const response = await fetch(image.previewUrl as string);
-      const blob = await response.blob();
-
-      return {
-        name: uniqueZipEntryName(imageDownloadName(image), index),
-        blob,
-      };
-    }),
-  );
-  const zipBlob = await createZipArchive(entries);
-  const downloadUrl = createObjectUrl(zipBlob);
-  const anchor = document.createElement("a");
-  anchor.href = downloadUrl;
-  anchor.download = `gpt-image-studio-${new Date().toISOString().replace(/[:.]/g, "-")}.zip`;
-  anchor.click();
-  revokeObjectUrl(downloadUrl);
+        return {
+          name: uniqueZipEntryName(imageDownloadName(image), index),
+          blob,
+        };
+      }),
+    );
+    const zipBlob = await createZipArchive(entries);
+    const downloadUrl = createObjectUrl(zipBlob);
+    const anchor = document.createElement("a");
+    anchor.href = downloadUrl;
+    anchor.download = `gpt-image-studio-${new Date().toISOString().replace(/[:.]/g, "-")}.zip`;
+    anchor.click();
+    revokeObjectUrl(downloadUrl);
+  } catch (error) {
+    feedback.notifyError(`打包图片失败：${formatError(error)}`);
+  }
 }
 
 function toggledSelection(selection: Set<string>, id: string) {

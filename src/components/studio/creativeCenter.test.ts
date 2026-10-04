@@ -5,9 +5,7 @@ import { buildTutorialSteps } from "../settings/tutorial";
 describe("creative center", () => {
   it("shows setup guidance when direct mode has no api key", () => {
     const status = buildCreativeCenterStatus({
-      connectionMode: "direct",
       apiKey: "",
-      companionPaired: false,
       pendingJobCount: 0,
       failedMessageCount: 0,
       imageCount: 0,
@@ -34,18 +32,16 @@ describe("creative center", () => {
     ]);
   });
 
-  it("prioritizes generation progress over idle state", () => {
+  it("uses the configured API key for connection status and prioritizes generation progress", () => {
     const status = buildCreativeCenterStatus({
-      connectionMode: "localCompanion",
-      apiKey: "",
-      companionPaired: true,
+      apiKey: "sk-test",
       pendingJobCount: 3,
       failedMessageCount: 1,
       imageCount: 4,
       messageCount: 8,
     });
 
-    expect(status.connectionLabel).toBe("Companion 已连接");
+    expect(status.connectionLabel).toBe("接口已配置");
     expect(status.activityLabel).toBe("生成中");
     expect(status.activityDetail).toBe("还有 3 张图片正在生成");
     expect(status.shouldExpandByDefault).toBe(false);

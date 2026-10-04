@@ -6,11 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 pnpm dev                  # Start Vite dev server (127.0.0.1:8888)
-pnpm dev:companion        # Start Companion CLI server (127.0.0.1:19750)
 pnpm build                # Production build to dist/
 pnpm preview              # Preview production build
 pnpm typecheck            # Type-check web app with vue-tsc --noEmit
-pnpm typecheck:companion  # Type-check companion with tsc --noEmit
 pnpm test                 # Run Vitest tests (all)
 pnpm test:watch           # Run Vitest in watch mode
 ```
@@ -75,9 +73,7 @@ All IndexedDB access goes through `db.ts` (generic CRUD: `getAllFromStore`, `get
 
 ### Generation / Image Client
 
-`src/features/generation/imageClients/imageClient.ts` defines the `ImageClient` interface (`generate` + `edit`). Two implementations:
-- `directImagesClient` — browser calls user-configured OpenAI-compatible Images API directly.
-- `localCompanionImagesClient` — browser calls a paired local companion service on `127.0.0.1`.
+`src/features/generation/imageClients/imageClient.ts` defines the `ImageClient` interface (`generate` + `edit`). The `directImagesClient` calls the user-configured image API from the browser.
 
 ### Types
 
@@ -96,7 +92,7 @@ Tailwind CSS v4 via `@tailwindcss/vite` plugin (no config file). Single CSS entr
 
 ### API Integration
 
-OpenAI-compatible Images API. Generation: `POST {apiBaseUrl}/generations` (JSON). Editing: `POST {apiBaseUrl}/edits` (multipart/form-data with `image[]` array). Response expects `{ data: [{ b64_json }] }`. Custom size validation: 16-3840px, multiples of 16, aspect ratio ≤ 3:1, total pixels 655,360-8,294,400.
+OpenAI-compatible Images API. Generation: `POST {apiBaseUrl}/generations` (JSON). Editing: `POST {apiBaseUrl}/edits` (multipart/form-data; one source image uses `image`, multiple source images use `image[]`). Response expects `{ data: [{ b64_json }] }`. Custom size validation: 16-3840px, multiples of 16, aspect ratio ≤ 3:1, total pixels 655,360-8,294,400.
 
 ## Roadmap
 
@@ -105,7 +101,6 @@ See `docs/roadmap.md` for the full roadmap. Current status:
 - Phase 5: Experience enhancements — core items done
 - Done: Settings refactor with batch operations (`docs/archive/settings-batch-operations-plan.md`)
 - Done: Generation jobs (`src/stores/generationStore.ts`), per-conversation drafts (`src/services/conversationDrafts.ts`), mask editing (`docs/mask-editing.md`)
-- Done: Local CLI Companion background service management (`start`/`stop`/`restart`/`logs`) with first-pairing wait flow; system keychain is deferred
 - Upcoming: analytics event logging (`docs/analytics-event-logging-plan.md`)
 
 ## Conventions

@@ -28,9 +28,7 @@ const settings = useSettingsStore();
 
 const status = computed(() =>
   buildCreativeCenterStatus({
-    connectionMode: settings.connectionMode,
     apiKey: settings.apiKey,
-    companionPaired: settings.companionPaired,
     pendingJobCount: generation.pendingJobCount,
     failedMessageCount: props.failedMessageCount,
     imageCount: images.imageAssets.length,

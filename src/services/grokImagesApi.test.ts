@@ -299,7 +299,7 @@ describe("Grok provider URL responses (direct mode downloads)", () => {
         prompt: "画一张图",
         params: generationParams,
       }),
-    ).rejects.toThrow("建议切换到 Companion 模式");
+    ).rejects.toThrow("请检查上游返回的图片格式");
   });
 });
 

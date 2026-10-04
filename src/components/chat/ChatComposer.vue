@@ -29,6 +29,10 @@ function focusComposer() {
   promptInputRef.value?.focusComposer();
 }
 
+function insertReference(index: number) {
+  promptInputRef.value?.insertReferenceMention(index);
+}
+
 defineExpose({ focusComposer });
 </script>
 
@@ -44,6 +48,7 @@ defineExpose({ focusComposer });
         :active-edit-source-image-id="composer.activeEditSourceImageId"
         @preview-image="emit('previewImage', $event)"
         @remove-attachment="emit('removeAttachment', $event)"
+        @insert-reference="insertReference"
       />
 
       <ComposerRagMatchBar />

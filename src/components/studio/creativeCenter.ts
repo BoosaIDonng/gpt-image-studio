@@ -1,5 +1,3 @@
-import type { ConnectionMode } from "../../types/studio";
-
 export type CreativeTemplate = {
   id: string;
   label: string;
@@ -9,9 +7,7 @@ export type CreativeTemplate = {
 };
 
 export type CreativeCenterInput = {
-  connectionMode: ConnectionMode;
   apiKey: string;
-  companionPaired: boolean;
   pendingJobCount: number;
   failedMessageCount: number;
   imageCount: number;
@@ -85,15 +81,14 @@ export const creativeTemplates: CreativeTemplate[] = [
 ];
 
 export function buildCreativeCenterStatus(input: CreativeCenterInput): CreativeCenterStatus {
-  const isConnected =
-    input.connectionMode === "localCompanion"
-      ? input.companionPaired
-      : Boolean(input.apiKey.trim());
+  const isConnected = Boolean(input.apiKey.trim());
   const hasCreated = input.imageCount > 0 || input.messageCount > 0;
 
   return {
-    connectionLabel: connectionLabel(input.connectionMode, isConnected),
-    connectionDetail: connectionDetail(input.connectionMode, isConnected),
+    connectionLabel: isConnected ? "接口已配置" : "接口未配置",
+    connectionDetail: isConnected
+      ? "将从浏览器直接请求当前 API"
+      : "先在设置中填写 API key 和 Base URL",
     connectionTone: isConnected ? "ok" : "warning",
     activityLabel: activityLabel(input.pendingJobCount, input.failedMessageCount),
     activityDetail: activityDetail(input.pendingJobCount, input.failedMessageCount),
@@ -103,22 +98,6 @@ export function buildCreativeCenterStatus(input: CreativeCenterInput): CreativeC
 
 export function promptFromTemplate(template: CreativeTemplate, hasReferences: boolean) {
   return hasReferences ? template.editPrompt : template.prompt;
-}
-
-function connectionLabel(connectionMode: ConnectionMode, isConnected: boolean) {
-  if (connectionMode === "localCompanion") {
-    return isConnected ? "Companion 已连接" : "Companion 未配对";
-  }
-
-  return isConnected ? "浏览器直连已配置" : "接口未配置";
-}
-
-function connectionDetail(connectionMode: ConnectionMode, isConnected: boolean) {
-  if (connectionMode === "localCompanion") {
-    return isConnected ? "API 凭据保存在本机 Companion 中" : "需要在设置中完成本地 Companion 配对";
-  }
-
-  return isConnected ? "将从浏览器直接请求当前 API" : "先在设置中填写 API key 和 Base URL";
 }
 
 function activityLabel(pendingJobCount: number, failedMessageCount: number) {

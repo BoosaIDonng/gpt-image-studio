@@ -1,5 +1,5 @@
 import "fake-indexeddb/auto";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   bulkDelete,
   bulkPut,
@@ -7,6 +7,7 @@ import {
   deleteFromStore,
   getAllFromStore,
   getFromStore,
+  getManyFromStore,
   getStudioDb,
   putInStore,
   resetDbCache,
@@ -42,6 +43,22 @@ describe("getStudioDb", () => {
     const db2 = await getStudioDb();
     expect(db1).toBe(db2);
   });
+
+  it("打开失败时不删除数据库，并允许后续重试", async () => {
+    const open = vi.spyOn(indexedDB, "open").mockImplementationOnce(() => {
+      throw new DOMException("存储不可用", "SecurityError");
+    });
+    const deleteDatabase = vi.spyOn(indexedDB, "deleteDatabase");
+
+    try {
+      await expect(getStudioDb()).rejects.toThrow("存储不可用");
+      expect(deleteDatabase).not.toHaveBeenCalled();
+      await expect(getStudioDb()).resolves.toBeInstanceOf(IDBDatabase);
+    } finally {
+      open.mockRestore();
+      deleteDatabase.mockRestore();
+    }
+  });
 });
 
 describe("putInStore / getFromStore", () => {
@@ -71,6 +88,20 @@ describe("getAllFromStore", () => {
 
     const result = await getAllFromStore(STORE_NAMES.messages);
     expect(result).toHaveLength(2);
+  });
+});
+
+describe("getManyFromStore", () => {
+  it("uses one lookup per requested key and preserves missing records", async () => {
+    const first = { key: "blob-1", blob: new Blob(["first"]) };
+    const second = { key: "blob-2", blob: new Blob(["second"]) };
+    await putInStore(STORE_NAMES.imageBlobs, first);
+    await putInStore(STORE_NAMES.imageBlobs, second);
+
+    await expect(
+      getManyFromStore<typeof first>(STORE_NAMES.imageBlobs, ["blob-2", "missing", "blob-1"]),
+    ).resolves.toEqual([second, undefined, first]);
+    await expect(getManyFromStore(STORE_NAMES.imageBlobs, [])).resolves.toEqual([]);
   });
 });
 

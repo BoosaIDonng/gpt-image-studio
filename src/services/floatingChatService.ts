@@ -3,8 +3,6 @@ export type ChatMessage = {
   content: string;
 };
 
-import { useSettingsStore } from "../stores/settingsStore";
-
 /** The builtin chat persona lives in this repo, not upstream of the relay. */
 export { IMAGE_ASSISTANT_SYSTEM_PROMPT } from "./imageAssistantPrompt";
 import { IMAGE_ASSISTANT_SYSTEM_PROMPT } from "./imageAssistantPrompt";
@@ -15,18 +13,11 @@ import { IMAGE_ASSISTANT_SYSTEM_PROMPT } from "./imageAssistantPrompt";
  */
 const BUILTIN_RELAY_URL = "https://chat-relay.354561650.workers.dev";
 
-export const FLOATING_CHAT_UNCONFIGURED_MESSAGE =
-  "内置 AI 助手需要先启动并配对本地 Companion：打开设置 → API 设置，启动 Companion 并完成配对后即可使用。";
+export const FLOATING_CHAT_UNCONFIGURED_MESSAGE = "内置 AI 助手当前不可用，请稍后重试。";
 
 /** True when any chat channel is reachable: the relay is always on. */
 export function isBuiltinChatAvailable(): boolean {
   return true;
-}
-
-function companionEndpoint(): { url: string; token: string } | null {
-  const settings = useSettingsStore();
-  if (!settings.companionUrl || !settings.companionSessionToken) return null;
-  return { url: settings.companionUrl, token: settings.companionSessionToken };
 }
 
 export async function streamChatReply(
@@ -40,16 +31,9 @@ export async function streamChatReply(
     : undefined;
   const outgoingMessages: ChatMessage[] = [...(systemMessage ? [systemMessage] : []), ...messages];
 
-  const companion = companionEndpoint();
-  const url = companion
-    ? `${companion.url.replace(/\/+$/, "")}/chat/completions`
-    : `${BUILTIN_RELAY_URL}/chat/completions`;
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (companion) headers.Authorization = `Bearer ${companion.token}`;
-
-  const response = await fetch(url, {
+  const response = await fetch(`${BUILTIN_RELAY_URL}/chat/completions`, {
     method: "POST",
-    headers,
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       messages: outgoingMessages,
       stream: true,

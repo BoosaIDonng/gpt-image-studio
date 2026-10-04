@@ -269,7 +269,6 @@ function buildProjectContext() {
     generation: {
       apiProvider: settings.apiProvider,
       apiMode: settings.apiMode,
-      connectionMode: settings.connectionMode,
       model: settings.model,
       size: settings.activeSizePreset,
       resolution: settings.sizeResolution,

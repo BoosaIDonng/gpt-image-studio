@@ -13,7 +13,7 @@ import {
   imageApiParams,
   normalizeStreamPartialImages,
 } from "./imageApiRequest";
-import { DIRECT_MODE_FALLBACK_HINT, downloadImageUrlAsBase64 } from "./imageUrlDownload";
+import { IMAGE_URL_FALLBACK_HINT, downloadImageUrlAsBase64 } from "./imageUrlDownload";
 export {
   PROMPT_REWRITE_GUARD_PREFIX,
   applyPromptRewriteGuard,
@@ -208,7 +208,7 @@ async function editImageViaImagesApi(
   body.append("model", input.model);
   body.append("prompt", input.prompt);
   input.images.forEach((image) => {
-    body.append("image[]", image.blob, image.name);
+    body.append(input.images.length === 1 ? "image" : "image[]", image.blob, image.name);
   });
   if (input.mask) {
     body.append("mask", input.mask.blob, input.mask.name);
@@ -494,7 +494,7 @@ async function extractImageResult(payload: ImageApiResponse): Promise<ImageApiRe
   }
 
   throw new Error(
-    `服务商返回的数据不标准：响应中没有 data[0].b64_json 或 data[0].url。${DIRECT_MODE_FALLBACK_HINT}`,
+    `服务商返回的数据不标准：响应中没有 data[0].b64_json 或 data[0].url。${IMAGE_URL_FALLBACK_HINT}`,
   );
 }
 
@@ -510,7 +510,7 @@ async function extractResponsesImageResult(payload: ResponsesApiResponse): Promi
   const result = await resolveResponsesImageItemResult(item);
   if (!result) {
     throw new Error(
-      `服务商返回的数据不标准：响应中没有 image_generation_call 结果。${DIRECT_MODE_FALLBACK_HINT}`,
+      `服务商返回的数据不标准：响应中没有 image_generation_call 结果。${IMAGE_URL_FALLBACK_HINT}`,
     );
   }
   return result;
@@ -610,12 +610,16 @@ async function getApiErrorMessage(response: Response) {
   try {
     const payload = JSON.parse(text) as unknown;
     const detail = extractUpstreamErrorDetail(payload);
-    return detail
-      ? `请求失败：HTTP ${response.status}：${detail}`
-      : `请求失败：HTTP ${response.status}`;
+    if (detail) return `请求失败：HTTP ${response.status}：${detail}`;
   } catch {
+    // Some OpenAI-compatible gateways return plain text instead of JSON.
+  }
+
+  const fallbackDetail = text.replace(/\s+/g, " ").trim();
+  if (!fallbackDetail || fallbackDetail.startsWith("<")) {
     return `请求失败：HTTP ${response.status}`;
   }
+  return `请求失败：HTTP ${response.status}：${fallbackDetail.slice(0, 500)}`;
 }
 
 /**
@@ -768,7 +772,7 @@ async function parseImagesApiStreamResponse(
   }
 
   throw new Error(
-    `流式接口未返回最终图片数据，服务商返回的数据可能不标准。${DIRECT_MODE_FALLBACK_HINT}`,
+    `流式接口未返回最终图片数据，服务商返回的数据可能不标准。${IMAGE_URL_FALLBACK_HINT}`,
   );
 }
 

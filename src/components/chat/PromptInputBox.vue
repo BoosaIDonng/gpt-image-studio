@@ -34,7 +34,7 @@ const PROMPT_MENU_MAX_HEIGHT = 256;
 
 const composerPlaceholder = computed(() =>
   props.activeAttachmentCount
-    ? "描述你想基于引用图修改什么... 输入 @ 可插入常用提示词"
+    ? "描述如何结合参考图生成或修改图片... 输入 @ 可插入常用提示词"
     : "描述你想生成的图片... 输入 @ 可插入常用提示词",
 );
 const filteredFavoritePrompts = computed(() => {
@@ -63,6 +63,31 @@ onBeforeUnmount(() => {
 
 function focusComposer() {
   textareaRef.value?.focus();
+}
+
+function insertReferenceMention(index: number) {
+  const el = textareaRef.value;
+  if (!el || index < 1) return;
+
+  const value = el.value;
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+  const before = value.slice(0, start);
+  const after = value.slice(end);
+  const mention = `@图${index}`;
+  const insertText = `${before && !/\s$/.test(before) ? " " : ""}${mention}${after && !/^\s/.test(after) ? " " : ""}`;
+  const nextValue = before + insertText + after;
+  const nextCaret = before.length + insertText.length;
+
+  emit("update:composerText", nextValue);
+  closePromptMenu();
+  void nextTick(() => {
+    el.value = nextValue;
+    el.selectionStart = nextCaret;
+    el.selectionEnd = nextCaret;
+    resizeTextarea(el);
+    el.focus();
+  });
 }
 
 function resizeTextarea(el: HTMLTextAreaElement) {
@@ -251,7 +276,7 @@ function findPromptMention(value: string, caretIndex: number) {
   if (atIndex < 0) return null;
 
   const query = beforeCaret.slice(atIndex + 1);
-  if (/[\s@]/.test(query)) return null;
+  if (/[\s@]/.test(query) || /^图\d+$/.test(query)) return null;
   return { start: atIndex, query };
 }
 
@@ -324,7 +349,7 @@ function imageFilesFromTransfer(
     .filter((file): file is File => Boolean(file));
 }
 
-defineExpose({ focusComposer });
+defineExpose({ focusComposer, insertReferenceMention });
 </script>
 
 <template>

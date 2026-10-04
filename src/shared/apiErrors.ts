@@ -1,7 +1,7 @@
 /**
  * API 错误文案常量与网络错误分类。
  *
- * 之前该长句在 imagesApi.ts（4 处）与 companion 路由（3 处）硬编码，
+ * 之前该长句在多个图片 API 路由中重复硬编码，
  * 且 networkRetry.ts 靠 error.message 子串匹配来决定是否重试——
  * 任何措辞改动都可能让重试逻辑静默失效。统一引用常量后，文案与匹配保持一致。
  */
@@ -53,7 +53,21 @@ export function extractUpstreamErrorDetail(payload: unknown): string {
     const message = (error as Record<string, unknown>).message;
     if (typeof message === "string" && message.trim()) return message;
   }
+  if (error && typeof error === "object" && "msg" in error) {
+    const message = (error as Record<string, unknown>).msg;
+    if (typeof message === "string" && message.trim()) return message;
+  }
   if (typeof record.message === "string" && record.message.trim()) return record.message;
   if (typeof record.detail === "string" && record.detail.trim()) return record.detail;
+  if (Array.isArray(record.detail)) {
+    const details = record.detail.flatMap((item) => {
+      if (typeof item === "string" && item.trim()) return [item.trim()];
+      if (!item || typeof item !== "object") return [];
+      const entry = item as Record<string, unknown>;
+      const message = typeof entry.msg === "string" ? entry.msg : entry.message;
+      return typeof message === "string" && message.trim() ? [message.trim()] : [];
+    });
+    if (details.length) return details.join("; ");
+  }
   return "";
 }

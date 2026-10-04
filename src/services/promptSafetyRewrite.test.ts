@@ -15,8 +15,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("./floatingChatService", () => ({
   streamChatReply: mocks.streamChatReply,
   isBuiltinChatAvailable: mocks.isBuiltinChatAvailable,
-  FLOATING_CHAT_UNCONFIGURED_MESSAGE:
-    "内置 AI 助手需要先启动并配对本地 Companion：打开设置 → API 设置，启动 Companion 并完成配对后即可使用。",
+  FLOATING_CHAT_UNCONFIGURED_MESSAGE: "内置 AI 助手当前不可用，请稍后重试。",
 }));
 
 describe("rewritePromptWithAssistant", () => {
@@ -100,7 +99,7 @@ describe("rewritePromptWithAssistant", () => {
     );
   });
 
-  it("throws the setup hint when the companion is not available", async () => {
+  it("throws the unavailable hint when builtin chat is unavailable", async () => {
     mocks.isBuiltinChatAvailable.mockReturnValue(false);
 
     await expect(

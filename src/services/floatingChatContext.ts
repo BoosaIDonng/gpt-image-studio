@@ -1,7 +1,6 @@
 import type {
   ApiMode,
   ApiProvider,
-  ConnectionMode,
   FavoritePrompt,
   GenerationParams,
   ImageAsset,
@@ -13,7 +12,6 @@ import { collectRagDocuments, retrieveRagContext } from "./rag";
 type FloatingChatGenerationContext = GenerationParams & {
   apiProvider: ApiProvider;
   apiMode: ApiMode;
-  connectionMode: ConnectionMode;
   model: string;
 };
 
@@ -113,7 +111,6 @@ function generationLine(generation: FloatingChatGenerationContext) {
     `供应商 ${generation.apiProvider}`,
     `模型 ${generation.model}`,
     `接口 ${generation.apiMode}`,
-    `连接 ${generation.connectionMode}`,
     `尺寸 ${size}`,
     `分辨率 ${generation.resolution}`,
     `数量 ${generation.imageCount}`,

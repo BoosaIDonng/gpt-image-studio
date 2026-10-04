@@ -6,8 +6,7 @@ GPT Image Studio 当前已经具备稳定的聊天式图片工作台体验：
 
 - 用户通过对话提交文生图或图片编辑请求。
 - 图片结果、引用图、遮罩图和聊天记录都保存在本地 IndexedDB。
-- 浏览器直连模式通过 OpenAI 兼容 Images API 完成生成与编辑。
-- 本地 Companion 模式通过 `127.0.0.1` 上的本地服务代理同样的图片接口。
+- 浏览器通过 OpenAI 兼容 Images API 完成生成与编辑。
 
 当前实现仍有两个明显缺口：
 
@@ -40,7 +39,7 @@ GPT Image Studio 当前已经具备稳定的聊天式图片工作台体验：
 
 ### 产品目标
 
-- 用户可以在“浏览器直连”模式下切换 `Images API` 与 `Responses API`。
+- 用户可以切换 `Images API` 与 `Responses API`。
 - 用户可以选择是否开启“流式预览”。
 - 生成中的 assistant 消息可以显示中间图预览，而不是只有骨架屏。
 - 最终图片完成后，仍按当前方式写入图片库与聊天记录。
@@ -50,7 +49,6 @@ GPT Image Studio 当前已经具备稳定的聊天式图片工作台体验：
 - 保持当前聊天工作台、图片库、引用图编辑、遮罩编辑、多图并发、重试和刷新逻辑可用。
 - 保持当前“多图 = 多 job 并发请求”的生成编排。
 - 不让 `generation` store 直接依赖某一个 OpenAI API 形态。
-- 为后续把流式支持扩展到 Companion 留出接口，但本轮不实现 Companion 流式。
 
 ## 非目标
 
@@ -62,38 +60,24 @@ GPT Image Studio 当前已经具备稳定的聊天式图片工作台体验：
 - 不接入函数工具或 `generate_image_batch`
 - 不扩展 `fal.ai`、自定义 provider、`chat/completions`
 - 不改成本地文件系统落盘
-- 不做 Companion 流式转发
 
 ## 当前实现概况
 
-### 当前连接模式
+### 当前请求模式
 
-当前项目只有两种连接模式：
-
-- `direct`
-- `localCompanion`
-
-接口模式目前只有一种隐含模式：OpenAI 兼容 `Images API`。
+图片请求从浏览器发送到用户配置的 API 地址。
 
 ### 当前请求路径
-
-浏览器直连：
 
 - 文生图：`POST /v1/images/generations`
 - 图片编辑：`POST /v1/images/edits`
 
-本地 Companion：
-
-- 文生图：`POST /images/generations`
-- 图片编辑：`POST /images/edits`
-
 ### 当前响应方式
 
-当前前端与 Companion 都采用“等待完整 JSON 再解析”的模式：
+当前前端采用“等待完整 JSON 再解析”的模式：
 
 - 前端没有发送 `stream: true`
 - 前端没有解析 `text/event-stream`
-- Companion 也不是流式透传，而是整体读取上游响应后再返回
 
 ### 当前多图生成策略
 
@@ -119,15 +103,6 @@ GPT Image Studio 当前已经具备稳定的聊天式图片工作台体验：
 - `Responses API` 请求体是否稳定
 - 流式中间图的用户体验是否足够好
 - 现有消息聚合模型是否适合 partial image
-
-如果这三层没有先在 Web App 内部稳定下来，就直接推动到 Companion，会把风险扩散到：
-
-- 本地 HTTP 协议
-- 安全边界
-- 原始事件流透传
-- 本地服务异常恢复
-
-因此本次建议把 Companion 明确后置。
 
 ## 总体方案
 
@@ -440,17 +415,6 @@ type PendingGenerationCardProps = {
 - partial image 不做持久化
 - 旧消息只要仍能展示最终结果即可
 
-### Companion 兼容
-
-Companion 本轮不改。
-
-在 `localCompanion` 模式下：
-
-- UI 中可先隐藏 `apiMode=responses`
-- 或保留切换但在提交前阻止，提示“本地 Companion 目前仅支持 Images API”
-
-推荐做法是先在设置页直接限制，减少用户混淆。
-
 ## 参数兼容策略
 
 ### 模型字段语义变化
@@ -649,23 +613,13 @@ Companion 本轮不改。
 
 尽管参考实现已经证明这条路径可行，但当前项目的遮罩来源、引用图筛选逻辑和消息关联方式与参考项目不同，仍需要单独验证。
 
-### 4. Companion 后续扩展成本
-
-本轮不做 Companion 是正确的，但也意味着：
-
-- 设置页会出现“直连支持、Companion 暂不支持”的短期差异
-
-这不是阻塞问题，但需要明确写入文档和 UI 提示。
-
 ## 后续扩展建议
 
 完成本方案后，可以再评估以下后续能力：
 
-1. Companion 对 `Responses API` 的非流式支持
-2. Companion 对 SSE 的透明转发
-3. partial image 序列回看
-4. 生成详情中展示实际生效参数
-5. 更细粒度的“请求进度状态文案”
+1. partial image 序列回看
+2. 生成详情中展示实际生效参数
+3. 更细粒度的“请求进度状态文案”
 
 这些都应在本方案落地稳定后再考虑。
 
@@ -674,7 +628,7 @@ Companion 本轮不改。
 如果要把本次工作做稳，建议遵循以下原则：
 
 1. 先做 `Responses API` 非流式，再做流式
-2. 先做浏览器直连，不碰 Companion
+2. 先做 `Images API`，再做 `Responses API`
 3. 保持“多图 = 多 job 并发”的现有架构
 4. partial image 只放运行时内存，不做持久化
 5. 设置页必须补齐 `apiMode`、模型输入和流式开关

@@ -68,6 +68,7 @@ onUnmounted(() => document.removeEventListener("keydown", handleGlobalKeydown));
     />
 
     <ImageLibrary
+      @load-image-config="studio.library.loadImageConfig"
       @open-batch-operations="studio.library.openBatchOperations"
       @preview-image="studio.library.previewImage"
       @rename-image="studio.library.renameImage"

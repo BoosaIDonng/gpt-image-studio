@@ -6,7 +6,6 @@ export type ApiMode = "images" | "responses";
 export type ApiProvider = "openai" | "grok" | "gemini";
 
 export type GenerationRecipe = {
-  connectionMode: ConnectionMode;
   apiProvider: ApiProvider;
   apiBaseUrl: string;
   apiBaseUrlMode: ApiBaseUrlMode;
@@ -30,6 +29,7 @@ export type Message = {
   conversationId: string;
   role: MessageRole;
   content: string;
+  generationPrompt?: string;
   referencedImageIds: string[];
   resultImageIds: string[];
   status: MessageStatus;
@@ -85,7 +85,6 @@ export type GenerationParams = {
   outputFormat: "png" | "webp" | "jpeg";
 };
 
-export type ConnectionMode = "direct" | "localCompanion";
 export type ApiBaseUrlMode = "origin" | "full";
 export type PromptMode = "default" | "safe" | "creative" | "adult";
 export type PromptWordbankSectionKey =
@@ -126,7 +125,6 @@ export type PromptRequestSettings = {
 };
 
 export type AppSettings = {
-  connectionMode: ConnectionMode;
   apiProvider: ApiProvider;
   promptExpandEnabled: boolean;
   chatApiKey: string;

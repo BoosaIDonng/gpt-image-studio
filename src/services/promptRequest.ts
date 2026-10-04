@@ -68,7 +68,7 @@ export function buildFinalRequestPrompt(input: BuildFinalRequestPromptInput) {
 /**
  * 基于「用户输入 + 提示词请求设置」一次性构造最终请求 prompt。
  *
- * 之前该 7 字段解构在 Grok/Gemini/companion 等多个客户端的
+ * 之前该 7 字段解构在 Grok/Gemini 等多个客户端的
  * generate/edit/generateBatch 路径里逐字复制了 12 遍，现收敛到此处。
  */
 export function buildPromptRequest(input: {

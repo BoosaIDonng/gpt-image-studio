@@ -12,7 +12,6 @@ import type { AppSettings } from "../types/studio";
 import { defaultPromptWordbanks } from "./promptWordbanks";
 
 const currentSettings: AppSettings = {
-  connectionMode: "direct",
   apiProvider: "openai",
   apiKey: "sk-current",
   apiBaseUrl: "https://api.packyapi.com/v1/images",
@@ -68,7 +67,6 @@ describe("URL settings", () => {
       apiBaseUrlMode: "origin",
       apiKey: "sk-url",
       model: "gpt-image-1",
-      connectionMode: "direct",
     });
     expect(next?.defaults).toEqual(currentSettings.defaults);
   });
@@ -238,13 +236,13 @@ describe("URL settings", () => {
 
   it("clears known URL settings without removing unrelated params", () => {
     const params = new URLSearchParams(
-      "apiProvider=grok&apiKey=sk-url&model=x&settings=ignored&prompt=hello&connectionMode=localCompanion&foo=bar",
+      "apiProvider=grok&apiKey=sk-url&model=x&settings=ignored&prompt=hello&oldOption=value&foo=bar",
     );
 
     expect(hasUrlSettingParams(params)).toBe(true);
     clearUrlSettingParams(params);
 
-    expect(params.toString()).toBe("connectionMode=localCompanion&foo=bar");
+    expect(params.toString()).toBe("oldOption=value&foo=bar");
   });
 
   it("applies URL settings, saves them, and removes sensitive params from the URL", async () => {

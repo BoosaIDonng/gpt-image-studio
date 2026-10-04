@@ -6,7 +6,6 @@
   "packageManager": "pnpm@10.21.0",
   "scripts": {
     "dev": "vite",
-    "dev:companion": "pnpm --filter @honlnk/image-studio-companion dev",
     "proxy": "node tools/cors-proxy/server.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -14,7 +13,6 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "vue-tsc --noEmit",
-    "typecheck:companion": "pnpm --filter @honlnk/image-studio-companion typecheck",
     "build": "vite build",
     "preview": "vite preview"
   },

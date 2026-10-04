@@ -14,7 +14,6 @@ export function useStudioSettings(input: UseStudioSettingsInput) {
 
   watch(
     [
-      refs.connectionMode,
       refs.apiProvider,
       refs.apiKey,
       refs.apiBaseUrl,
@@ -49,6 +48,11 @@ export function useStudioSettings(input: UseStudioSettingsInput) {
   return {
     ...refs,
     applySettings: settings.applySettings,
+    applyImageCount: (count: number) =>
+      settings.applyImageCount(
+        count,
+        settings.imageCountPresets.some((preset) => preset === count) ? "preset" : "custom",
+      ),
     applySizePreset: settings.applySizePreset,
     applySizeResolution: settings.applySizeResolution,
     apiKeyForProvider: settings.apiKeyForProvider,

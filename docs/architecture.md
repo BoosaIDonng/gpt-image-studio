@@ -2,7 +2,7 @@
 
 GPT Image Studio 是一个本地优先的 AI 图片创作工作台。当前应用是基于 Vue 3 + TypeScript + Vite 的单页 Web App，本地数据主要保存在 IndexedDB。
 
-下一步架构调整不应该是重写，而是从当前偏平的 Vue 项目结构，逐步演进为：应用装配层、业务功能模块、共享浏览器工具，以及可选的本地 CLI companion。
+下一步架构调整不应该是重写，而是从当前偏平的 Vue 项目结构，逐步演进为应用装配层、业务功能模块和共享浏览器工具。
 
 ## 当前结构
 
@@ -70,18 +70,7 @@ src/
   main.ts
   App.vue
 
-companion/
 ```
-
-长期如果 companion 和 Web App 需要独立构建、发布或维护，再迁移为：
-
-```text
-apps/
-  web/
-  companion/
-```
-
-这个迁移应该等它能解决真实发布或构建问题时再做。
 
 ## App 层
 
@@ -105,7 +94,7 @@ Feature module 应该围绕业务概念组织，而不是围绕视觉布局组�
 - `images`：图片资源、Blob、导入、预览 URL 恢复和存储用量。
 - `generation`：生成参数、图片 client、生成任务和请求编排。
 - `drafts`：对话级输入草稿、引用图、生成参数，以及未来的 mask 草稿元数据。
-- `settings`：应用设置、连接模式和默认生成参数。
+- `settings`：应用设置、API 配置和默认生成参数。
 - `backup`：备份导出、恢复和备份格式校验。
 - `feedback`：通知 toast 和确认弹窗状态。
 
@@ -132,12 +121,7 @@ export type ImageClient = {
 };
 ```
 
-第一批 client：
-
-- `directImagesClient`：浏览器直接调用用户配置的 OpenAI 兼容 Images API。
-- `localCompanionImagesClient`：浏览器调用已配对的 `127.0.0.1` 本地 companion 服务。
-
-这个边界可以让 Web App 在保持生成流程不变的前提下接入 companion。
+当前的 `directImagesClient` 直接调用用户配置的图片 API。
 
 ## 状态管理方向
 
@@ -159,9 +143,3 @@ src/stores/
 - `useStudioViewModel` 保留为页面级 orchestration 层，负责草稿切换、备份恢复、预览、重命名弹窗等跨 store 工作流。
 - 单组件内部 UI 状态继续留在组件内，例如搜索输入、筛选状态、拖拽深度、mask modal 当前选择等。
 - 旧 feature composable 中的 `useStudioSettings`、`useStudioImages`、`useStudioConversations`、`useStudioGeneration`、`useStudioFeedback` 暂时作为兼容 wrapper 保留。
-
-## Companion 边界
-
-Companion 应该是可选能力。浏览器直连模式继续作为默认模式保留。
-
-Companion 不属于 `src/`。它通过明确的 HTTP 协议和 Web App 通信，协议相关类型分别保留在 Web App 与 companion 内部，避免为了简单工具额外发布共享协议包。Web App 永远不应该读取 companion 中保存的真实凭据。

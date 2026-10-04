@@ -89,6 +89,28 @@ type GenerationStoreContext = {
   ) => Conversation | null;
 };
 
+function resolveReferenceSelection(prompt: string, imageIds: string[], requiredImageId?: string) {
+  const matches = [...prompt.matchAll(/@图([1-9]\d*)/g)];
+  const indexes = new Set(matches.map((match) => Number(match[1])));
+  if (!indexes.size || [...indexes].some((index) => index > imageIds.length)) {
+    return { imageIds, prompt };
+  }
+
+  const requiredIndex = requiredImageId ? imageIds.indexOf(requiredImageId) + 1 : 0;
+  if (requiredIndex > 0) indexes.add(requiredIndex);
+  const orderedIndexes = [...indexes].sort((a, b) => a - b);
+  const resolvedIndexes = new Map(orderedIndexes.map((index, position) => [index, position + 1]));
+  const resolvedPrompt = prompt.replace(
+    /@图([1-9]\d*)/g,
+    (_, rawIndex: string) => `第${resolvedIndexes.get(Number(rawIndex))}张参考图`,
+  );
+
+  return {
+    imageIds: orderedIndexes.map((index) => imageIds[index - 1]),
+    prompt: `${resolvedPrompt}\n\n参考图序号按本次提交图片的顺序对应。`,
+  };
+}
+
 export const useGenerationStore = defineStore("generation", () => {
   /** Concurrent requests per message batch; higher values trigger upstream 429s whose backoff makes total time worse. */
   const GENERATION_CONCURRENCY = 3;
@@ -131,7 +153,7 @@ export const useGenerationStore = defineStore("generation", () => {
     input.value.activeEditMaskImageId.value && input.value.activeEditSourceImageId.value
       ? "局部编辑"
       : input.value.attachedImages.value.length
-        ? "引用图片编辑"
+        ? "参考图生成"
         : "文字生成图片",
   );
   const canSend = computed(
@@ -161,7 +183,7 @@ export const useGenerationStore = defineStore("generation", () => {
     if (!canSend.value || isExpanding.value) return;
 
     const ctx = input.value;
-    const rawText = ctx.composerText.value.trim() || "基于引用图片继续编辑。";
+    const rawText = ctx.composerText.value.trim() || "结合参考图生成图片。";
     const prompt = await promptAfterExpansionPreview(rawText, ctx);
     if (!prompt) return;
 
@@ -169,7 +191,7 @@ export const useGenerationStore = defineStore("generation", () => {
   }
 
   async function promptAfterExpansionPreview(rawText: string, ctx: GenerationStoreContext) {
-    if (!canExpandPrompt(ctx)) return rawText;
+    if (/@图[1-9]\d*/.test(rawText) || !canExpandPrompt(ctx)) return rawText;
 
     const expanded = await expandPromptOrOriginal(rawText, ctx);
     if (expanded === rawText) return rawText;
@@ -239,8 +261,21 @@ export const useGenerationStore = defineStore("generation", () => {
       }));
     const conversationId = conversation.id;
     const editMaskImageId = input.value.activeEditMaskImageId.value || undefined;
-    const references = input.value.attachedImages.value.filter((id) => id !== editMaskImageId);
     const editSourceImageId = input.value.activeEditSourceImageId.value || undefined;
+    const attachedReferences = input.value.attachedImages.value.filter(
+      (id) => id !== editMaskImageId,
+    );
+    const orderedReferences =
+      editSourceImageId && attachedReferences.includes(editSourceImageId)
+        ? [editSourceImageId, ...attachedReferences.filter((id) => id !== editSourceImageId)]
+        : attachedReferences;
+    const referenceSelection = resolveReferenceSelection(
+      text,
+      orderedReferences,
+      editSourceImageId,
+    );
+    const references = referenceSelection.imageIds;
+    const generationPrompt = referenceSelection.prompt;
     const generationParams = input.value.currentGenerationParams();
     const generationRecipe = currentGenerationRecipe();
     const imageCount = normalizeImageCount(generationParams.imageCount);
@@ -251,6 +286,7 @@ export const useGenerationStore = defineStore("generation", () => {
       conversationId,
       role: "user",
       content: text,
+      generationPrompt: generationPrompt === text ? undefined : generationPrompt,
       referencedImageIds: references,
       resultImageIds: [],
       status: "success",
@@ -305,7 +341,7 @@ export const useGenerationStore = defineStore("generation", () => {
         generationRecipe: assistantMessage.generationRecipe ?? currentGenerationRecipe(),
         promptRequestSettings:
           assistantMessage.promptRequestSettings ?? input.value.currentPromptRequestSettings(text),
-        prompt: text,
+        prompt: generationPrompt,
         referencedImageIds: references,
         editSourceImageId,
         editMaskImageId,
@@ -330,7 +366,7 @@ export const useGenerationStore = defineStore("generation", () => {
     const userMessage = findSourceUserMessage(message);
 
     if (userMessage) {
-      const prompt = promptOverride?.trim() || userMessage.content;
+      const prompt = promptOverride?.trim() || userMessage.generationPrompt || userMessage.content;
       const promptRequestSettings =
         message.promptRequestSettings ??
         (await (input.value.currentPromptRequestSettingsAsync?.(prompt) ??
@@ -415,9 +451,15 @@ export const useGenerationStore = defineStore("generation", () => {
           generationRecipe,
           promptRequestSettings:
             message.promptRequestSettings ??
-            (await (input.value.currentPromptRequestSettingsAsync?.(userMessage.content) ??
-              Promise.resolve(input.value.currentPromptRequestSettings(userMessage.content)))),
-          prompt: userMessage.content,
+            (await (input.value.currentPromptRequestSettingsAsync?.(
+              userMessage.generationPrompt || userMessage.content,
+            ) ??
+              Promise.resolve(
+                input.value.currentPromptRequestSettings(
+                  userMessage.generationPrompt || userMessage.content,
+                ),
+              ))),
+          prompt: userMessage.generationPrompt || userMessage.content,
           referencedImageIds: message.referencedImageIds,
           editSourceImageId: message.editSourceImageId,
           editMaskImageId: message.editMaskImageId,
@@ -655,6 +697,11 @@ export const useGenerationStore = defineStore("generation", () => {
     if (editSourceImageId && !editImages.length) {
       throw new Error("编辑源图不在当前引用列表中，请重新选择继续编辑。");
     }
+    if (editSourceImageId && editImages.length !== imageSources.length) {
+      throw new Error(
+        "局部编辑只会发送选定的源图。请移除其他引用图片，或退出局部编辑后使用多张参考图。",
+      );
+    }
     if (editMaskImageId && !maskImage) {
       throw new Error("编辑遮罩不存在，请重新选择编辑区域。");
     }
@@ -679,6 +726,8 @@ export const useGenerationStore = defineStore("generation", () => {
       }
     }
 
+    const requestImages = editImages.length ? editImages : imageSources;
+
     if (maskBlob) {
       console.info(
         "[generation] edit with mask",
@@ -696,7 +745,7 @@ export const useGenerationStore = defineStore("generation", () => {
       prompt,
       params,
       promptRequestSettings,
-      images: (editImages.length ? editImages : imageSources).map((item) => ({
+      images: requestImages.map((item) => ({
         blob: item.blob,
         name: item.name,
       })),
@@ -1036,7 +1085,6 @@ export const useGenerationStore = defineStore("generation", () => {
     const ctx = input.value;
     return (
       ctx.currentGenerationRecipe?.() ?? {
-        connectionMode: "direct",
         apiProvider: "openai",
         apiBaseUrl: "",
         apiBaseUrlMode: "origin",

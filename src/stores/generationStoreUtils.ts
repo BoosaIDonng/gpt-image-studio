@@ -27,9 +27,7 @@ export function resultCountLabel(prefix: string, count: number) {
 
 export function pendingGenerationLabel(isEdit: boolean, count: number) {
   if (isEdit) {
-    return count > 1
-      ? `正在基于引用图片生成 ${count} 张编辑结果。`
-      : "正在基于引用图片生成编辑结果。";
+    return count > 1 ? `正在基于参考图生成 ${count} 张图片。` : "正在基于参考图生成图片。";
   }
 
   return count > 1 ? `正在生成 ${count} 张图片。` : "正在生成图片。";
@@ -37,8 +35,8 @@ export function pendingGenerationLabel(isEdit: boolean, count: number) {
 
 export function continuedGenerationLabel(isEdit: boolean, isReplacing: boolean, count: number) {
   if (isEdit) {
-    if (isReplacing) return "正在重新生成编辑结果。";
-    return count > 1 ? `正在继续生成 ${count} 张编辑结果。` : "正在继续生成编辑结果。";
+    if (isReplacing) return "正在基于参考图重新生成图片。";
+    return count > 1 ? `正在基于参考图继续生成 ${count} 张图片。` : "正在基于参考图继续生成图片。";
   }
 
   if (isReplacing) return "正在重新生成图片。";
@@ -57,6 +55,7 @@ export function toPlainMessage(message: Message): Message {
     conversationId: message.conversationId,
     role: message.role,
     content: message.content,
+    generationPrompt: message.generationPrompt,
     referencedImageIds: [...message.referencedImageIds],
     resultImageIds: [...message.resultImageIds],
     status: message.status,

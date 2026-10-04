@@ -12,6 +12,7 @@ import StorageUsagePanel from "../image-library/StorageUsagePanel.vue";
 import StudioPanel from "./StudioPanel.vue";
 
 const emit = defineEmits<{
+  loadImageConfig: [image: ImageAsset];
   openBatchOperations: [];
   previewImage: [id: string];
   renameImage: [id: string];
@@ -298,8 +299,13 @@ function closeLibrary() {
           v-if="selectedImage"
           :image="selectedImage"
           :is-attached="isAttached(selectedImage.id)"
+          :image-by-id="images.imageById"
+          :attached-image-ids="images.attachedImages"
+          @attach-image="images.attachImage"
           @clear-selection="selectedImageId = ''"
           @delete-image="images.deleteImage"
+          @load-image-config="emit('loadImageConfig', $event)"
+          @preview-image="emit('previewImage', $event)"
           @rename-image="emit('renameImage', $event)"
           @set-tag-color="setImageTagColor"
         />

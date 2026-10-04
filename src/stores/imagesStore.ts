@@ -358,16 +358,33 @@ export const useImagesStore = defineStore("images", () => {
     const input = getContext();
     try {
       const blob = await loadImageBlob(image.blobKey);
-      if (!blob) return;
+      const current = imageById(id);
+      if (!blob || !current || current.previewUrl) return;
 
-      let restored: ImageAsset = { ...image, previewUrl: createObjectUrl(blob) };
+      const previewUrl = createObjectUrl(blob);
+      let restored: ImageAsset = { ...current, previewUrl };
       if (!restored.width || !restored.height) {
         const dimensions = await readImageDimensions(blob);
         if (dimensions)
           restored = { ...restored, width: dimensions.width, height: dimensions.height };
       }
+
+      const latest = imageById(id);
+      if (!latest || latest.previewUrl) {
+        revokeObjectUrls([previewUrl]);
+        return;
+      }
+      restored = {
+        ...latest,
+        previewUrl,
+        width: latest.width ?? restored.width,
+        height: latest.height ?? restored.height,
+      };
+
       replaceImage(restored);
       await saveImageAsset(toPlainImageAsset(restored)).catch(input.onStorageError);
+    } catch (error) {
+      input.onStorageError(error);
     } finally {
       previewLoadInFlight.delete(id);
     }

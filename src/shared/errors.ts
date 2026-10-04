@@ -37,6 +37,5 @@ export function isApiConfigurationError(error: unknown) {
     "请先在设置里填写",
     "请先获取并选择图片模型",
     "仅支持 images api",
-    "尚未与本地 companion 配对",
   ].some((pattern) => message.includes(pattern));
 }

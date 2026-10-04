@@ -28,7 +28,7 @@ const ALLOWED_ORIGINS = new Set([
   "http://localhost:4173",
 ]);
 
-/** Same message limits as the local companion chat route. */
+/** Keep validation limits aligned with the floating chat client. */
 const MAX_REQUEST_MESSAGES = 40;
 const MAX_MESSAGE_CHARS = 24_000;
 

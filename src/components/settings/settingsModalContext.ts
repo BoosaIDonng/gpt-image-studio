@@ -3,7 +3,6 @@ import { inject, provide } from "vue";
 import type {
   ApiMode,
   ApiProvider,
-  ConnectionMode,
   Conversation,
   FavoritePrompt,
   ImageAsset,
@@ -20,7 +19,6 @@ import type {
  */
 export type SettingsModalContext = {
   // ── API 设置 ──
-  connectionMode: Ref<ConnectionMode>;
   apiProvider: Ref<ApiProvider>;
   apiBaseUrl: Ref<string>;
   apiBaseUrlMode: Ref<"origin" | "full">;
@@ -29,10 +27,6 @@ export type SettingsModalContext = {
   model: Ref<string>;
   streamImages: Ref<boolean>;
   streamPartialImages: Ref<0 | 1 | 2 | 3>;
-  companionUrl: Ref<string>;
-  companionSessionToken: Ref<string>;
-  companionPaired: Ref<boolean>;
-  updateConnectionMode: (value: ConnectionMode) => void;
   updateApiProvider: (value: ApiProvider) => void;
   updateApiBaseUrl: (value: string) => void;
   updateApiBaseUrlMode: (value: "origin" | "full") => void;
@@ -41,7 +35,6 @@ export type SettingsModalContext = {
   updateModel: (value: string) => void;
   updateStreamImages: (value: boolean) => void;
   updateStreamPartialImages: (value: 0 | 1 | 2 | 3) => void;
-  updateCompanionSessionToken: (value: string) => void;
 
   // ── 通用设置 ──
   autoRetryOnNetworkError: Ref<boolean>;

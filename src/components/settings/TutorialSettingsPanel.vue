@@ -5,11 +5,7 @@ import { buildTutorialSteps } from "./tutorial";
 
 const ctx = useSettingsModalContext();
 
-const isConnected = computed(() =>
-  ctx.connectionMode.value === "localCompanion"
-    ? ctx.companionPaired.value
-    : Boolean(ctx.apiKey.value.trim()),
-);
+const isConnected = computed(() => Boolean(ctx.apiKey.value.trim()));
 
 const tutorialSteps = computed(() =>
   buildTutorialSteps({

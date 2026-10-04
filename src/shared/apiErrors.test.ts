@@ -8,6 +8,12 @@ describe("extractUpstreamErrorDetail", () => {
     );
   });
 
+  it("reads {error: {msg}} payloads", () => {
+    expect(extractUpstreamErrorDetail({ error: { msg: "model is required" } })).toBe(
+      "model is required",
+    );
+  });
+
   it("reads string error payloads", () => {
     expect(extractUpstreamErrorDetail({ error: "rate limited" })).toBe("rate limited");
   });
@@ -18,6 +24,14 @@ describe("extractUpstreamErrorDetail", () => {
 
   it("reads FastAPI-style {detail} payloads used by shared-account relays", () => {
     expect(extractUpstreamErrorDetail({ detail: "Forbidden" })).toBe("Forbidden");
+  });
+
+  it("reads validation errors in array-shaped detail payloads", () => {
+    expect(
+      extractUpstreamErrorDetail({
+        detail: [{ msg: "model is required" }, { message: "image is required" }],
+      }),
+    ).toBe("model is required; image is required");
   });
 
   it("returns empty string for non-object payloads or unreadable shapes", () => {

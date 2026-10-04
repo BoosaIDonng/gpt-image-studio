@@ -1,7 +1,6 @@
 /**
  * Blob 编码工具：集中处理 base64 / data-URL 转换。
- * 之前在 imagesApi / grokImagesApi / geminiImagesApi / localCompanionImagesClient
- * 各处逐字复制，现统一到此处。
+ * 之前在 imagesApi / grokImagesApi / geminiImagesApi 各处逐字复制，现统一到此处。
  */
 
 const CHUNK_SIZE = 8192;

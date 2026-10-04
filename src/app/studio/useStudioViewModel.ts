@@ -6,7 +6,6 @@ import { useStudioConversations } from "../../features/conversations";
 import { useStudioFeedback } from "../../features/feedback";
 import {
   createDirectImagesClient,
-  createLocalCompanionImagesClient,
   type ImageClient,
   useStudioGeneration,
 } from "../../features/generation";
@@ -124,6 +123,7 @@ export function useStudioViewModel() {
     imageById: (id) => images.imageById(id),
     messages: computed(() => conversations?.messages.value ?? []),
     currentGenerationParams: () => settings.currentGenerationParams(),
+    applyImageCount: settings.applyImageCount,
     applySizeResolution: (resolution) => settings.applySizeResolution(resolution),
     applySizePreset: (size) => settings.applySizePreset(size),
     imageWidth: settings.imageWidth,
@@ -159,62 +159,25 @@ export function useStudioViewModel() {
     getStreamImages: () => settings.streamImages.value,
     getStreamPartialImages: () => settings.streamPartialImages.value,
   });
-  const localCompanionImagesClient = createLocalCompanionImagesClient({
-    getCompanionUrl: () => settings.companionUrl.value,
-    getSessionToken: () => settings.companionSessionToken.value,
-    getApiProvider: () => settings.apiProvider.value,
-    getModel: () => settings.model.value,
-  });
   const imageClient: ImageClient = {
     canGenerateBatch(input) {
-      const recipe = input?.recipe;
-      if (
-        (recipe?.connectionMode ?? settings.connectionMode.value) === "localCompanion" &&
-        (recipe?.apiMode ?? settings.apiMode.value) !== "images"
-      ) {
-        return false;
-      }
-      const client =
-        (recipe?.connectionMode ?? settings.connectionMode.value) === "localCompanion"
-          ? localCompanionImagesClient
-          : directImagesClient;
-      return client.canGenerateBatch?.(input) ?? false;
+      return directImagesClient.canGenerateBatch?.(input) ?? false;
     },
     generate(input) {
-      const recipe = input.recipe;
-      if (
-        (recipe?.connectionMode ?? settings.connectionMode.value) === "localCompanion" &&
-        (recipe?.apiMode ?? settings.apiMode.value) !== "images"
-      ) {
-        throw new Error("本地 Companion 当前仅支持 Images API。");
-      }
-      const fn = () =>
-        (recipe?.connectionMode ?? settings.connectionMode.value) === "localCompanion"
-          ? localCompanionImagesClient.generate(input)
-          : directImagesClient.generate(input);
       return withNetworkRetry(
-        fn,
+        () => directImagesClient.generate(input),
         () => settings.autoRetryOnNetworkError.value,
         input.onNetworkRetry,
         input.signal,
       );
     },
     generateBatch(input) {
-      const recipe = input.recipe;
-      if (
-        (recipe?.connectionMode ?? settings.connectionMode.value) === "localCompanion" &&
-        (recipe?.apiMode ?? settings.apiMode.value) !== "images"
-      ) {
-        throw new Error("本地 Companion 当前仅支持 Images API。");
-      }
-      const client =
-        (recipe?.connectionMode ?? settings.connectionMode.value) === "localCompanion"
-          ? localCompanionImagesClient
-          : directImagesClient;
       const fn = () =>
-        client.generateBatch
-          ? client.generateBatch(input)
-          : Promise.all(Array.from({ length: input.count }, () => client.generate(input)));
+        directImagesClient.generateBatch
+          ? directImagesClient.generateBatch(input)
+          : Promise.all(
+              Array.from({ length: input.count }, () => directImagesClient.generate(input)),
+            );
       return withNetworkRetry(
         fn,
         () => settings.autoRetryOnNetworkError.value,
@@ -223,19 +186,8 @@ export function useStudioViewModel() {
       );
     },
     edit(input) {
-      const recipe = input.recipe;
-      if (
-        (recipe?.connectionMode ?? settings.connectionMode.value) === "localCompanion" &&
-        (recipe?.apiMode ?? settings.apiMode.value) !== "images"
-      ) {
-        throw new Error("本地 Companion 当前仅支持 Images API。");
-      }
-      const fn = () =>
-        (recipe?.connectionMode ?? settings.connectionMode.value) === "localCompanion"
-          ? localCompanionImagesClient.edit(input)
-          : directImagesClient.edit(input);
       return withNetworkRetry(
-        fn,
+        () => directImagesClient.edit(input),
         () => settings.autoRetryOnNetworkError.value,
         input.onNetworkRetry,
         input.signal,
@@ -504,6 +456,7 @@ export function useStudioViewModel() {
     messages: chatMessages,
   };
   const library = proxyRefs({
+    loadImageConfig: drafts.loadImageConfig,
     openBatchOperations: settingsSync.openBatchImageOperations,
     previewImage: imagePreview.previewImageById,
     renameImage: renameDialogs.requestRenameImage,
@@ -521,7 +474,6 @@ export function useStudioViewModel() {
   // 在编排边界统一组装并通过单一 prop 下发，替代 App.vue 里几十个转发 props/事件。
   // `importBackupRequest` 由 SettingsModal 自己补充（它依赖弹窗内部的恢复确认步骤）。
   const settingsModalPanelsContext: SettingsPanelsContext = {
-    connectionMode: settings.connectionMode,
     apiProvider: settings.apiProvider,
     apiBaseUrl: settings.apiBaseUrl,
     apiBaseUrlMode: settings.apiBaseUrlMode,
@@ -530,12 +482,6 @@ export function useStudioViewModel() {
     model: settings.model,
     streamImages: settings.streamImages,
     streamPartialImages: settings.streamPartialImages,
-    companionUrl: settings.companionUrl,
-    companionSessionToken: settings.companionSessionToken,
-    companionPaired: settings.companionPaired,
-    updateConnectionMode: (value) => {
-      settings.connectionMode.value = value;
-    },
     updateApiProvider: (value) => {
       settings.apiProvider.value = value;
     },
@@ -559,9 +505,6 @@ export function useStudioViewModel() {
     },
     updateStreamPartialImages: (value) => {
       settings.streamPartialImages.value = value;
-    },
-    updateCompanionSessionToken: (value) => {
-      settings.companionSessionToken.value = value;
     },
 
     autoRetryOnNetworkError: settings.autoRetryOnNetworkError,

@@ -50,6 +50,7 @@ type StoredBackupSettings = Omit<
   | "ragTopK"
   | "ragSemanticEnabled"
 > & {
+  connectionMode?: unknown;
   promptRewriteGuardEnabled?: boolean;
   promptRewriteGuardText?: string;
   promptRewriteGuardHistory?: AppSettings["promptRewriteGuardHistory"];
@@ -105,32 +106,34 @@ export async function restoreStudioBackup(file: File) {
   validateImageBlobs(data, files);
 
   const currentSettings = await loadSettings();
-  const restoredSettings = data.settings
-    ? {
-        ...data.settings,
-        apiKey: currentSettings?.apiKey ?? "",
-        chatApiKey: currentSettings?.chatApiKey ?? "",
-        promptMode: data.settings.promptMode ?? "default",
-        promptWordbanks: normalizePromptWordbanks(data.settings.promptWordbanks),
-        promptRewriteGuardEnabled: data.settings.promptRewriteGuardEnabled ?? true,
-        promptRewriteGuardText: normalizePromptRewriteGuardText(
-          data.settings.promptRewriteGuardText,
-        ),
-        promptRewriteGuardHistory: data.settings.promptRewriteGuardHistory ?? [
-          {
-            id: "prompt-guard-default",
-            text: PROMPT_REWRITE_GUARD_PREFIX,
-            createdAt: new Date(0).toISOString(),
-          },
-        ],
-        favoritePrompts: normalizeFavoritePrompts(data.settings.favoritePrompts),
-        ragEnabled: data.settings.ragEnabled ?? false,
-        ragTopK: normalizeRagTopK(data.settings.ragTopK),
-        ragSemanticEnabled: data.settings.ragSemanticEnabled ?? false,
-        defaults: normalizeGenerationParams(data.settings.defaults),
-        autoRetryOnNetworkError: data.settings.autoRetryOnNetworkError ?? false,
-      }
-    : currentSettings;
+  let restoredSettings = currentSettings;
+  if (data.settings) {
+    const { connectionMode: _legacyConnectionMode, ...backupSettings } = data.settings;
+    restoredSettings = {
+      ...backupSettings,
+      apiKey: currentSettings?.apiKey ?? "",
+      chatApiKey: currentSettings?.chatApiKey ?? "",
+      promptMode: backupSettings.promptMode ?? "default",
+      promptWordbanks: normalizePromptWordbanks(backupSettings.promptWordbanks),
+      promptRewriteGuardEnabled: backupSettings.promptRewriteGuardEnabled ?? true,
+      promptRewriteGuardText: normalizePromptRewriteGuardText(
+        backupSettings.promptRewriteGuardText,
+      ),
+      promptRewriteGuardHistory: backupSettings.promptRewriteGuardHistory ?? [
+        {
+          id: "prompt-guard-default",
+          text: PROMPT_REWRITE_GUARD_PREFIX,
+          createdAt: new Date(0).toISOString(),
+        },
+      ],
+      favoritePrompts: normalizeFavoritePrompts(backupSettings.favoritePrompts),
+      ragEnabled: backupSettings.ragEnabled ?? false,
+      ragTopK: normalizeRagTopK(backupSettings.ragTopK),
+      ragSemanticEnabled: backupSettings.ragSemanticEnabled ?? false,
+      defaults: normalizeGenerationParams(backupSettings.defaults),
+      autoRetryOnNetworkError: backupSettings.autoRetryOnNetworkError ?? false,
+    };
+  }
 
   // Snapshot existing data so we can attempt rollback on write failure
   const snapshot = await Promise.all([

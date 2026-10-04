@@ -7,7 +7,7 @@
 
 > 🔗 **在线体验**：<a href="https://image.idurspace.cn" target="_blank">image.idurspace.cn</a>
 
-本地优先的 AI 图片创作工作台。通过聊天式界面调用 OpenAI 兼容 Images API 生成和编辑图片，所有数据保存在浏览器本地。默认数据保存在浏览器本地；如需把 API 凭据留在本机而不是浏览器中，可以配合本地 `Companion` 使用。
+本地优先的 AI 图片创作工作台。通过聊天式界面调用 OpenAI 兼容 Images API 生成和编辑图片，所有数据保存在浏览器本地。
 
 ## 来源说明
 
@@ -27,7 +27,7 @@
   - OpenAI：`gpt-image-2`
   - Grok：`grok-imagine-image-quality`
   - Gemini：`gemini-3.1-flash-image-preview`
-- 浏览器直连与本地 Companion 双通道均可使用，按供应商自动适配请求格式
+- 按供应商自动适配请求格式
 
 ### 提示词控制
 - 提示词模式：默认、安全、创意、开放四档，默认保持原始 prompt 直出
@@ -60,14 +60,6 @@
 - 本地优先：所有数据存储在浏览器 IndexedDB
 - 完整备份导出/恢复（ZIP 格式）
 - API key 不写入备份文件
-- 支持本地 Companion 模式，凭据不经过浏览器
-
-## 连接模式
-
-| 模式 | 说明 |
-|------|------|
-| 浏览器直连 | 配置 API Base URL 和 API key，浏览器直接调用接口 |
-| 本地 Companion | 安装本地 CLI 服务，凭据保存在本机，浏览器只与 localhost 通信 |
 
 ### HTTP 中转站与非标准端口
 
@@ -142,13 +134,12 @@ http://127.0.0.1:8787/?url=http%3A%2F%2Fgateway.example.com%3A8080
 ```text
 gpt-image-studio/
 ├── src/                # Web App 源码，Vue 组件、状态、业务逻辑
-├── companion/          # 本地 CLI Companion，负责本机凭据代理
 ├── public/             # 静态资源
 ├── prompt-wordbanks/   # Prompt 模式使用的词库
 ├── docs/               # 架构、路线图、ADR、迁移和专题文档
 ├── embed-test.html     # iframe 嵌入联调页
 ├── package.json        # Web App 根脚本
-└── pnpm-workspace.yaml # workspace 配置
+└── pnpm-workspace.yaml # pnpm workspace 设置
 ```
 
 `src/` 当前按应用装配、业务功能、组件、共享工具划分：
@@ -169,7 +160,6 @@ src/
 ```bash
 pnpm install
 pnpm dev
-pnpm dev:companion
 pnpm test
 pnpm typecheck
 pnpm build
@@ -178,31 +168,15 @@ pnpm build
 命令说明：
 
 - `pnpm dev`：启动 Web App，本地默认地址为 `http://127.0.0.1:8888`
-- `pnpm dev:companion`：启动本地 Companion 服务
 - `pnpm test`：运行 Vitest 测试
 - `pnpm typecheck`：运行前端类型检查
 - `pnpm build`：构建 Web App
-
-## Companion 说明
-
-`companion/` 是一个可独立发布的 CLI 包，包名为 `@honlnk/image-studio-companion`。它负责把 API 凭据保存在本地机器，并通过 `localhost` 为 Web App 提供代理能力。
-
-常用启动方式：
-
-```bash
-npm install -g @honlnk/image-studio-companion
-gpt-image-studio login
-gpt-image-studio start
-```
-
-更多命令和配对流程见 [companion/README.md](companion/README.md)。
 
 ## 文档入口
 
 - [文档索引](docs/README.md)
 - [架构说明](docs/architecture.md)
 - [产品路线图](docs/roadmap.md)
-- [本地 Companion 方案](docs/companion.md)
 - [遮罩编辑方案](docs/mask-editing.md)
 - [备份格式](docs/backup-format.md)
 

@@ -1,7 +1,6 @@
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useFloatingChatStore } from "./floatingChatStore";
-import { useSettingsStore } from "./settingsStore";
 import type { ChatMessage } from "../services/floatingChatService";
 
 const mocks = vi.hoisted(() => ({
@@ -12,21 +11,13 @@ vi.mock("../services/floatingChatService", () => ({
   streamChatReply: mocks.streamChatReply,
   IMAGE_ASSISTANT_SYSTEM_PROMPT: "persona",
   isBuiltinChatAvailable: vi.fn(() => true),
-  FLOATING_CHAT_UNCONFIGURED_MESSAGE:
-    "内置 AI 助手需要先启动并配对本地 Companion：打开设置 → API 设置，启动 Companion 并完成配对后即可使用。",
+  FLOATING_CHAT_UNCONFIGURED_MESSAGE: "内置 AI 助手当前不可用，请稍后重试。",
 }));
-
-function configureCompanion() {
-  const settings = useSettingsStore();
-  settings.companionUrl = "http://127.0.0.1:19750";
-  settings.companionSessionToken = "session-token";
-}
 
 describe("floating chat store", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setActivePinia(createPinia());
-    configureCompanion();
   });
 
   it("sends the message through the builtin chat channel", async () => {

@@ -1,5 +1,5 @@
 import type { Conversation, ImageAsset, Message } from "../types/studio";
-import { getAllFromStore, STORE_NAMES } from "./db";
+import { getAllFromStore, getManyFromStore, STORE_NAMES } from "./db";
 
 type ImageBlobRecord = {
   key: string;
@@ -71,11 +71,8 @@ async function sumImageBytes(imageAssets: ImageAsset[]): Promise<number> {
   }
 
   if (missingBlobKeys.length) {
-    const blobs = await getAllFromStore<ImageBlobRecord>(STORE_NAMES.imageBlobs);
-    const blobByKey = new Map(blobs.map((record) => [record.key, record.blob]));
-    for (const key of missingBlobKeys) {
-      total += blobByKey.get(key)?.size ?? 0;
-    }
+    const blobs = await getManyFromStore<ImageBlobRecord>(STORE_NAMES.imageBlobs, missingBlobKeys);
+    total += blobs.reduce((sum, record) => sum + (record?.blob.size ?? 0), 0);
   }
 
   return total;

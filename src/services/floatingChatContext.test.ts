@@ -58,7 +58,6 @@ describe("floating chat project context", () => {
       generation: {
         apiProvider: "openai",
         apiMode: "images",
-        connectionMode: "direct",
         model: "gpt-image-2",
         size: "1:1",
         resolution: "1k",
@@ -119,7 +118,6 @@ describe("floating chat project context", () => {
       generation: {
         apiProvider: "openai",
         apiMode: "images",
-        connectionMode: "direct",
         model: "gpt-image-2",
         size: "custom",
         resolution: "1k",

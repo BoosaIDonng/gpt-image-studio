@@ -251,4 +251,17 @@ describe("imagesStore", () => {
       expect(store.imageAssets[0].id).toBe("source-1");
     });
   });
+
+  describe("ensureImagePreview", () => {
+    it("reports blob read failures without rejecting fire-and-forget callers", async () => {
+      const { store, onStorageError } = setupStore();
+      const error = new Error("IndexedDB read failed");
+      mocks.loadImageBlob.mockRejectedValueOnce(error);
+      store.imageAssets = [makeImage({ id: "img-1", blobKey: "blob-1" })];
+
+      await expect(store.ensureImagePreview("img-1")).resolves.toBeUndefined();
+
+      expect(onStorageError).toHaveBeenCalledWith(error);
+    });
+  });
 });

@@ -259,14 +259,13 @@ const prompt = applyPromptRewriteGuard(
 
 文生图和图生图都要使用同样逻辑。
 
-同时更新两个图片客户端：
+同时更新图片客户端：
 
 ```text
 src/features/generation/imageClients/directImagesClient.ts
-src/features/generation/imageClients/localCompanionImagesClient.ts
 ```
 
-两个客户端都需要从配置里读取 `getPromptMode()`，再传给底层图片请求。
+客户端需要从配置里读取 `getPromptMode()`，再传给底层图片请求。
 
 ## UI 设计
 
@@ -348,7 +347,7 @@ promptMode: "default"
 - 新增 `promptBuilder.ts`。
 - 新增 `promptWordbanks.ts`。
 - 为 `buildImagePrompt` 补单元测试。
-- 把 prompt mode 接入 direct 和 companion 图片客户端。
+- 把 prompt mode 接入图片客户端。
 
 ### Phase 2：设置 UI
 
@@ -375,7 +374,7 @@ promptMode: "default"
 - 安全、创意、成人模式只改变发送给接口的请求 prompt，不改变保存到聊天记录里的原始消息。
 - `promptRewriteGuard` 仍然包住最终请求 prompt。
 - 文生图和图生图都应用当前提示词模式。
-- 浏览器直连和本地 Companion 两种连接模式行为一致。
+- 图片生成请求应用当前提示词模式。
 - 设置刷新后仍然保留。
 - 旧设置加载后默认得到 `promptMode: "default"`。
 - 单元测试覆盖默认透传和三个提示词模式。

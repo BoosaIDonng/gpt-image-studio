@@ -18,8 +18,7 @@ const settings = useSettingsStore();
 
 const sourcePrompt = computed(
   () =>
-    composer.composerText.trim() ||
-    (images.activeAttachments.length ? "基于引用图片继续编辑。" : ""),
+    composer.composerText.trim() || (images.activeAttachments.length ? "结合参考图生成图片。" : ""),
 );
 
 const ragDocuments = computed(() =>
