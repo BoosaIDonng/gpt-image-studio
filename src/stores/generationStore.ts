@@ -491,8 +491,7 @@ export const useGenerationStore = defineStore("generation", () => {
           outputFormatToMimeType(params.outputFormat),
         );
       };
-      const onStatusText = (text: string) =>
-        setGenerationStatusText(job.assistantMessageId, text);
+      const onStatusText = (text: string) => setGenerationStatusText(job.assistantMessageId, text);
       const imageResults = job.referencedImageIds.length
         ? await requestImageEdit(
             job.prompt,
