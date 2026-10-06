@@ -4,6 +4,7 @@ defineProps<{
   /** Human-readable ETA based on the user's own generation history. */
   etaLabel?: string;
   previewUrl?: string;
+  statusText?: string;
   retryAttempt?: number;
 }>();
 
@@ -15,7 +16,7 @@ defineEmits<{
 <template>
   <figure
     class="generation-skeleton-card overflow-hidden rounded-panel border border-border-subtle bg-surface"
-    aria-label="图片生成中"
+    :aria-label="statusText || '图片生成中'"
   >
     <div
       :class="[
@@ -32,13 +33,13 @@ defineEmits<{
       </div>
       <div
         :class="[
-          'generation-duration-badge absolute left-1/2 top-[66%] z-1 -translate-x-1/2 rounded-full px-3 py-1 text-xs font-medium shadow-sm backdrop-blur',
+          'generation-duration-badge absolute left-1/2 top-[66%] z-1 max-w-[calc(100%-1.5rem)] -translate-x-1/2 truncate rounded-full px-3 py-1 text-xs font-medium shadow-sm backdrop-blur',
           previewUrl
             ? 'border border-black/10 bg-surface/92 text-content'
             : 'border border-border-subtle bg-surface/90 text-content-muted',
         ]"
       >
-        {{ previewUrl ? "预览更新中" : "正在生成" }}：{{ durationLabel
+        {{ statusText || (previewUrl ? "预览更新中" : "正在生成") }}：{{ durationLabel
         }}<template v-if="etaLabel"> · 预计 {{ etaLabel }}</template>
       </div>
       <div
@@ -64,12 +65,14 @@ defineEmits<{
         </div>
       </div>
       <button
+        v-if="statusText !== '正在保存图片'"
         class="mt-3 cursor-pointer text-xs text-content-muted transition-colors hover:text-content"
         type="button"
         @click="$emit('cancel')"
       >
         停止生成
       </button>
+      <span v-else class="mt-3 block text-xs text-content-muted">已收到图片，正在保存</span>
     </figcaption>
   </figure>
 </template>

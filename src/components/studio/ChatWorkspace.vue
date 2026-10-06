@@ -5,7 +5,7 @@ import { useDesktopLayout } from "../../composables/useDesktopLayout";
 import { useComposerStore } from "../../stores/composerStore";
 import { useGenerationStore } from "../../stores/generationStore";
 import { useImagesStore } from "../../stores/imagesStore";
-import type { Conversation, Message } from "../../types/studio";
+import type { Conversation, ImageAsset, Message } from "../../types/studio";
 import ChatComposer from "../chat/ChatComposer.vue";
 import CreativeCenterBanner from "./CreativeCenterBanner.vue";
 import EditMaskModal from "../chat/EditMaskModal.vue";
@@ -28,6 +28,10 @@ type ChatWorkspaceActions = {
   copyText: (text: string) => void;
   deleteMessage: (id: string) => void;
   generateAnother: (message: Message) => void;
+  loadImageConfig: (
+    image: ImageAsset,
+    options?: { sourceImageOnly?: boolean; restoreRecipe?: boolean },
+  ) => void;
   loadMessageConfig: (message: Message) => void;
   openConversations: () => void;
   openApiSettings: () => void;
@@ -88,15 +92,11 @@ const isDragActive = ref(false);
 const composerRef = ref<InstanceType<typeof ChatComposer> | null>(null);
 let dragDepth = 0;
 
-function isImageAttached(id: string) {
-  return images.activeAttachments.some((image) => image.id === id);
-}
-
 async function continueEdit(imageId: string) {
   if (!composerState.editModeEnabled) {
-    if (!isImageAttached(imageId)) {
-      images.attachImage(imageId);
-    }
+    const image = images.imageById(imageId);
+    if (!image) return;
+    actions.loadImageConfig(image, { sourceImageOnly: true, restoreRecipe: true });
 
     await nextTick();
     composerRef.value?.focusComposer();

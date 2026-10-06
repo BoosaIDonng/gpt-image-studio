@@ -116,6 +116,7 @@ export const useGenerationStore = defineStore("generation", () => {
   const GENERATION_CONCURRENCY = 3;
   const jobs = shallowRef<GenerationJob[]>([]);
   const partialPreviewUrls = ref<Record<string, string>>({});
+  const generationStatusTexts = ref<Record<string, string>>({});
   /** Coalescing state for streamed partial previews: only the newest frame decodes. */
   const partialPreviewDecodes = new Map<string, { busy: boolean; latest?: string }>();
   let context: GenerationStoreContext | null = null;
@@ -473,9 +474,14 @@ export const useGenerationStore = defineStore("generation", () => {
   async function runImageRequest(job: GenerationJob, signal: AbortSignal) {
     try {
       const params = job.generationParams;
+      setGenerationStatusText(
+        job.assistantMessageId,
+        job.referencedImageIds.length ? "正在准备参考图" : "正在准备请求",
+      );
       const onPartialImage = (event: { b64Json: string }) => {
         const assistantMessage = findMessage(job.assistantMessageId);
         if (!assistantMessage || assistantMessage.status !== "pending") return;
+        setGenerationStatusText(job.assistantMessageId, "模型已返回预览，生成仍在继续");
 
         // Streaming sends many intermediate frames; coalesce decodes so only
         // the newest frame is processed and the main thread stays free.
@@ -485,6 +491,8 @@ export const useGenerationStore = defineStore("generation", () => {
           outputFormatToMimeType(params.outputFormat),
         );
       };
+      const onStatusText = (text: string) =>
+        setGenerationStatusText(job.assistantMessageId, text);
       const imageResults = job.referencedImageIds.length
         ? await requestImageEdit(
             job.prompt,
@@ -495,11 +503,13 @@ export const useGenerationStore = defineStore("generation", () => {
             job.editMaskImageId,
             (retryAttempt) => updateMessageNetworkRetry(job.assistantMessageId, retryAttempt),
             onPartialImage,
+            onStatusText,
             job.generationRecipe,
             signal,
           )
-        : await requestImageGeneration(job, params, onPartialImage, signal);
+        : await requestImageGeneration(job, params, onPartialImage, onStatusText, signal);
       if (signal.aborted) return;
+      setGenerationStatusText(job.assistantMessageId, "收到结果，正在处理图片");
       const resultList = Array.isArray(imageResults) ? imageResults : [imageResults];
       recordWordbankHitsForJob(job, resultList);
       const now = Date.now();
@@ -509,6 +519,41 @@ export const useGenerationStore = defineStore("generation", () => {
           buildGeneratedImageAsset(job, imageResult, params, generationDurationMs),
         ),
       );
+      if (signal.aborted) {
+        savedImages.forEach(({ imageAsset }) => revokeObjectUrl(imageAsset.previewUrl));
+        return;
+      }
+      const hasOtherPendingJobs = jobs.value.some(
+        (otherJob) =>
+          otherJob.assistantMessageId === job.assistantMessageId &&
+          otherJob.id !== job.id &&
+          otherJob.status === "pending",
+      );
+      setGenerationStatusText(
+        job.assistantMessageId,
+        hasOtherPendingJobs ? "部分结果正在保存，其余图片仍在生成" : "正在保存图片",
+      );
+      const saveTasks = savedImages.flatMap(({ blob, imageAsset }) => [
+        saveImageBlob(imageAsset.blobKey, blob),
+        saveImageAsset(toPlainImageAsset(imageAsset)),
+      ]);
+      const saveResults = await Promise.allSettled(saveTasks);
+      const saveFailure = saveResults.find(
+        (result): result is PromiseRejectedResult => result.status === "rejected",
+      );
+      if (signal.aborted || saveFailure) {
+        const cleanupResults = await Promise.allSettled(
+          savedImages.map(({ imageAsset }) =>
+            Promise.all([deleteImageAsset(imageAsset.id), deleteImageBlob(imageAsset.blobKey)]),
+          ),
+        );
+        savedImages.forEach(({ imageAsset }) => revokeObjectUrl(imageAsset.previewUrl));
+        cleanupResults.forEach((result) => {
+          if (result.status === "rejected") input.value.onStorageError(result.reason);
+        });
+        if (signal.aborted) return;
+        throw saveFailure?.reason;
+      }
 
       input.value.imageAssets.value = [
         ...savedImages.map(({ imageAsset }) => imageAsset),
@@ -521,17 +566,10 @@ export const useGenerationStore = defineStore("generation", () => {
           imageId: imageAsset.id,
         });
       });
-
-      const saveTasks: Promise<unknown>[] = [
-        ...savedImages.flatMap(({ blob, imageAsset }) => [
-          saveImageBlob(imageAsset.blobKey, blob),
-          saveImageAsset(toPlainImageAsset(imageAsset)),
-        ]),
-      ];
-      if (assistantMessage) {
-        saveTasks.push(enqueueMessageSave(assistantMessage));
+      if (assistantMessage) await enqueueMessageSave(assistantMessage);
+      if (assistantMessage?.status !== "pending") {
+        setGenerationStatusText(job.assistantMessageId);
       }
-      await Promise.all(saveTasks);
     } catch (error) {
       if (signal.aborted) return;
       const rawMessage = formatError(error);
@@ -558,6 +596,8 @@ export const useGenerationStore = defineStore("generation", () => {
           console.error("[generation] 保存失败消息到 IndexedDB 失败", saveError);
           input.value.onStorageError(saveError);
         });
+      } else {
+        setGenerationStatusText(job.assistantMessageId);
       }
     }
   }
@@ -566,6 +606,7 @@ export const useGenerationStore = defineStore("generation", () => {
     job: GenerationJob,
     params: GenerationParams,
     onPartialImage: (event: { b64Json: string }) => void,
+    onStatusText: (text: string) => void,
     signal: AbortSignal,
   ) {
     const commonInput = {
@@ -577,6 +618,7 @@ export const useGenerationStore = defineStore("generation", () => {
       onNetworkRetry: (retryAttempt: number) =>
         updateMessageNetworkRetry(job.assistantMessageId, retryAttempt),
       onPartialImage,
+      onStatusText,
     };
 
     if (
@@ -647,6 +689,7 @@ export const useGenerationStore = defineStore("generation", () => {
     editMaskImageId?: string,
     onNetworkRetry?: (retryAttempt: number) => void,
     onPartialImage?: (event: { b64Json: string }) => void,
+    onStatusText?: (text: string) => void,
     recipe?: GenerationRecipe,
     signal?: AbortSignal,
   ) {
@@ -757,6 +800,7 @@ export const useGenerationStore = defineStore("generation", () => {
         : undefined,
       onNetworkRetry,
       onPartialImage,
+      onStatusText,
       recipe,
       signal,
     });
@@ -858,6 +902,19 @@ export const useGenerationStore = defineStore("generation", () => {
 
   function getPartialPreviewUrl(messageId: string) {
     return partialPreviewUrls.value[messageId];
+  }
+
+  function getGenerationStatusText(messageId: string) {
+    return generationStatusTexts.value[messageId];
+  }
+
+  function setGenerationStatusText(messageId: string, text?: string) {
+    const next = { ...generationStatusTexts.value };
+    const status = findMessage(messageId)?.status;
+    if (text && (status === "pending" || (text === "正在保存图片" && status === "success"))) {
+      next[messageId] = text;
+    } else delete next[messageId];
+    generationStatusTexts.value = next;
   }
 
   function createJob(
@@ -969,6 +1026,7 @@ export const useGenerationStore = defineStore("generation", () => {
   function cancelMessageGeneration(messageId: string) {
     const controller = requestControllers.get(messageId);
     if (!controller) return;
+    setGenerationStatusText(messageId);
     controller.abort();
     requestControllers.delete(messageId);
     jobs.value = jobs.value.map((job) =>
@@ -1048,6 +1106,14 @@ export const useGenerationStore = defineStore("generation", () => {
 
     if (pendingCount === 0) {
       clearPartialPreview(job.assistantMessageId);
+      setGenerationStatusText(
+        job.assistantMessageId,
+        update.imageId && assistantMessage.status === "success" ? "正在保存图片" : undefined,
+      );
+    } else if (update.imageId) {
+      setGenerationStatusText(job.assistantMessageId, "部分结果已返回，剩余图片仍在生成");
+    } else if (update.errorMessage) {
+      setGenerationStatusText(job.assistantMessageId, "部分请求失败，其余图片仍在生成");
     }
 
     replaceMessage(assistantMessage);
@@ -1108,6 +1174,7 @@ export const useGenerationStore = defineStore("generation", () => {
     pendingJobCount,
     generateAnother,
     getPartialPreviewUrl,
+    getGenerationStatusText,
     refreshGeneratedImage,
     retryMessage,
     submitMessage,

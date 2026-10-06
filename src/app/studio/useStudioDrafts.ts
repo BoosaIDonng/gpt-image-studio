@@ -9,6 +9,7 @@ import { readJsonStorage, readStorage } from "../../shared/localStorage";
 import type {
   ConversationDraft,
   GenerationParams,
+  GenerationRecipe,
   ImageAsset,
   Message,
   SizeResolution,
@@ -34,6 +35,7 @@ export function useStudioDrafts(ctx: {
   imageById: (id: string) => ImageAsset | undefined;
   messages: Ref<Message[]>;
   currentGenerationParams: () => GenerationParams;
+  applyGenerationRecipe: (recipe: GenerationRecipe) => void;
   applyImageCount: (count: number) => void;
   applySizeResolution: (resolution: SizeResolution) => void;
   applySizePreset: (size: GenerationParams["size"]) => void;
@@ -119,11 +121,16 @@ export function useStudioDrafts(ctx: {
     loadComposerConfig(message.content, message.referencedImageIds, message.generationParams);
   }
 
-  function loadImageConfig(image: ImageAsset) {
+  function loadImageConfig(
+    image: ImageAsset,
+    options: { sourceImageOnly?: boolean; restoreRecipe?: boolean } = {},
+  ) {
+    const recipe = image.generationRecipe;
+    if (options.restoreRecipe && recipe) ctx.applyGenerationRecipe(recipe);
     loadComposerConfig(
       image.prompt,
-      image.referencedImageIds ?? [],
-      image.generationRecipe?.params,
+      options.sourceImageOnly ? [image.id] : (image.referencedImageIds ?? []),
+      recipe?.params,
     );
   }
 

@@ -53,6 +53,7 @@ export function useStudioSettings(input: UseStudioSettingsInput) {
         count,
         settings.imageCountPresets.some((preset) => preset === count) ? "preset" : "custom",
       ),
+    applyGenerationRecipe: settings.applyGenerationRecipe,
     applySizePreset: settings.applySizePreset,
     applySizeResolution: settings.applySizeResolution,
     apiKeyForProvider: settings.apiKeyForProvider,

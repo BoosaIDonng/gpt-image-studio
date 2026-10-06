@@ -45,6 +45,8 @@ export function createDirectImagesClient(config: DirectClientConfig): ImageClien
         throw new Error("请先在设置里填写 API Base URL。");
       }
 
+      input.onStatusText?.("正在请求模型，等待返回结果");
+
       if (provider === "grok") {
         return generateGrokImage({
           apiBaseUrl,
@@ -111,6 +113,8 @@ export function createDirectImagesClient(config: DirectClientConfig): ImageClien
         throw new Error("当前供应商不支持批量单请求生成。");
       }
 
+      input.onStatusText?.("正在请求模型，等待返回结果");
+
       return generateGrokImages({
         apiBaseUrl,
         apiBaseUrlMode,
@@ -140,6 +144,8 @@ export function createDirectImagesClient(config: DirectClientConfig): ImageClien
       if (!apiBaseUrl) {
         throw new Error("请先在设置里填写 API Base URL。");
       }
+
+      input.onStatusText?.("正在提交图生图请求，等待模型处理");
 
       if (provider === "grok") {
         return editGrokImage({

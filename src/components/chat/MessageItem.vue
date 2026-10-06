@@ -42,9 +42,11 @@ const generation = useGenerationStore();
 const imagesStore = useImagesStore();
 const createdAtLabel = computed(() => formatRelativeTime(props.message.createdAt, props.nowMs));
 const pendingPreviewUrl = computed(() => generation.getPartialPreviewUrl(props.message.id));
+const pendingStatusText = computed(() => generation.getGenerationStatusText(props.message.id));
 
 /** ETA for non-streaming providers, based on the user's own past durations. */
 const pendingEtaLabel = computed(() => {
+  if (pendingStatusText.value === "正在保存图片") return "";
   const averageMs = imagesStore.averageGenerationDurationMs;
   if (!averageMs) return "";
   const startedAtMs = new Date(
@@ -100,8 +102,8 @@ let pendingTimer: number | null = null;
 watch(
   () => props.message.status,
   (status) => {
-    if (status === "pending") {
-      pendingNowMs.value = Date.now();
+    if (status === "pending" || pendingStatusText.value === "正在保存图片") {
+      if (status === "pending") pendingNowMs.value = Date.now();
       if (!pendingTimer) {
         pendingTimer = window.setInterval(() => {
           pendingNowMs.value = Date.now();
@@ -114,6 +116,12 @@ watch(
   },
   { immediate: true },
 );
+
+watch(pendingStatusText, (statusText) => {
+  if (props.message.status !== "pending" && statusText !== "正在保存图片") {
+    stopPendingTimer();
+  }
+});
 
 onUnmounted(stopPendingTimer);
 
@@ -202,10 +210,11 @@ function stopPendingTimer() {
         />
 
         <PendingGenerationCard
-          v-if="message.status === 'pending'"
+          v-if="message.status === 'pending' || pendingStatusText === '正在保存图片'"
           :duration-label="pendingDurationLabel()"
           :eta-label="pendingEtaLabel"
           :preview-url="pendingPreviewUrl"
+          :status-text="pendingStatusText"
           :retry-attempt="message.networkRetryAttempt"
           @cancel="emit('cancelMessageGeneration', message.id)"
         />

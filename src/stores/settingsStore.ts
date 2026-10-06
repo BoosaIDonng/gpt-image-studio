@@ -39,6 +39,7 @@ import type {
   AppSettings,
   FavoritePrompt,
   GenerationParams,
+  GenerationRecipe,
   PromptMode,
   PromptRewriteGuardHistoryItem,
   PromptWordbankSectionKey,
@@ -329,6 +330,19 @@ export const useSettingsStore = defineStore("settings", () => {
     };
   }
 
+  function applyGenerationRecipe(recipe: GenerationRecipe) {
+    applySettings({
+      ...currentSettings(),
+      apiProvider: recipe.apiProvider,
+      apiKey: apiKeyForProvider(recipe.apiProvider),
+      apiBaseUrl: recipe.apiBaseUrl,
+      apiBaseUrlMode: recipe.apiBaseUrlMode,
+      apiMode: recipe.apiMode,
+      model: recipe.model,
+      defaults: recipe.params,
+    });
+  }
+
   function apiKeyForProvider(provider: ApiProvider) {
     if (provider === apiProvider.value) return apiKey.value.trim();
     return readProviderApiSettings(provider, defaultProviderApiSettings(provider)).apiKey.trim();
@@ -516,6 +530,7 @@ export const useSettingsStore = defineStore("settings", () => {
     applySettings,
     applyImageCount,
     applyImageCountMode,
+    applyGenerationRecipe,
     applySizePreset,
     applySizeResolution,
     background,
